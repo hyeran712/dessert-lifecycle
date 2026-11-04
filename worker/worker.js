@@ -90,22 +90,38 @@ async function shops(q, src, page, env) {
 
 // ---------- 신메뉴 제안 ----------
 // 카페 메뉴 레시피 원가표 [재료단가] 시트 (2026-11-02 온라인 식자재몰·마트 판매가 기준)
+// 디저트 재료는 2026-11-04 식봄(foodspring.co.kr) 판매가(쿠폰 전)로 추가
 const PRICE = {
   '원두': { unit: 'g', price: 28.5 }, '우유': { unit: 'ml', price: 3.27 }, '바닐라시럽': { unit: 'ml', price: 15.5 },
   '초코소스': { unit: 'g', price: 8.92 }, '연유': { unit: 'g', price: 8.6 }, '아이스컵세트': { unit: '개', price: 96.9 },
   '얼음': { unit: 'g', price: 1.0, note: '예시값' }, '빨대': { unit: '개', price: 15.0, note: '예시값' },
+  '찹쌀가루': { unit: 'g', price: 6.63 }, '설탕': { unit: 'g', price: 1.43 }, '팥앙금': { unit: 'g', price: 4.61 },
+  '전분': { unit: 'g', price: 4.93 }, '박력분': { unit: 'g', price: 1.30 }, '버터': { unit: 'g', price: 15.75 },
+  '생크림': { unit: 'ml', price: 9.3 }, '계란': { unit: '개', price: 216.7 }, '말차가루': { unit: 'g', price: 18.01 },
+  '물': { unit: 'ml', price: 0 },
+  '생딸기': { unit: 'g', price: 18.0, note: '예시값' }, '포장용기': { unit: '개', price: 150, note: '예시값' },
+};
+// AI가 다른 이름으로 쓸 때 원가표 이름으로 맞춤
+const ALIAS = { '백설탕': '설탕', '통팥앙금': '팥앙금', '앙금': '팥앙금', '감자전분': '전분', '옥수수전분': '전분',
+  '무염버터': '버터', '휘핑크림': '생크림', '동물성생크림': '생크림', '달걀': '계란', '녹차가루': '말차가루',
+  '녹차파우더': '말차가루', '말차파우더': '말차가루', '말차': '말차가루', '딸기': '생딸기', '포장용기': '포장용기',
+  '디저트용기': '포장용기', '포장케이스': '포장용기', '정수': '물', '박력밀가루': '박력분' };
+const findPrice = name => {
+  const n = String(name || '').replace(/\s/g, '');
+  return PRICE[n] ? n : (ALIAS[n] || null);
 };
 const GEMINI_MODEL = 'gemini-3.8-flash';  // 바뀌면 Worker 변수 GEMINI_MODEL로 덮어쓰기
 
 function costOf(recipe) {
   let total = 0;
   const rows = recipe.map(r => {
-    const known = PRICE[r.ing];
+    const key = findPrice(r.ing);
+    const known = key ? PRICE[key] : null;
     const unit = known ? known.unit : r.unit;
     const up = known ? known.price : Number(r.est_unit_price) || 0;
     const cost = (Number(r.qty) || 0) * up;
     total += cost;
-    return { ing: r.ing, qty: Number(r.qty) || 0, unit, unit_price: +up.toFixed(2), cost: Math.round(cost),
+    return { ing: key || r.ing, qty: Number(r.qty) || 0, unit, unit_price: +up.toFixed(2), cost: Math.round(cost),
              source: known ? (known.note ? '원가표 (예시값)' : '원가표') : 'AI 추정' };
   });
   return { rows, total: Math.round(total) };
@@ -156,7 +172,7 @@ async function menu(body, env) {
 - 쓰지 않는 재료: ${(p.ban || []).join(', ') || '없음'} (절대 넣지 말 것)
 - 단가를 아는 재료: ${known}. 이 재료는 이름을 똑같이 쓰고 단위도 맞출 것.
 - 그 밖의 재료는 2026년 한국 업소용 식자재 기준 단위당 단가(원)를 est_unit_price로 추정. 단위는 g, ml, 개 중 하나.
-- 음료면 아이스컵세트 1개와 빨대 1개를 넣고, 디저트면 포장 용기를 재료로 넣을 것.
+- 음료면 아이스컵세트 1개와 빨대 1개를 넣고, 디저트면 포장용기 1개를 재료로 넣을 것. 생딸기처럼 과일은 개수 말고 g으로 쓸 것.
 JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
   const log = [];
   let prompt = base, result, cost;
@@ -173,7 +189,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const banned = (p.ban || []).filter(b => cost.rows.some(r => r.ing.includes(b)));
   return { banned, keyword: kw, kind, price, target, name: result.name, concept: result.concept, targetCustomer: result.target,
     point: result.point, pairing: result.pairing, steps: result.steps || [], recipe: cost.rows, cost: cost.total,
-    rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-02' };
+    rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-04' };
 }
 
 export default {
