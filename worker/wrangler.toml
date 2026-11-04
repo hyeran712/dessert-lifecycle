@@ -7,3 +7,12 @@ keep_vars = true          # 대시보드에서 넣은 GEMINI_MODEL 같은 변수
 # Gemini는 홍콩 등에서 막혀 있어서, Worker를 미국 구글 클라우드 근처에서 실행되게 고정
 [placement]
 region = "gcp:us-central1"
+
+# Gemini 호출을 미국 서부에서 하도록 고정하는 Durable Object
+[[durable_objects.bindings]]
+name = "GEMINI_PROXY"
+class_name = "GeminiProxy"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GeminiProxy"]

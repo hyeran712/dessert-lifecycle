@@ -12,6 +12,19 @@
  * GET /shops?q=과일모찌&src=cafe&page=1  → 상호에 단어가 들어간 휴게음식점(cafe)·제과점(bakery) 100곳씩
  * POST /menu  {keyword, type, kind, price, targetRate, profile}  → AI 신메뉴 제안 + 원가 검증(목표 원가율을 넘으면 최대 3번 다시)
  */
+import { DurableObject } from 'cloudflare:workers';
+
+// Gemini는 홍콩 등에서 막혀 있다. Worker는 접속한 사람과 가까운 곳(가끔 홍콩)에서 돌기 때문에,
+// 미국 서부에 고정한 Durable Object를 거쳐서 Gemini를 부른다.
+export class GeminiProxy extends DurableObject {
+  async fetch(request) { return fetch(request); }
+}
+function geminiFetch(url, init, env) {
+  if (!env.GEMINI_PROXY) return fetch(url, init);
+  const stub = env.GEMINI_PROXY.get(env.GEMINI_PROXY.idFromName('us-west-v1'), { locationHint: 'wnam' });
+  return stub.fetch(new Request(url, init));
+}
+
 const ALLOWED_ORIGINS = ['https://hyeran712.github.io'];
 const SHOP_API = {
   cafe: 'https://apis.data.go.kr/1741000/rest_cafes/info',
@@ -107,11 +120,11 @@ async function askGemini(prompt, env) {
   for (const model of models) {
     // 붐빌 때(503·429)는 잠깐 쉬고 같은 모델로 한 번 더, 그래도 안 되면 다음 모델
     for (let i = 0; i < 2; i++) {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
+      res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
-      });
+      }, env);
       text = await res.text();
       if (res.ok || (res.status !== 503 && res.status !== 429)) break;
       await new Promise(r => setTimeout(r, 2000));
@@ -168,6 +181,10 @@ export default {
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors(origin) });
     const url = new URL(request.url);
+    if (url.pathname === '/where') {   // Gemini를 부르는 곳이 어느 데이터센터인지 확인용
+      const t = await (await geminiFetch('https://www.cloudflare.com/cdn-cgi/trace', {}, env)).text();
+      return json({ worker: request.cf && request.cf.colo, gemini: (t.match(/colo=(\w+)/) || [])[1], loc: (t.match(/loc=(\w+)/) || [])[1] }, 200, origin);
+    }
     if (url.pathname === '/menu') {
       if (request.method !== 'POST') return json({ error: 'POST로 요청해 주세요.' }, 405, origin);
       if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY가 설정되지 않았어요.' }, 500, origin);
