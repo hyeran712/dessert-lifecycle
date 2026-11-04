@@ -972,9 +972,12 @@ async function makeMenu() {
     mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.';
   } catch (e) {
     const msg = String(e.message || e);
-    mkMsg.textContent = /503|UNAVAILABLE|high demand|429|RESOURCE_EXHAUSTED/.test(msg)
+    mkMsg.textContent = /429|RESOURCE_EXHAUSTED|quota/i.test(msg)
+      ? 'AI 무료 사용량을 다 썼어요. 잠시 뒤(하루 한도면 내일) 다시 눌러 주세요. (Gemini 사용량 한도)'
+      : /503|UNAVAILABLE|high demand/.test(msg)
       ? 'AI 서버가 지금 붐벼요. 1~2분 뒤에 다시 눌러 주세요. (Gemini 일시적 과부하)'
       : `만들지 못했어요: ${msg}`;
+    mkMsg.title = msg;   // 마우스를 올리면 원래 오류 문구가 보임
   }
   finally { mkBtn.disabled = false; }
 }

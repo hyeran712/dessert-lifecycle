@@ -98,24 +98,30 @@ function costOf(recipe) {
   return { rows, total: Math.round(total) };
 }
 
+// 기본 모델이 붐비거나 없으면 다음 모델로 넘어감 (latest 별칭은 구글이 최신 모델로 자동 연결)
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
+
 async function askGemini(prompt, env) {
-  const model = env.GEMINI_MODEL || GEMINI_MODEL;
-  let res, text;
-  // 서버가 붐빌 때(503·429)는 잠깐 쉬고 최대 3번까지 다시 시도
-  for (let i = 0; i < 3; i++) {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
-    });
-    text = await res.text();
-    if (res.status !== 503 && res.status !== 429) break;
-    await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+  const models = [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
+  let res, text, last = '';
+  for (const model of models) {
+    // 붐빌 때(503·429)는 잠깐 쉬고 같은 모델로 한 번 더, 그래도 안 되면 다음 모델
+    for (let i = 0; i < 2; i++) {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
+      });
+      text = await res.text();
+      if (res.ok || (res.status !== 503 && res.status !== 429)) break;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    if (res.ok) break;
+    last = `${model} ${res.status}`;
+    if (/location is not supported/i.test(text)) throw new Error('Gemini 지역 제한: Worker가 Gemini를 쓸 수 없는 지역에서 실행됐어요.');
+    if (![404, 429, 503, 500].includes(res.status)) break;   // 키 오류 등은 다른 모델로 넘겨도 소용없음
   }
-  if (!res.ok) {
-    if (/location is not supported/i.test(text)) throw new Error('Gemini 지역 제한: Worker가 Gemini를 쓸 수 없는 지역(예: 홍콩)에서 실행됐어요. wrangler.toml의 placement 설정으로 배포해 주세요.');
-    throw new Error(`Gemini 오류 ${res.status}: ${text.slice(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`Gemini 오류 ${res.status} (마지막 시도: ${last}): ${text.slice(0, 200)}`);
   const data = JSON.parse(text);
   const out = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   return JSON.parse(out.replace(/^```json\s*|```$/g, ''));
