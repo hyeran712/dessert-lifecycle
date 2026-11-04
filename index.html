@@ -220,6 +220,24 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .pl .ok{color:#1a7f3c;font-weight:900}.pl .no{color:var(--teal-d);font-weight:900}
 @media (max-width:860px){.pf-grid{grid-template-columns:1fr 1fr}}
 @media (max-width:520px){.pf-grid{grid-template-columns:1fr}}
+.mk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+#mk-btn{font:inherit;font-weight:900;font-size:15px;padding:12px 18px;border:3px solid var(--ink);border-radius:12px;background:var(--pop-y);color:var(--ink);cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+#mk-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+#mk-btn[disabled]{opacity:.6;cursor:wait}
+.mk-card{margin-top:16px;border:3px solid var(--ink);border-radius:16px;background:#fff;padding:18px}
+.mk-card h4{font-family:var(--display);font-weight:400;font-size:24px;margin:4px 0 6px}
+.mk-card .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.mk-card .meta div{border:2px solid var(--ink);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.mk-card .meta span{display:block;font-size:12px;color:var(--ink-2);font-weight:700}
+.mk-card .meta b{font-family:var(--display);font-weight:400;font-size:22px}
+.mk-card .pass{color:#1a7f3c}.mk-card .fail{color:var(--teal-d)}
+.mk-card table{min-width:0;font-size:13.5px;margin-top:6px}
+.mk-card td,.mk-card th{padding:7px 8px}
+.mk-card .src{font-size:11.5px;border-radius:5px;padding:0 6px;border:1px solid var(--ink)}
+.mk-card .src.ai{background:var(--teal-l)}
+.mk-card ol{margin:6px 0 0;padding-left:20px;font-size:14px}
+.mk-card p{margin:4px 0;font-size:14px;color:var(--ink-2)}
+@media (max-width:520px){.mk-card .meta{grid-template-columns:1fr 1fr}}
 /* ===== 편의점 신상 POP 테마 ===== */
 :root{
   --bg:#fff8dc; --surface:#ffffff; --ink:#1c1c1c; --ink-2:#3b3b3b; --ink-3:#6e6a5e;
@@ -493,6 +511,11 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
       </details>
       <div class="card" style="overflow-x:auto">
         <div class="plan" id="p-plan"></div>
+        <div class="mk">
+          <button type="button" id="mk-btn">🧪 <span id="mk-label">이 디저트로 신메뉴 만들기</span></button>
+          <span class="note" id="mk-msg">원가표 단가와 내 가게 프로필로 AI가 메뉴를 만들고, 원가율이 목표를 넘으면 스스로 고쳐요.</span>
+        </div>
+        <div id="mk-out"></div>
         <h3 style="font-size:16px;margin:26px 0 8px">신호별 출시 전략 <span style="font-weight:500;color:var(--ink-3);font-size:13px">(노란 줄 = 지금 디저트)</span></h3>
         <table id="p-table">
           <thead><tr><th>신호</th><th>판단</th><th>전략</th></tr></thead>
@@ -899,12 +922,58 @@ function renderPlan(k, v, st) {
       ['근거', '늦게 들어가면 위험', late || '피크가 지난 뒤 들어간 가게일수록 오래 버티기 어려웠어요.']];
   }
   document.getElementById('p-h2').textContent = `${k} 기획 제안`;
+  const lb = document.getElementById('mk-label'); if (lb && lb.dataset.k !== k) { lb.dataset.k = k; lb.textContent = `${k}로 신메뉴 만들기`; const o = document.getElementById('mk-out'); if (o) o.innerHTML = ''; }
   document.getElementById('p-sub').textContent = `${k}${J} '${v.type}'이라 이렇게 해보면 좋아요.`;
   const fit = fitCard(k);
   document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
     `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>`;
   document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
 }
+
+
+/* ---------- 이 디저트로 신메뉴 만들기 (AI + 원가 검증) ---------- */
+const mkBtn = document.getElementById('mk-btn'), mkMsg = document.getElementById('mk-msg'), mkOut = document.getElementById('mk-out');
+const won = n => Math.round(n).toLocaleString() + '원';
+function menuPrice(k, p) {
+  const r = REQ[k] || guessReq(k);
+  if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
+  return r ? r.price : 5500;
+}
+async function makeMenu() {
+  if (!current) return;
+  const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
+  const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
+  const price = menuPrice(k, p);
+  mkBtn.disabled = true; mkMsg.textContent = `AI가 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (20초쯤 걸려요)`; mkOut.innerHTML = '';
+  try {
+    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p }) });
+    const m = await res.json(); if (!res.ok || m.error) throw new Error(m.error || res.status);
+    if (current !== k) return;
+    const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
+    mkOut.innerHTML = `<div class="mk-card">
+      <span class="tag" style="background:var(--teal)">${m.kind}</span>
+      <h4>${esc(m.name)}</h4>
+      <p>${esc(m.concept || '')}</p>
+      <div class="meta">
+        <div><span>판매가 (목표)</span><b>${won(m.price)}</b></div>
+        <div><span>재료 원가</span><b>${won(m.cost)}</b></div>
+        <div><span>원가율 (목표 ${m.target}%)</span><b class="${m.pass ? 'pass' : 'fail'}">${m.rate}% ${m.pass ? '✔' : '✖'}</b></div>
+      </div>
+      <p><b>타깃</b> ${esc(m.targetCustomer || '')}</p>
+      <p><b>판매 포인트</b> ${esc(m.point || '')}</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>재료</th><th class="num-r">사용량</th><th class="num-r">단가</th><th class="num-r">원가</th><th>단가 출처</th></tr></thead><tbody>
+        ${m.recipe.map(x => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${x.unit_price}원</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : ''}">${x.source}</span></td></tr>`).join('')}
+      </tbody></table></div>
+      ${m.steps && m.steps.length ? `<p style="margin-top:10px"><b>만드는 순서</b></p><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
+      <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
+      <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
+    </div>`;
+    mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.';
+  } catch (e) { mkMsg.textContent = `만들지 못했어요: ${e.message}`; }
+  finally { mkBtn.disabled = false; }
+}
+mkBtn.addEventListener('click', makeMenu);
 
 /* ---------- 사례: 과일모찌 ---------- */
 const fm = D.kw['과일모찌'];
