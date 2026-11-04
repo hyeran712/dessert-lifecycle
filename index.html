@@ -90,7 +90,7 @@ td:first-child{font-weight:700;white-space:nowrap}
 .shop-k small{font-weight:500}
 .shop-v{margin:2px 0 0;font-size:18px;font-weight:900;color:var(--charcoal)}
 .shop-s{margin:2px 0 0;font-size:13.5px;color:var(--ink-2)}
-table.small{font-size:13.5px;min-width:640px}
+table.small{font-size:13.5px;min-width:520px}
 table.small td,table.small th{padding:9px 10px}
 table.small td:first-child{white-space:nowrap}
 .num-r{text-align:right}
@@ -393,16 +393,16 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
       </div>
 
       <div class="card finding">
-        <h3><span style="color:var(--teal)">④</span> 검색 피크를 보고 따라가면 늦다</h3>
-        <p>검색량은 관심도일 뿐이라, 전국 휴게음식점·제과점 <b>인허가 72만 건</b>으로 실제 가게가 언제 생기고 닫았는지 확인했어요. 상호에 키워드가 들어간 가게만 셌고, 90일 안에 닫은 곳은 팝업 매장으로 따로 봤어요.</p>
+        <h3><span style="color:var(--teal)">④</span> 검색 피크를 따라가면 늦어요</h3>
+        <p>실제 가게 수(전국 인허가 72만 건)로 확인했어요.</p>
         <div class="kpis">
-          <div class="kpi"><b>1,123 → 139곳</b><span>탕후루 영업 매장 (2024.01 최고점 → 현재)</span></div>
-          <div class="kpi"><b>28.6% vs 10.8%</b><span>탕후루 1년 내 폐업률 (검색 피크 후 개업 vs 피크 전 개업)</span></div>
-          <div class="kpi"><b>57%</b><span>모찌 매장 인허가 중 팝업 비율 (탕후루 7%)</span></div>
+          <div class="kpi"><b>1,123 → 139곳</b><span>탕후루 가게, 최고 → 지금</span></div>
+          <div class="kpi"><b>2.6배</b><span>피크 뒤에 연 탕후루 가게의 1년 내 폐업률</span></div>
+          <div class="kpi"><b>57%</b><span>모찌 가게 중 팝업 매장</span></div>
         </div>
-        <div class="legend"><span><i style="background:var(--s1)"></i>검색량</span><span><i style="background:var(--s2)"></i>영업 중 매장 수</span></div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>검색량</span><span><i style="background:var(--s2)"></i>가게 수</span></div>
         <div class="grid2" id="shop-grid"></div>
-        <p class="note">각자 최고점 = 100 · 크로플과 마카롱은 검색이 꺼지고 2년쯤 지나서야 매장 수가 최고점에 도달했어요.</p>
+        <p class="note">크로플·마카롱은 검색이 꺼지고 2년 뒤에야 가게 수가 최고였어요.</p>
         <div style="overflow-x:auto;margin-top:18px">
           <table class="small" id="shop-table"></table>
         </div>
@@ -511,6 +511,7 @@ Chart.defaults.plugins.tooltip.backgroundColor = '#2b3034';
 Chart.defaults.plugins.tooltip.padding = 10;
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
 Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.devicePixelRatio = Math.max(2, window.devicePixelRatio || 1);  // 확대·고해상도 화면에서도 선명하게
 Chart.defaults.layout = { padding: { top: 8 } };
 
 // 날짜 → 연도 소수 (가로축용)
@@ -741,7 +742,7 @@ new Chart(document.getElementById('c-pre'), {
 const grid = document.getElementById('shop-grid');
 ['탕후루', '크로플', '마카롱', '베이글'].forEach(k => {
   const st = D.shops[k].stats, box = document.createElement('div'); box.className = 'mini';
-  box.innerHTML = `<h4>${k} <span style="font-weight:500;color:var(--ink-2);font-size:13px">매장 최고 ${st.alive_max.toLocaleString()}곳 → 현재 ${st.open_now.toLocaleString()}곳</span></h4><div class="chart-box"><canvas></canvas></div>`;
+  box.innerHTML = `<h4>${k} <span style="font-weight:500;color:var(--ink-2);font-size:13px">${st.alive_max.toLocaleString()} → ${st.open_now.toLocaleString()}곳</span></h4><div class="chart-box"><canvas></canvas></div>`;
   grid.appendChild(box);
   new Chart(box.querySelector('canvas'), {
     type: 'line',
@@ -757,11 +758,10 @@ const grid = document.getElementById('shop-grid');
 });
 const ORDER = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'];
 const pct = v => v === null || v === undefined ? '–' : v + '%';
-document.getElementById('shop-table').innerHTML = `<thead><tr><th>디저트</th><th>검색 피크</th><th>매장 수 최고점</th><th class="num-r">시차</th><th class="num-r">최고 → 현재</th><th class="num-r">생존율</th><th class="num-r">1년 내 폐업<br>(피크 전 / 후 개업)</th><th class="num-r">팝업 비율</th></tr></thead><tbody>` +
+document.getElementById('shop-table').innerHTML = `<thead><tr><th>디저트</th><th>검색 최고</th><th>가게 최고</th><th class="num-r">가게 수</th><th class="num-r">늦게 연 가게<br>1년 내 폐업</th></tr></thead><tbody>` +
   ORDER.map(k => { const s = D.shops[k].stats;
-    return `<tr data-k="${k}"><td>${k}</td><td>${fmtYM(s.search_peak)}</td><td>${fmtYM(s.alive_peak)}</td><td class="num-r">${k === '모찌' ? '진행 중' : (s.lag_alive >= 0 ? '+' : '') + s.lag_alive + '개월'}</td>
-      <td class="num-r">${s.alive_max.toLocaleString()} → ${s.open_now.toLocaleString()}곳</td><td class="num-r">${s.survive_now}%</td>
-      <td class="num-r">${pct(s.close1y_before)} / ${pct(s.close1y_after)}</td><td class="num-r">${Math.round(s.popup / s.total * 100)}%</td></tr>`; }).join('') + '</tbody>';
+    return `<tr data-k="${k}"><td>${k}</td><td>${fmtYM(s.search_peak)}</td><td>${k === '모찌' ? '지금' : fmtYM(s.alive_peak) + ` <small style="color:var(--ink-3)">(+${s.lag_alive}개월)</small>`}</td>
+      <td class="num-r">${s.alive_max.toLocaleString()} → ${s.open_now.toLocaleString()}곳</td><td class="num-r">${pct(s.close1y_after)}</td></tr>`; }).join('') + '</tbody>';
 
 /* ---------- About data ---------- */
 const dlg = document.getElementById('about');
