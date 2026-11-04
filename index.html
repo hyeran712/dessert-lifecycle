@@ -325,11 +325,6 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-chips .c1{background:#ff7a2e}.ms-chips .c2{background:#ffe9a8}
 .map-wrap{position:relative;max-width:520px;margin:4px auto 0 max(0px,calc(50% - 400px));overflow:hidden;touch-action:none}
 #kmap{width:100%;height:auto;display:block;overflow:visible}
-#kmap .float{animation:mfloat 5s ease-in-out infinite}
-#kmap .ground{animation:mshadow 5s ease-in-out infinite;transform-origin:206px 360px}
-@keyframes mfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes mshadow{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.96);opacity:.75}}
-@media (prefers-reduced-motion:reduce){#kmap .float,#kmap .ground{animation:none}}
 #kmap path.top{fill-opacity:.6;stroke:rgba(255,255,255,.85);stroke-width:.9;stroke-linejoin:round;cursor:pointer;transition:fill-opacity .2s}
 #kmap path.top:hover{fill-opacity:.85}
 #kmap .tops path.sel{fill-opacity:.15}
