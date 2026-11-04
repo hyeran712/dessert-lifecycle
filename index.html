@@ -195,6 +195,13 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
   .cal{grid-template-columns:repeat(4,1fr)}
 }
 #shop-table tr.me td{background:var(--pop-y);font-weight:900}
+.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pl{border:2px solid var(--ink);border-radius:14px;padding:14px;background:var(--bg)}
+.pl .k{display:inline-block;font-size:12px;font-weight:900;background:var(--ink);color:var(--pop-y);border-radius:6px;padding:1px 8px}
+.pl b{display:block;font-size:16px;margin:8px 0 4px;line-height:1.35}
+.pl p{margin:0;font-size:13.5px;color:var(--ink-2)}
+#p-table tr.me td{background:var(--pop-y);font-weight:900}
+@media (max-width:860px){.plan{grid-template-columns:1fr}}
 /* ===== 편의점 신상 POP 테마 ===== */
 :root{
   --bg:#fff8dc; --surface:#ffffff; --ink:#1c1c1c; --ink-2:#3b3b3b; --ink-3:#6e6a5e;
@@ -433,25 +440,21 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 
   <section id="proposal">
     <div class="wrap">
-      <h2>기획 제안</h2>
-      <p class="sub">검색량 신호를 보고 출시 전략을 이렇게 정할 수 있어요.</p>
+      <h2 id="p-h2">기획 제안</h2>
+      <p class="sub" id="p-sub">고른 디저트의 신호에 맞는 출시 전략이에요.</p>
       <div class="card" style="overflow-x:auto">
-        <table>
+        <div class="plan" id="p-plan"></div>
+        <h3 style="font-size:16px;margin:26px 0 8px">신호별 출시 전략 <span style="font-weight:500;color:var(--ink-3);font-size:13px">(노란 줄 = 지금 디저트)</span></h3>
+        <table id="p-table">
           <thead><tr><th>신호</th><th>판단</th><th>전략</th></tr></thead>
           <tbody>
-            <tr><td>몇 주 만에 급상승</td><td><span class="tag" style="background:var(--t-fad)">유행형</span></td><td>기간 한정 메뉴로 빠르게 출시하고 빠르게 정리</td></tr>
-            <tr><td>1년 이상 꾸준히 상승</td><td><span class="tag" style="background:var(--t-stay)">정착형</span></td><td>정규 메뉴 편입, 맛·구성 라인업 확장</td></tr>
-            <tr><td>매년 같은 달에 상승</td><td><span class="tag" style="background:var(--t-season)">시즌형</span></td><td>피크 1~2개월 전으로 출시 일정 고정</td></tr>
-            <tr><td>검색 피크가 이미 지남</td><td><span class="tag" style="background:var(--t-watch)">후발 주의</span></td><td>신규 매장·단독 메뉴 진입 자제 (탕후루는 피크 후 개업 시 1년 내 폐업률 2.6배)</td></tr>
-            <tr><td>기반 위에서 급가속</td><td><span class="tag" style="background:var(--t-hot)">진행중</span></td><td>시즌 한정으로 즉시 출시, 4주마다 검색량 재점검</td></tr>
+            <tr data-t="유행형"><td>몇 주 만에 급상승 후 꺼짐</td><td><span class="tag" style="background:var(--t-fad)">유행형</span></td><td>단독 신메뉴는 피하고 토핑·맛 소재로만</td></tr>
+            <tr data-t="정착형"><td>1년 이상 꾸준히 상승</td><td><span class="tag" style="background:var(--t-stay)">정착형</span></td><td>정규 메뉴 편입, 맛·구성 라인업 확장</td></tr>
+            <tr data-t="시즌형"><td>매년 같은 달에 상승</td><td><span class="tag" style="background:var(--t-season)">시즌형</span></td><td>피크 1~2개월 전으로 출시 일정 고정</td></tr>
+            <tr data-t="관망형"><td>검색 피크가 이미 지남</td><td><span class="tag" style="background:var(--t-watch)">관망형</span></td><td>신규 진입보다 기존 메뉴 리뉴얼 (늦게 연 탕후루 가게는 1년 내 폐업률 2.6배)</td></tr>
+            <tr data-t="진행중"><td>지금 급가속 중</td><td><span class="tag" style="background:var(--t-hot)">진행중</span></td><td>기간 한정으로 즉시 출시, 4주마다 검색량 재점검</td></tr>
           </tbody>
         </table>
-        <h3 style="font-size:17px;margin:24px 0 8px">과일모찌 적용 예시</h3>
-        <ul class="case-list" style="margin-top:0">
-          <li><b>과일모찌 단품</b>: 급상승 구간이고 경쟁 매장도 아직 팝업 단계라 겨울 시즌 한정 메뉴로 즉시 출시</li>
-          <li><b>찹쌀모찌·찹쌀떡 계열</b>: 꾸준한 상승세이므로 '쫀득 떡 디저트' 정규 라인 후보로 검토</li>
-          <li><b>겨울 딸기 과일모찌</b>: 딸기모찌의 12~2월 피크와 결합해 두 흐름을 함께 공략</li>
-        </ul>
       </div>
     </div>
   </section>
@@ -662,6 +665,7 @@ const BASE = Object.entries(D.kw).filter(([k, v]) => k !== '모찌류(합산)' &
 const FAST = BASE.filter(([, v]) => v.rise <= 20).map(([, v]) => v), SLOW = BASE.filter(([, v]) => v.rise >= 40).map(([, v]) => v);
 const AVG = { fast: { rise: med(FAST.map(v => v.rise)), half: med(FAST.map(v => v.half)), n: FAST.length },
               slow: { rise: med(SLOW.map(v => v.rise)), half: med(SLOW.map(v => v.half)), n: SLOW.length } };
+const reul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '을' : '를'; };
 const eul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '은' : '는'; };
 function lifeRow(name, sub, rise, half, me, maxW) {
   const W = x => Math.max(12, x / maxW * 88);
@@ -709,10 +713,51 @@ function renderFindings(k) {
   document.getElementById('f3-lead').textContent = seasonal
     ? `${k}${J} ${pm + 1}월에 가장 많이 찾아요 (연평균의 ${smax.toFixed(1)}배). ${go[0] + 1}~${go[1] + 1}월에 출시하면 대목을 잡을 수 있어요.`
     : `${k}${J} 계절을 크게 타지 않아요. 가장 많이 찾는 ${pm + 1}월도 연평균의 ${smax.toFixed(1)}배 정도라, 출시 달보다 유행 단계가 더 중요해요.`;
+  renderPlan(k, v, entry(k).shop);
   // 과일모찌 사례는 과일모찌를 볼 때만
   document.getElementById('case-mochi').hidden = k !== '과일모찌';
   // ④ 표에서 지금 디저트 강조
   document.querySelectorAll('#shop-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.k === SHOPMAP[k]));
+}
+
+
+/* ---------- 기획 제안: 고른 디저트에 맞춰 ---------- */
+function renderPlan(k, v, st) {
+  const sv = v.season, smax = Math.max(...sv), smin = Math.min(...sv), pm = sv.indexOf(smax) + 1;
+  const seasonal = smin > 0 && smax / smin >= 1.6, b1 = ((pm + 9) % 12) + 1, b2 = ((pm + 10) % 12) + 1;
+  const J = eul(k), shopTxt = st && st.alive_max ? `전국 가게 ${st.open_now.toLocaleString()}곳 (최고 ${st.alive_max.toLocaleString()}곳)` : '';
+  const late = st && st.close1y_after !== null ? `피크 뒤에 연 가게 ${st.close1y_after}%가 1년 안에 문을 닫았어요.` : '';
+  let cards;
+  switch (v.type) {
+    case '진행중': cards = [
+      ['지금', `${k} 기간 한정 메뉴 바로 출시`, `검색량이 전년보다 ${sign(v.yoy)}. 지금이 가장 뜨거울 때예요.`],
+      ['확인', '4주마다 검색량 다시 보기', `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났어요. 꺾이면 바로 정리해요.`],
+      ['확장', seasonal ? `${pm}월 대목에 맞춘 시즌 패키지` : '반응 좋으면 정규 메뉴 후보로', shopTxt ? `${shopTxt}. 경쟁 가게가 늘어나는 속도도 같이 봐요.` : '경쟁 가게 수도 같이 지켜봐요.']];
+      break;
+    case '유행형': cards = [
+      ['피하기', `${k} 단독 신메뉴는 비추천`, `${v.peak}에 피크를 지났고 지금은 피크의 ${v.now}%예요.`],
+      ['활용', `${k} 맛을 토핑·소재로`, `음료나 다른 디저트에 ${k} 맛을 살짝 얹는 정도로 가볍게 써요.`],
+      ['교훈', '다음 유행은 더 일찍', late || `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났어요.`]];
+      break;
+    case '정착형': cards = [
+      ['정규', `${k}${J} 정규 메뉴로`, `피크가 지나도 ${v.now}%를 유지하는 오래 가는 디저트예요.`],
+      ['확장', `${k} 맛·구성 라인업`, `기본 + 시즌 맛 + 세트처럼 2~3종으로 넓혀 객단가를 올려요.`],
+      ['타이밍', v.yoy > 20 ? '다시 오르는 지금이 확장 적기' : '신메뉴보다 품질·차별화', v.yoy > 20 ? `전년보다 ${sign(v.yoy)} 다시 찾고 있어요.` : (shopTxt ? `${shopTxt}. 이미 경쟁이 있으니 맛으로 차별화해요.` : '이미 익숙한 메뉴라 맛으로 차별화해요.')]];
+      break;
+    case '시즌형': cards = [
+      ['일정', `${b1}~${b2}월 출시 고정`, `매년 ${pm}월에 연평균의 ${smax.toFixed(1)}배까지 찾아요.`],
+      ['대목', `${pm}월 한정 패키지`, '선물 세트나 시즌 한정 맛으로 대목 매출을 키워요.'],
+      ['비수기', '비수기엔 줄이거나 쉬기', `검색이 연평균보다 낮은 달엔 재고를 줄여요.${shopTxt ? ' ' + shopTxt + '.' : ''}`]];
+      break;
+    default: cards = [
+      ['주의', `${k} 신규 진입은 신중하게`, `피크(${v.peak}) 대비 ${v.now}%가 남았고 전년보다 ${v.yoy === null ? '–' : sign(v.yoy)}예요.`],
+      ['리뉴얼', '기존 메뉴를 새롭게', `이미 ${k}${reul(k)} 판다면 맛이나 모양을 바꿔 다시 알리는 편이 나아요.`],
+      ['근거', '늦게 들어가면 위험', late || '피크가 지난 뒤 들어간 가게일수록 오래 버티기 어려웠어요.']];
+  }
+  document.getElementById('p-h2').textContent = `${k} 기획 제안`;
+  document.getElementById('p-sub').textContent = `${k}${J} '${v.type}'이라 이렇게 해보면 좋아요.`;
+  document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('');
+  document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
 }
 
 /* ---------- 사례: 과일모찌 ---------- */
