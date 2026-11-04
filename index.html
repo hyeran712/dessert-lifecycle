@@ -96,6 +96,21 @@ table.small td:first-child{white-space:nowrap}
 .num-r{text-align:right}
 .mini h4{margin:0 0 6px;font-size:14px}
 .mini .chart-box{height:200px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:var(--bg);border-radius:10px;padding:10px 12px}
+.tile > span{display:block;font-size:12.5px;color:var(--ink-2)}
+.tile b{font-size:20px;font-weight:900;color:var(--charcoal)}
+.tile small{display:block;font-size:12px;color:var(--ink-3)}
+.tile .up{color:var(--teal-d);font-weight:700}.tile .dn{color:#b4532a;font-weight:700}
+.rd-item{padding:10px 0;border-bottom:1px solid var(--line)}
+.rd-item:last-child{border-bottom:0}
+.rd-item .w{font-weight:900;font-size:16px;color:var(--charcoal)}
+.rd-item .m{font-size:12.5px;color:var(--ink-2);margin-left:6px}
+.rd-item .ex{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.kb{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:0 6px;vertical-align:2px;margin-left:4px;color:#fff}
+.kb.km{background:var(--teal)}.kb.kbr{background:var(--s1)}
+.grid2 > *{min-width:0}
+.rd-group{font-size:12px;font-weight:700;color:var(--ink-3);margin:10px 0 0}
 footer{border-top:1px solid var(--line);padding:28px 0 48px;font-size:13px;color:var(--ink-3)}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 dialog{border:0;border-radius:var(--radius);padding:0;max-width:640px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -111,6 +126,7 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
   nav a.hide-sm{display:none}
 }
 @media (max-width:520px){
+  nav a{display:none}
   .card{padding:18px}
   .chart-box{height:260px}
   header .wrap{gap:10px}
@@ -124,6 +140,7 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
     <a class="logo" href="#top">디저트 <b>타이밍</b><small>지금 출시해도 될까?</small></a>
     <nav>
       <a href="#diagnose">진단하기</a>
+      <a href="#radar">레이더</a>
       <a href="#findings" class="hide-sm">핵심 발견</a>
       <a href="#proposal" class="hide-sm">기획 제안</a>
       <button class="about" type="button" data-open-about>ABOUT DATA</button>
@@ -173,6 +190,42 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
           <div class="chart-box tall"><canvas id="c-main" aria-label="선택한 디저트의 주간 검색량 추이"></canvas></div>
           <div class="legend" id="lg-main"></div>
           <p class="note">13주 이동평균 · 각자 최고점 = 100 · 매장 수는 상호에 키워드가 들어간 상설 매장(인허가 기준)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="radar">
+    <div class="wrap">
+      <h2>이번 주 디저트 레이더</h2>
+      <p class="sub" id="rd-sub">전국 휴게음식점·제과점 인허가 데이터로 매주 월요일 자동 업데이트돼요.</p>
+      <div class="card" style="margin-bottom:20px">
+        <div class="chart-head"><h4>디저트별 영업 중 매장 <span style="font-weight:500;color:var(--ink-3);font-size:13px">(지난 7일 개업 / 폐업)</span></h4></div>
+        <div class="tiles" id="rd-tiles"></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="chart-head"><h4>새로 늘어나는 가게 이름</h4></div>
+          <p class="note" style="margin:0 0 12px">최근 3개월 개업 매장 이름에서, 그 전 1년보다 크게 늘고 여러 지역에서 동시에 나타난 단어예요. 축제 부스·백화점 팝업·90일 안에 닫은 곳은 뺐어요.</p>
+          <div id="rd-list"><p class="note">불러오는 중…</p></div>
+        </div>
+        <div class="card">
+          <div class="chart-head"><h4>이 규칙을 과거에 썼다면?</h4></div>
+          <p class="note" style="margin:0 0 12px">2017~2026년 데이터로 매달 같은 규칙을 돌려, 처음 경보가 울린 달을 기록했어요.</p>
+          <div style="overflow-x:auto"><table class="small" style="min-width:420px">
+            <thead><tr><th>잡아낸 단어</th><th>첫 경보</th><th>검색 피크</th><th>결과</th></tr></thead>
+            <tbody>
+              <tr><td>왕가탕후루 <span class="kb kbr">브랜드</span></td><td>2022.11</td><td>2023.08</td><td><b style="color:var(--teal-d)">9개월 먼저</b></td></tr>
+              <tr><td>탕후루 <span class="kb km">메뉴</span></td><td>2023.04</td><td>2023.08</td><td><b style="color:var(--teal-d)">4개월 먼저</b></td></tr>
+              <tr><td>요거트아이스크림의정석 <span class="kb kbr">브랜드</span></td><td>2024.03</td><td>2024.08</td><td><b style="color:var(--teal-d)">5개월 먼저</b></td></tr>
+              <tr><td>크로플 <span class="kb km">메뉴</span></td><td>2021.01</td><td>2020.09</td><td style="color:var(--ink-3)">4개월 늦음</td></tr>
+              <tr><td>쌀핫도그 <span class="kb km">메뉴</span></td><td>2017.03</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
+              <tr><td>티라미수 <span class="kb km">메뉴</span></td><td>2020.08</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
+              <tr><td>잉어빵 <span class="kb km">메뉴</span></td><td>2024.12</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
+              <tr><td>땅콩빵 <span class="kb km">메뉴</span></td><td>2025.07</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
+            </tbody>
+          </table></div>
+          <p class="note">가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어 예시 가게 이름을 같이 보여줘요.</p>
         </div>
       </div>
     </div>
@@ -291,6 +344,8 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
     <p>네이버 데이터랩 검색어트렌드의 주간 검색량(2016년 1월 ~ 2026년 10월)이에요. 디저트 키워드 21개를 6번에 나눠 조회했어요.</p>
     <h4>매장 데이터</h4>
     <p>행정안전부 지방행정 인허가 데이터(전국 휴게음식점 65만 건 + 제과점영업 7만 건, 2026년 11월 다운로드)에서 상호에 키워드가 들어간 가게를 셌어요. 흑당은 대표 브랜드(타이거슈가·쩐주단·흑화당)를 포함했고, 90일 안에 폐업한 곳은 팝업·행사 매장으로 따로 분류했어요.</p>
+    <h4>레이더 자동 업데이트</h4>
+    <p>매주 월요일 GitHub Actions가 행정안전부 인허가 API에서 지난주 이후 바뀐 가게를 받아와 매장 수와 레이더를 다시 계산해요. 원본 데이터는 2일 전 기준이에요.</p>
     <h4>서로 다른 조회를 합치는 방법</h4>
     <p>데이터랩은 한 번에 5개까지만 조회되고, 조회마다 최댓값을 100으로 둔 상대 비율을 줘요. 그래서 모든 조회에 기준 키워드 '디저트'를 같이 넣고, 각 조회의 '디저트' 값이 같아지도록 배율을 맞췄어요.</p>
     <h4>지표 계산</h4>
@@ -583,6 +638,30 @@ document.querySelector('[data-close-about]').onclick = () => dlg.close();
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 
 select('과일모찌');
+
+/* ---------- 이번 주 레이더 (live/live.json, 매주 자동 갱신) ---------- */
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function renderRadar(L) {
+  document.getElementById('rd-sub').textContent = `기준일 ${L.data_date} · ${L.updated} 자동 업데이트 · 전국 휴게음식점·제과점 인허가 데이터`;
+  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'].map(k => {
+    const s = L.shops[k]; if (!s) return '';
+    return `<div class="tile"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></div>`;
+  }).join('');
+  const group = (lv, title) => {
+    const xs = L.radar.filter(i => i.level === lv); if (!xs.length) return '';
+    return `<p class="rd-group">${title}</p>` + xs.map(i => `<div class="rd-item"><span class="w">${esc(i.word)}</span>
+      <span class="kb ${i.kind === 'menu' ? 'km' : 'kbr'}">${i.kind === 'menu' ? '메뉴' : '브랜드'}</span>
+      <span class="m">최근 3개월 ${i.recent}곳 개업 · 이전 대비 ${i.growth}배 · ${i.spread}개 시군구</span>
+      <div class="ex">예: ${i.examples.map(esc).join(', ')}</div></div>`).join('');
+  };
+  const html = group('alert', '🔔 경보 (기준을 모두 넘은 단어)') + group('watch', '👀 관찰 목록 (기준에 가까운 단어)');
+  document.getElementById('rd-list').innerHTML = html || '<p class="note">이번 주에는 새로 늘어나는 단어가 없어요.</p>';
+  // 진단 카드의 매장 숫자를 최신값으로
+  Object.entries(L.shops).forEach(([k, v]) => { if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
+  if (current) select(current);
+}
+fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(renderRadar)
+  .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 </script>
 </body>
 </html>
