@@ -100,13 +100,22 @@ function costOf(recipe) {
 
 async function askGemini(prompt, env) {
   const model = env.GEMINI_MODEL || GEMINI_MODEL;
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Gemini 오류 ${res.status}: ${text.slice(0, 200)}`);
+  let res, text;
+  // 서버가 붐빌 때(503·429)는 잠깐 쉬고 최대 3번까지 다시 시도
+  for (let i = 0; i < 3; i++) {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
+    });
+    text = await res.text();
+    if (res.status !== 503 && res.status !== 429) break;
+    await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+  }
+  if (!res.ok) {
+    if (/location is not supported/i.test(text)) throw new Error('Gemini 지역 제한: Worker가 Gemini를 쓸 수 없는 지역(예: 홍콩)에서 실행됐어요. wrangler.toml의 placement 설정으로 배포해 주세요.');
+    throw new Error(`Gemini 오류 ${res.status}: ${text.slice(0, 200)}`);
+  }
   const data = JSON.parse(text);
   const out = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   return JSON.parse(out.replace(/^```json\s*|```$/g, ''));

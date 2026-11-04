@@ -1,0 +1,9 @@
+# GitHub Actions(.github/workflows/deploy-worker.yml)가 이 설정으로 Worker를 배포한다.
+name = "dessert-timing"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+keep_vars = true          # 대시보드에서 넣은 GEMINI_MODEL 같은 변수를 지우지 않음 (비밀 변수는 원래 유지됨)
+
+# Gemini는 홍콩 등에서 막혀 있어서, Worker를 미국 구글 클라우드 근처에서 실행되게 고정
+[placement]
+region = "gcp:us-central1"
