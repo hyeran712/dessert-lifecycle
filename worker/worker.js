@@ -82,7 +82,7 @@ const PRICE = {
   '초코소스': { unit: 'g', price: 8.92 }, '연유': { unit: 'g', price: 8.6 }, '아이스컵세트': { unit: '개', price: 96.9 },
   '얼음': { unit: 'g', price: 1.0, note: '예시값' }, '빨대': { unit: '개', price: 15.0, note: '예시값' },
 };
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.8-flash';  // 바뀌면 Worker 변수 GEMINI_MODEL로 덮어쓰기
 
 function costOf(recipe) {
   let total = 0;
