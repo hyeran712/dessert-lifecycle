@@ -19,7 +19,8 @@ SHOPS_CSV = ROOT / 'dessert_lifecycle' / 'data' / 'shops_filtered.csv'
 STATE = LIVE / 'state.json'
 OUT = LIVE / 'live.json'
 KST = dt.timezone(dt.timedelta(hours=9))
-DEFAULT_ENDPOINTS = {'휴게음식점': 'https://apis.data.go.kr/1741000/rest_cafes/info'}
+DEFAULT_ENDPOINTS = {'휴게음식점': 'https://apis.data.go.kr/1741000/rest_cafes/info',
+                     '제과점': 'https://apis.data.go.kr/1741000/bakeries/info'}
 KW = {'탕후루': ['탕후루'], '흑당': ['흑당', '타이거슈가', '쩐주단', '흑화당'], '크로플': ['크로플'], '마카롱': ['마카롱'],
       '요거트 아이스크림': ['요아정', '요거트아이스크림', '요거트퍼플'], '베이글': ['베이글'], '모찌': ['모찌']}
 
