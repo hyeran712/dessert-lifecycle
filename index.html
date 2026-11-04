@@ -577,7 +577,7 @@ const main = new Chart(document.getElementById('c-main'), {
 });
 
 const LIVE = {};          // 실시간으로 분석한 디저트
-const LIVE_API = '';     // Cloudflare Worker 주소 (예: https://dessert-timing.xxx.workers.dev)
+const LIVE_API = 'https://dessert-timing.yhr9232.workers.dev';     // Cloudflare Worker 주소 (예: https://dessert-timing.xxx.workers.dev)
 function entry(k) {
   if (LIVE[k]) return LIVE[k];
   const sk = SHOPMAP[k];
