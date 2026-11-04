@@ -1,0 +1,87 @@
+# 디저트 타이밍 — 프로젝트 안내 (Claude Code용)
+
+## 가장 중요한 규칙
+- **사용자에게는 항상 한국어로만 답한다.** (영어로 답하면 사용자가 매우 불편해함. 도구를 많이 쓴 뒤에도 한국어 유지)
+- 설명은 쉬운 말로. 사용자는 개발자가 아니라 식품 상품기획·프랜차이즈 메뉴개발 직무를 준비하는 사람이다. 이 사이트는 취업 포트폴리오다.
+- **인증키·토큰은 절대 코드나 채팅에 넣지 않는다.** GitHub Secrets / Cloudflare Worker 비밀 변수에만 둔다.
+- 레퍼런스 사이트(시그니처 팩토리 signaturefactory.kr)는 **구조·흐름만 참고**한다. 로고, 문구, 사진, 브랜드는 쓰지 않는다.
+- 색은 지금 사이트의 POP 팔레트를 유지한다: 노랑 `#ffd400`, 주황 `#ff5a1f`, 잉크 `#1c1c1c`, 크림 배경 `#fff8dc`, 제목 글꼴 Black Han Sans.
+
+## 사이트 주소
+- 새 버전(단계형): https://hyeran712.github.io/dessert-lifecycle/
+- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 사용자가 둘 중 하나를 고르면 정리할 예정
+- 포트폴리오 메인: https://hyeran712.github.io (다른 저장소 `hyeran712/hyeran712.github.io`, `#dessert` 카드)
+
+## 파일 구조
+```
+src/head.html    <head>와 CSS 전부
+src/body.html    화면 구조(HTML)
+src/app.js       동작(JS) 전부
+src/data.json    분석 결과 데이터(디저트 21종 수명주기, 매장 통계)
+build.sh         src/ 네 파일을 합쳐 index.html 생성  ← 수정 후 반드시 실행
+index.html       배포되는 파일 (직접 고치지 말 것, build.sh가 만듦)
+v1.html          예전 버전 스냅샷 (따로 손대지 않음)
+live/live.json   주간 레이더 결과 (GitHub Actions가 매주 갱신, 손으로 고치지 말 것)
+live/radar_base.csv.gz, live/state.json   레이더 원본·진행 상태
+scripts/update.py, scripts/radar_core.py  주간 레이더 계산
+worker/worker.js, worker/wrangler.toml    Cloudflare Worker (실시간 검색·AI 신메뉴)
+dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 데이터 (README에서 사용)
+```
+
+## 작업 순서
+1. `src/` 파일을 고친다.
+2. `./build.sh` 실행 → `index.html` 갱신
+3. 확인: `python3 -m http.server 8765` 후 http://localhost:8765 에서 1→2→3단계를 눌러 보고, 콘솔 오류가 없는지 본다. (`node --check src/app.js`로 문법 확인)
+4. 커밋·푸시하면 GitHub Pages가 1~2분 안에 자동 배포된다.
+
+## 화면 구조 (src/body.html)
+- 위쪽 바: 로고 · 내 가게 이름(`#store-chip`) · [메뉴 개발] [이번 주 레이더] [About data]
+- 알림 띠 `#notice`: 이번 주 레이더 요약 (renderRadar에서 채움)
+- `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
+  - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`
+  - 2단계 `[data-panel="2"]#findings`: 판정 `.result`, 그래프 `#c-main`, 핵심 발견 ①~④, 과일모찌 사례 `#case-mochi`
+  - 3단계 `[data-panel="3"]#proposal`: 목적 카드 `#goals`, 기획 카드 `#p-plan`, 내 가게 프로필 `#profile`, 요청사항 `#mk-note`, 신메뉴 버튼 `#mk-btn`, 결과 `#mk-out`, 전략표 `#p-table`
+  - 오른쪽 사이드바 `#side`: 진행 단계 `#prog`, 고른 디저트 요약 `#sel-sum`
+- `#radar`: 별도 화면. 디저트 타일 `#rd-tiles`, 3D 지도 `#mapstage`(`#kmap` SVG, 팝업 `#map-panel`, 확대 버튼 `.ms-ctrl`), 새 가게 이름 `#rd-list`
+
+## 동작 핵심 (src/app.js)
+- `select(k)`: 디저트 선택 → 판정·그래프·발견·기획 갱신. 아래쪽에서 한 번 감싸서 카드/사이드바도 갱신함
+- `goStep(n)`, `setView('flow'|'radar')`: 단계·화면 전환 (숨긴 차트는 전환 후 `Chart.instances` resize)
+- `analyzeLive(q)`: 목록에 없는 디저트를 Worker로 실시간 분석 (`LIVE_API`)
+- `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
+- 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
+- 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
+- Chart.js 4.4.1 (cdnjs). 차트 선명도용 `Chart.defaults.devicePixelRatio = 2`
+
+## Cloudflare Worker (worker/)
+- 주소: https://dessert-timing.yhr9232.workers.dev (CORS는 hyeran712.github.io와 localhost만 허용)
+- **배포: `worker/` 아래를 main에 푸시하면 `.github/workflows/deploy-worker.yml`이 wrangler 4로 자동 배포** (대시보드에 붙여넣지 않음)
+- GitHub Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SERVICE_KEY`(공공데이터포털, 주간 레이더용)
+- Worker 비밀 변수(대시보드에서 관리, `keep_vars = true`라 배포해도 유지): `NAVER_ID`, `NAVER_SECRET`(NAVER API HUB 검색어 트렌드 — 검색광고 API 아님), `DATA_GO_KEY`, `GEMINI_KEY`, `GEMINI_MODEL`(gemini-3.8-flash)
+- Gemini는 홍콩(HKG)에서 막혀서 `GeminiProxy` Durable Object(locationHint 'wnam')를 거쳐 호출한다. 확인: `/where` → `gemini`가 미국 공항 코드면 정상
+- 503/429면 재시도 후 `gemini-flash-latest` → `gemini-flash-lite-latest`로 넘어감
+- `PRICE`: 사용자의 카페 원가표 [재료단가] 시트 단가 + 디저트 재료(2026-11-04 식봄 판매가). 생딸기·포장용기·얼음·빨대는 예시값. `ALIAS`로 재료 이름을 맞춤
+- 엔드포인트: `GET /trend?q=`, `GET /shops?q=&src=cafe|bakery&page=`, `POST /menu`, `GET /where`
+- 이 작업 환경(클라우드)에서는 workers.dev와 data.go.kr에 직접 접속이 안 될 수 있다 → 사용자가 브라우저로 확인하거나, 테스트용 복사본에서 Playwright로 응답을 흉내 낸다
+
+## 주간 레이더 (GitHub Actions)
+- `.github/workflows/weekly-radar.yml`: 매주 월요일 08:23(한국 시간) `scripts/update.py` 실행 → `live/` 커밋
+- 행정안전부 인허가 API(휴게음식점 `rest_cafes`, 제과점 `bakeries`)에서 `DAT_UPDT_PNT` 이후 바뀐 가게를 받아 매장 수·시도별 통계(`regions`)·가게 이름 경보를 다시 계산
+- 손으로 다시 계산만: `python scripts/update.py --offline` (이때 `live/state.json` 변경은 커밋하지 않기)
+
+## 분석 방법 요약 (README·About data와 일치시킬 것)
+- 네이버 데이터랩 주간 검색량 2016.01~2026.10, 기준 키워드 '디저트'로 6개 조회를 하나로 맞춤
+- 13주 이동평균, 상승 기간(피크 25%→피크), 반감기(피크→50%), 현재 수준(최근 13주÷피크), 전년 대비(최근 13주 vs 작년 같은 13주)
+- 유형: 진행중(최근 13주 안 피크) / 시즌형(월별 차이 2.5배 이상) / 유행형(<10%) / 정착형(≥25%) / 관망형
+- '모찌'는 데이터랩에서 0으로 나와 모찌떡·찹쌀모찌·과일모찌를 합산
+- 매장: 상호에 키워드가 들어간 인허가 가게, 90일 안에 닫은 곳은 팝업으로 분류
+
+## 커밋
+- 커밋 작성자는 `Claude <noreply@anthropic.com>`
+- 커밋 메시지는 한국어로, 무엇을 바꿨는지 한 줄
+
+## 다음에 할 수 있는 일 (사용자와 이야기한 것)
+- 새 버전과 v1 중 하나로 정리
+- 포트폴리오 메인(`hyeran712.github.io`)의 디저트 타이밍 카드 이미지를 새 디자인으로 교체
+- 네이버 검색광고 API(월간 검색 수)를 붙여 "검색 수 대비 매장이 부족한 디저트", 연관 키워드로 신메뉴 형태 찾기
+- 원가표에 디저트 재료 단가 계속 추가 (생딸기·포장용기 실제 가격으로)

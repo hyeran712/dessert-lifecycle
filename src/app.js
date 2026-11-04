@@ -1,0 +1,764 @@
+const D = JSON.parse(document.getElementById('data').textContent);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {ink:css('--ink'), ink2:css('--ink-2'), ink3:css('--ink-3'), grid:css('--grid'), teal:css('--teal'), main:css('--chart-main') || css('--teal'),
+  s:[css('--s1'),css('--s2'),css('--s3'),css('--s4')]};
+const TYPE_COLOR = {'진행중':css('--t-hot'),'유행형':css('--t-fad'),'정착형':css('--t-stay'),'시즌형':css('--t-season'),'관망형':css('--t-watch')};
+Chart.defaults.font.family = '"Noto Sans KR", system-ui, sans-serif';
+Chart.defaults.color = C.ink2;
+Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.tooltip.backgroundColor = '#2b3034';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.devicePixelRatio = Math.max(2, window.devicePixelRatio || 1);  // 확대·고해상도 화면에서도 선명하게
+Chart.defaults.layout = { padding: { top: 8 } };
+
+// 날짜 → 연도 소수 (가로축용)
+const X = D.dates.map(d => { const t = new Date(d); return t.getFullYear() + (t - new Date(t.getFullYear(),0,1)) / 31536000000; });
+const fmtDate = d => { const t = new Date(d); return `${t.getFullYear()}년 ${t.getMonth()+1}월 ${t.getDate()}일 주`; };
+const NARROW = window.innerWidth < 560;
+const sign = v => (v > 0 ? '+' : '') + Math.round(v) + '%';
+
+/* ---------- 매장 데이터 ---------- */
+const SHOPMAP = {'탕후루':'탕후루','흑당':'흑당','크로플':'크로플','마카롱':'마카롱','요거트 아이스크림':'요거트 아이스크림','베이글':'베이글',
+  '과일모찌':'모찌','찹쌀모찌':'모찌','모찌떡':'모찌','딸기모찌':'모찌'};
+const shopPts = key => { const a = D.shops[key].alive, mx = Math.max(...a);
+  return a.map((v, i) => ({ x: 2016 + i / 12 + 1 / 24, y: v / mx * 100, n: v, m: `${2016 + Math.floor(i / 12)}년 ${i % 12 + 1}월` })); };
+const fmtYM = s => s.replace('-', '.');
+
+/* ---------- 진단: 칩 ---------- */
+const GROUPS = [
+  ['한때 유행한 디저트', ['흑당','크로플','탕후루','두바이 초콜릿','달고나','마카롱','뚱카롱','요거트 아이스크림']],
+  ['떡 · 모찌', ['과일모찌','찹쌀모찌','모찌떡','딸기모찌','찹쌀떡','약과']],
+  ['빵 · 기타', ['소금빵','베이글','마라탕']],
+  ['맛 · 소재', ['피스타치오','말차','흑임자','쑥']],
+];
+const chipsEl = document.getElementById('chips');
+GROUPS.forEach(([name, ks]) => {
+  const g = document.createElement('div'); g.className = 'chip-group';
+  g.innerHTML = `<span>${name}</span><div class="chips"></div>`;
+  ks.forEach(k => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.k = k;
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = k + (D.kw[k].type === '진행중' ? '<span class="hot">HOT</span>' : '');
+    b.onclick = () => select(k);
+    g.querySelector('.chips').appendChild(b);
+  });
+  chipsEl.appendChild(g);
+});
+
+function verdict(k, v) {
+  const m = v.smonth, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
+  const sIdx = Math.max(...v.season).toFixed(1);
+  switch (v.type) {
+    case '진행중': return ['지금 뜨는 중이에요. 시즌 한정으로 바로 출시하세요',
+      `최근 13주 검색량이 전년 같은 시기보다 ${sign(v.yoy)} 늘어 역대 최고 수준이에요. 피크 1년 전 검색량이 피크의 ${Math.round(v.pre52)}%로, 바닥에서 갑자기 튄 유행형(1%)보다는 기반이 있고 정착형(48%)보다는 낮아요. 기간 한정으로 먼저 내고 4주마다 검색량을 다시 확인하세요.`];
+    case '유행형': return ['유행이 지나갔어요. 신규 출시는 권하지 않아요',
+      `${v.peak}에 피크를 찍고 ${v.half}주 만에 절반으로 줄었고, 지금은 피크의 ${v.now}%만 남았어요.` +
+      (v.rise <= 20 ? ` 피크까지 ${v.rise}주 만에 급상승한 전형적인 반짝 유행이었어요.` : '') +
+      ` 단독 메뉴보다는 다른 메뉴의 토핑이나 맛 소재로 활용하는 정도가 적당해요.`];
+    case '정착형': return ['정규 메뉴로 갈 만해요',
+      (v.rise ? `${v.rise}주에 걸쳐 천천히 올랐고, ` : '오랫동안 꾸준히 검색됐고, ') +
+      `피크(${v.peak}) 이후에도 피크의 ${v.now}%를 유지하고 있어요.` +
+      (v.yoy > 20 ? ` 최근엔 전년 대비 ${sign(v.yoy)}로 다시 오르는 중이에요.` : '') +
+      ` 정규 메뉴로 두고 맛과 구성을 넓혀 보세요.`];
+    case '시즌형': return [`${m}월이 대목이에요. ${before}~${before2}월에 출시하세요`,
+      `매년 ${m}월 검색량이 연평균의 ${sIdx}배까지 올라요. 피크 1~2개월 전으로 출시 일정을 고정하는 게 유리해요.` +
+      (v.yoy > 20 ? ` 올해는 전년 같은 시기보다 ${sign(v.yoy)} 많이 찾고 있어요.` : '')];
+    default: return ['남은 수요를 확인하며 작게 가세요',
+      `피크(${v.peak}) 대비 ${v.now}% 수준이 남아 있어 완전히 꺼지진 않았어요. 다만 전년 대비 ${sign(v.yoy)}로 ` +
+      (v.yoy < 0 ? '줄고 있어서, 새로 크게 내기보다는 기존 메뉴 리뉴얼에 어울려요.' : '움직이고 있어 지켜볼 만해요.')];
+  }
+}
+
+let range = 'all', current = null;
+const main = new Chart(document.getElementById('c-main'), {
+  type: 'line',
+  data: { datasets: [{ data: [], borderColor: C.main, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5,
+    pointHoverBackgroundColor: C.main, pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+    fill: true, backgroundColor: 'rgba(28,28,28,.06)', tension: .25, spanGaps: true, label: '검색량' },
+    { data: [], borderColor: C.s[1], borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: C.s[1],
+      pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2, tension: .25, label: '영업 중 매장 수' }] },
+  options: {
+    parsing: false, animation: { duration: 400 },
+    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+    scales: {
+      x: { type: 'linear', grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } },
+      X
+    },
+    plugins: { tooltip: { callbacks: {
+      title: it => it[0].raw.m || fmtDate(it[0].raw.d || D.dates[it[0].raw.i]),
+      label: it => it.datasetIndex === 1 ? ` 영업 중 매장 ${it.raw.n.toLocaleString()}곳` : ` 검색량: 피크 대비 ${it.raw.y.toFixed(1)}%` } } }
+  },
+  plugins: [{ id: 'peakLine', afterDatasetsDraw(ch) {
+    const pts = ch.data.datasets[0].data; if (!pts.length) return;
+    const pk = pts.reduce((a, b) => (b.y > a.y ? b : a));
+    const { ctx, scales: { x, y } } = ch; const px = x.getPixelForValue(pk.x);
+    if (px < x.left || px > x.right) return;
+    ctx.save(); ctx.strokeStyle = C.ink3; ctx.setLineDash([3, 3]); ctx.beginPath();
+    ctx.moveTo(px, y.top); ctx.lineTo(px, y.bottom); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.ink2; ctx.font = '12px "Noto Sans KR"'; ctx.textAlign = px > x.right - 60 ? 'right' : 'left';
+    ctx.fillText('피크 ' + entry(current).v.peak, px + (ctx.textAlign === 'right' ? -6 : 6), y.top + 12); ctx.restore();
+  } }]
+});
+
+const LIVE = {};          // 실시간으로 분석한 디저트
+const LIVE_API = 'https://dessert-timing.yhr9232.workers.dev';     // Cloudflare Worker 주소 (예: https://dessert-timing.xxx.workers.dev)
+function entry(k) {
+  if (LIVE[k]) return LIVE[k];
+  const sk = SHOPMAP[k];
+  return { v: D.kw[k], X, dates: D.dates, shop: sk ? D.shops[sk].stats : null, shopPts: sk ? shopPts(sk) : [],
+           shopNote: sk === '모찌' ? "· 상호에 '모찌'가 들어간 매장" : '· 인허가 기준 상설 매장', shopLegend: sk === '모찌' ? " (상호에 '모찌')" : '' };
+}
+function drawMain() {
+  const E = entry(current), v = E.v, XX = E.X;
+  const startX = range === '3y' ? XX[XX.length - 1] - 3 : -Infinity;
+  main.data.datasets[0].data = v.s.map((y, i) => ({ x: XX[i], y, i, d: E.dates[i] })).filter(p => p.y !== null && p.x >= startX);
+  main.data.datasets[1].data = (E.shopPts || []).filter(p => p.x >= startX && p.x <= XX[XX.length - 1]);
+  document.getElementById('lg-main').innerHTML = `<span><i style="background:${C.main}"></i>검색량</span>` +
+    (E.shopPts && E.shopPts.length ? `<span><i style="background:${C.s[1]}"></i>영업 중 매장 수${E.shopLegend || ''}</span>` : '');
+  main.options.scales.x.min = range === '3y' ? Math.floor(startX * 4) / 4 : 2016;
+  main.options.scales.x.max = XX[XX.length - 1];
+  main.update();
+}
+
+function select(k) {
+  current = k;
+  document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  const E = entry(k), v = E.v, [t, body] = verdict(k, v);
+  const badge = document.getElementById('v-badge');
+  badge.textContent = v.type; badge.style.background = TYPE_COLOR[v.type];
+  document.getElementById('v-title').textContent = t;
+  document.getElementById('v-body').textContent = body;
+  document.getElementById('st-peak').textContent = v.peak;
+  document.getElementById('st-rise').innerHTML = v.rise ? `${v.rise}<small>주</small>` : '<small>꾸준히 검색</small>';
+  document.getElementById('st-now').innerHTML = `${v.now}<small>%</small>`;
+  document.getElementById('st-yoy').textContent = v.yoy === null ? '–' : sign(v.yoy);
+  document.getElementById('c-title').textContent = `${k} 검색량 추이`;
+  const st = E.shop, box = document.getElementById('shopbox');
+  box.hidden = !st;
+  if (st) {
+    document.getElementById('shop-note').textContent = E.shopNote;
+    document.getElementById('shop-v').textContent = st.alive_max ? `최고 ${st.alive_max.toLocaleString()}곳 (${fmtYM(st.alive_peak)}) → 현재 ${st.open_now.toLocaleString()}곳` : '상호에 이 단어가 들어간 매장이 거의 없어요';
+    const parts = [];
+    if (st.close1y_after !== null && st.close1y_before !== null) parts.push(`1년 내 폐업률: 검색 피크 전 개업 ${st.close1y_before}% · 피크 후 개업 ${st.close1y_after}%`);
+    if (st.total) parts.push(`팝업 매장 비율 ${Math.round(st.popup / st.total * 100)}%`);
+    if (st.capped) parts.push(`매장이 많아 ${st.total.toLocaleString()}곳까지만 분석`);
+    document.getElementById('shop-s').textContent = parts.join(' · ');
+  }
+  warnings(k, v, E.shop);
+  drawMain();
+  if (typeof renderFindings === 'function' && document.getElementById('shop-table').rows.length) renderFindings(k);
+}
+document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
+  range = b.dataset.range;
+  document.querySelectorAll('[data-range]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  drawMain();
+});
+
+/* ---------- 발견 ①~③: 고른 디저트 기준으로 다시 그리기 ---------- */
+const med = a => { const b = a.filter(x => x !== null && x !== undefined).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const BASE = Object.entries(D.kw).filter(([k, v]) => k !== '모찌류(합산)' && v.type !== '진행중' && v.rise);
+const FAST = BASE.filter(([, v]) => v.rise <= 20).map(([, v]) => v), SLOW = BASE.filter(([, v]) => v.rise >= 40).map(([, v]) => v);
+const AVG = { fast: { rise: med(FAST.map(v => v.rise)), half: med(FAST.map(v => v.half)), n: FAST.length },
+              slow: { rise: med(SLOW.map(v => v.rise)), half: med(SLOW.map(v => v.half)), n: SLOW.length } };
+const reul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '을' : '를'; };
+const iga = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '이' : '가'; };
+const eul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '은' : '는'; };
+function lifeRow(name, sub, rise, half, me, maxW) {
+  const W = x => Math.max(12, x / maxW * 88);
+  const up = rise ? `<div class="seg-up" style="flex:0 0 ${W(rise)}%">🚀 ${rise}주</div>` : `<div class="seg-up" style="flex:0 0 ${W(22)}%">🚀 꾸준히</div>`;
+  const dn = half ? `<div class="seg-dn" style="flex:0 0 ${W(half)}%">📉 ${half}주</div>` : `<div class="seg-dn seg-na" style="flex:1 1 auto">아직 안 떨어짐</div>`;
+  return `<div class="life-row${me ? ' me' : ''}"><div class="life-name">${name}<small>${sub}</small></div><div class="life-track">${up}${dn}</div></div>`;
+}
+function renderFindings(k) {
+  const v = entry(k).v, J = eul(k);
+  const others = Object.keys(D.kw).filter(n => n !== '모찌류(합산)' && n !== k).length;
+  document.getElementById('f-sub').textContent = `'${k}'을(를) 다른 디저트 ${others}종과 비교했어요. 위에서 디저트를 바꾸면 아래도 같이 바뀌어요.`;
+  // ① 유행의 수명
+  const tot = (r, h) => (r || 22) + (h || 30);
+  const maxW = Math.max(60, tot(v.rise, v.half), tot(AVG.fast.rise, AVG.fast.half), tot(AVG.slow.rise, AVG.slow.half)) * 1.02;
+  document.getElementById('f1-title').textContent = `${k}의 유행 수명`;
+  document.getElementById('f1-bars').innerHTML =
+    lifeRow(k, '지금 보는 디저트', v.rise, v.half, true, maxW) +
+    lifeRow('급하게 뜬 디저트', `${AVG.fast.n}종 중앙값 · 흑당·탕후루 등`, AVG.fast.rise, AVG.fast.half, false, maxW) +
+    lifeRow('천천히 뜬 디저트', `${AVG.slow.n}종 중앙값 · 소금빵·베이글 등`, AVG.slow.rise, AVG.slow.half, false, maxW);
+  let l1;
+  if (v.type === '진행중') l1 = `${k}${J} 아직 피크가 진행 중이에요. ` + (v.rise ? `지금까지 ${v.rise}주 동안 올랐어요. ` : '') + `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났으니, 기간 한정으로 빠르게 내는 게 안전해요.`;
+  else if (!v.rise) l1 = `${k}${J} 처음부터 꾸준히 검색된 디저트예요. 갑자기 뜬 유행이 아니라 오래 찾는 기본 메뉴에 가까워요.`;
+  else if (v.rise <= 20) l1 = `${k}${J} ${v.rise}주 만에 급하게 떴어요. 이런 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났고, ${k}${J} ${v.half ? v.half + '주' : '아직'} 만에 절반으로 줄었어요.`;
+  else if (v.rise >= 40) l1 = `${k}${J} ${v.rise}주에 걸쳐 천천히 떴어요. 천천히 뜬 디저트는 반토막까지 보통 ${AVG.slow.half}주가 걸려서, 오래 가는 편이에요.`;
+  else l1 = `${k}${J} ${v.rise}주 동안 올라서 급하게 뜬 디저트와 천천히 뜬 디저트의 중간이에요.`;
+  document.getElementById('f1-lead').textContent = l1;
+  // ② 지금도 찾는 순위
+  const list = Object.entries(D.kw).filter(([n]) => n !== '모찌류(합산)').map(([n, x]) => ({ n, now: x.now, rise: x.rise, type: x.type }));
+  if (LIVE[k]) list.push({ n: k, now: v.now, rise: v.rise, type: v.type });
+  list.sort((a, b) => b.now - a.now);
+  const col = x => x.type === '진행중' || !x.rise ? '#c9c3b0' : x.rise <= 20 ? css('--teal') : x.rise < 40 ? css('--pop-y') : css('--pop-b');
+  const mx = Math.max(...list.map(x => x.now));
+  document.getElementById('f2-rank').innerHTML = list.map((x, i) => `<div class="rk${x.n === k ? ' me' : ''}"><span class="no">${i + 1}</span><span class="nm">${x.n}</span><span class="bar" style="width:${Math.max(2, x.now / mx * 100)}%;background:${col(x)}"></span><span class="pc">${x.n === k ? '👉 ' : ''}${x.now}%</span></div>`).join('');
+  const rank = list.findIndex(x => x.n === k) + 1;
+  document.getElementById('f2-title').textContent = `지금도 찾는 디저트 순위: ${k} ${rank}위`;
+  document.getElementById('f2-lead').textContent = `${k}${J} 지금 검색량이 최고점의 ${v.now}%로, ${list.length}종 중 ${rank}위예요.` + (v.type === '진행중' ? ' 지금이 최고점 근처라 위쪽에 있어요.' : '');
+  // ③ 디저트 달력
+  const sv = v.season, smin = Math.min(...sv), smax = Math.max(...sv), pm = sv.indexOf(smax), amp = smin > 0 ? smax / smin : 1;
+  const seasonal = amp >= 1.6, go = [(pm + 10) % 12, (pm + 11) % 12];
+  const shade = x => { const t = Math.max(0, Math.min(1, (x - 0.6) / 1.6)); const c = (a, b) => Math.round(a + (b - a) * t); return [`rgb(${c(255, 255)},${c(243, 90)},${c(224, 31)})`, t > .55 ? '#fff' : css('--ink')]; };
+  document.getElementById('f3-cal').innerHTML = sv.map((x, i) => { const [bg, fg] = shade(x);
+    const stk = i === pm ? '<i class="stk">🔥 대목</i>' : (seasonal && go.includes(i) ? '<i class="stk go">출시!</i>' : '');
+    return `<div class="mo" style="background:${bg};color:${fg}">${stk}<b>${i + 1}월</b><span>${x.toFixed(1)}배</span></div>`; }).join('');
+  document.getElementById('f3-title').textContent = `${k} 달력`;
+  document.getElementById('f3-lead').textContent = seasonal
+    ? `${k}${J} ${pm + 1}월에 가장 많이 찾아요 (연평균의 ${smax.toFixed(1)}배). ${go[0] + 1}~${go[1] + 1}월에 출시하면 대목을 잡을 수 있어요.`
+    : `${k}${J} 계절을 크게 타지 않아요. 가장 많이 찾는 ${pm + 1}월도 연평균의 ${smax.toFixed(1)}배 정도라, 출시 달보다 유행 단계가 더 중요해요.`;
+  renderPlan(k, v, entry(k).shop);
+  // 과일모찌 사례는 과일모찌를 볼 때만
+  document.getElementById('case-mochi').hidden = k !== '과일모찌';
+  // ④ 표에서 지금 디저트 강조
+  document.querySelectorAll('#shop-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.k === SHOPMAP[k]));
+}
+
+
+
+/* ---------- 데이터 품질 경고 ---------- */
+function warnings(k, v, st) {
+  const w = [], name = k.replace(/\s/g, '');
+  const zs = v.zeroShare ?? (v.s.filter(x => x !== null && x < 0.5).length / v.s.length);
+  if (zs > 0.3) w.push(`검색량이 0에 가까운 주가 ${Math.round(zs * 100)}%예요. 검색이 적은 단어라 유형 판단이 흔들릴 수 있어요.`);
+  if (v.type === '진행중' && (v.pre52 ?? 0) < 5) w.push('최근에 갑자기 생긴 단어라 유행형인지 정착형인지 판단하기엔 아직 일러요.');
+  if (name.length === 1) w.push(`'${k}'처럼 한 글자 단어는 다른 뜻의 검색과 가게 이름이 섞일 수 있어요.`);
+  if (st && st.total > 0 && st.total < 20) w.push(`상호에 '${name}'이 들어간 가게가 ${st.total}곳뿐이라 매장 수는 참고만 해 주세요.`);
+  if (st && st.total === 0) w.push(`상호에 '${name}'이 들어간 가게가 없어요. 메뉴로만 파는 경우는 셀 수 없어요.`);
+  if (st && st.capped) w.push('가게가 너무 많아 일부만 분석했어요.');
+  if (k === '과일모찌' || k === '모찌떡' || k === '찹쌀모찌') w.push("'모찌' 한 단어는 네이버에서 집계되지 않아 연관 검색어로 대신 봤어요.");
+  const box = document.getElementById('warnbox');
+  box.hidden = !w.length;
+  document.getElementById('warn-list').innerHTML = w.map(x => `<li>${x}</li>`).join('');
+}
+
+/* ---------- 내 가게 프로필 ---------- */
+const REQ = {
+  '흑당': { eq: ['에스프레소 머신'], cat: '음료', ing: ['흑당', '우유', '타피오카'], price: 5500, alt: '흑당 라떼' },
+  '크로플': { eq: ['와플 기계'], cat: '디저트', ing: ['크루아상 생지', '버터', '생크림'], price: 6000 },
+  '마라탕': { eq: ['화구'], cat: '식사', ing: ['마라 소스'], price: 10000 },
+  '탕후루': { eq: ['화구'], cat: '디저트', ing: ['과일', '설탕'], price: 4000, alt: '탕후루 토핑 에이드' },
+  '약과': { eq: ['튀김기'], cat: '디저트', ing: ['밀가루', '조청', '참기름'], price: 3500, alt: '약과 완제품 + 음료 세트' },
+  '요거트 아이스크림': { eq: ['아이스크림 기계'], cat: '디저트', ing: ['요거트', '과일', '그래놀라'], price: 7000, alt: '요거트 스무디' },
+  '두바이 초콜릿': { eq: [], cat: '디저트', ing: ['피스타치오', '카다이프', '초콜릿'], price: 8000 },
+  '마카롱': { eq: ['오븐'], cat: '디저트', ing: ['아몬드가루', '달걀흰자', '버터크림'], price: 3000, alt: '마카롱 완제품 납품' },
+  '뚱카롱': { eq: ['오븐'], cat: '디저트', ing: ['아몬드가루', '버터크림'], price: 4000, alt: '마카롱 완제품 납품' },
+  '소금빵': { eq: ['오븐'], cat: '베이커리', ing: ['버터', '밀가루'], price: 3500, alt: '냉동 생지 구매 후 굽기' },
+  '베이글': { eq: ['오븐'], cat: '베이커리', ing: ['밀가루', '크림치즈'], price: 4500, alt: '베이글 납품 + 크림치즈 직접' },
+  '달고나': { eq: ['화구'], cat: '음료', ing: ['설탕', '베이킹소다', '우유'], price: 5500, alt: '달고나 라떼' },
+  '피스타치오': { eq: ['에스프레소 머신'], cat: '음료', ing: ['피스타치오', '우유'], price: 6500, alt: '피스타치오 라떼' },
+  '말차': { eq: ['에스프레소 머신'], cat: '음료', ing: ['말차', '우유'], price: 6000, alt: '말차 라떼' },
+  '흑임자': { eq: ['블렌더'], cat: '음료', ing: ['흑임자', '우유'], price: 6000, alt: '흑임자 라떼' },
+  '쑥': { eq: ['블렌더'], cat: '음료', ing: ['쑥', '우유'], price: 6000, alt: '쑥 라떼' },
+  '딸기모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '딸기', '팥'], price: 4500 },
+  '찹쌀떡': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '팥'], price: 2500, alt: '찹쌀떡 완제품 + 음료 세트' },
+  '모찌떡': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '생크림'], price: 4500 },
+  '찹쌀모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '팥'], price: 4000 },
+  '과일모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '과일', '생크림'], price: 5500, alt: '과일모찌 완제품 납품' },
+};
+function guessReq(k) {
+  const n = k.replace(/\s/g, ''), has = (...a) => a.some(x => n.includes(x));
+  if (has('라떼', '티', '에이드', '스무디', '커피', '주스', '쉐이크')) return { eq: has('스무디', '쉐이크', '주스') ? ['블렌더'] : ['에스프레소 머신'], cat: '음료', ing: [], price: 6000 };
+  if (has('빵', '베이글', '스콘', '쿠키', '케이크', '타르트', '휘낭시에', '까눌레', '마들렌', '파이', '머핀', '브라우니')) return { eq: ['오븐'], cat: '베이커리', ing: [], price: 4000, alt: `${k} 납품받기` };
+  if (has('빙수', '아이스크림', '젤라또', '소르베')) return { eq: ['아이스크림 기계'], cat: '디저트', ing: [], price: 8000 };
+  if (has('모찌', '떡', '찹쌀')) return { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루'], price: 4000 };
+  if (has('와플', '크로플')) return { eq: ['와플 기계'], cat: '디저트', ing: [], price: 6000 };
+  if (has('도넛', '츄러스', '튀김', '꽈배기')) return { eq: ['튀김기'], cat: '디저트', ing: [], price: 3500 };
+  return null;
+}
+const PF_KEY = 'dessert-timing-profile';
+function loadProfile() { try { return JSON.parse(localStorage.getItem(PF_KEY)) || null; } catch { return null; } }
+function saveProfile(p) { try { localStorage.setItem(PF_KEY, JSON.stringify(p)); } catch {} }
+function readForm() {
+  const f = document.getElementById('profile');
+  return { cat: f.querySelector('[name=pf-cat]:checked')?.value || '', price: f.querySelector('[name=pf-price]:checked')?.value || '',
+    eq: [...f.querySelectorAll('[name=pf-eq]:checked')].map(x => x.value),
+    ban: document.getElementById('pf-ban').value.split(',').map(x => x.trim()).filter(Boolean),
+    name: (document.getElementById('pf-name').value || '').trim() };
+}
+function fillName(p) { document.getElementById('pf-name').value = (p && p.name) || ''; }
+function fillForm(p) {
+  if (!p) return; const f = document.getElementById('profile');
+  f.querySelectorAll('[name=pf-cat]').forEach(x => x.checked = x.value === p.cat);
+  f.querySelectorAll('[name=pf-price]').forEach(x => x.checked = x.value === p.price);
+  f.querySelectorAll('[name=pf-eq]').forEach(x => x.checked = (p.eq || []).includes(x.value));
+  document.getElementById('pf-ban').value = (p.ban || []).join(', ');
+}
+const hasProfile = p => p && (p.cat || p.price || (p.eq || []).length || (p.ban || []).length);
+function fitCard(k) {
+  const p = loadProfile();
+  if (!hasProfile(p)) return ['내 가게', '가게 프로필을 넣어 보세요', '위의 🏪 내 가게 프로필에 장비와 가격대를 넣으면 우리 가게에서 만들 수 있는지 알려드려요.'];
+  const r = REQ[k] || guessReq(k);
+  if (!r) return ['내 가게', '이 디저트는 장비 정보가 아직 없어요', '목록에 없는 디저트라 필요한 장비를 판단하지 못했어요.'];
+  const lines = [], missing = r.eq.filter(e => !(p.eq || []).includes(e));
+  if (!r.eq.length || !missing.length) lines.push(`<span class="ok">✔ 지금 장비로 만들 수 있어요</span>`);
+  else { const m = missing.join(', '); lines.push(`<span class="no">✖ ${m}${iga(m)} 필요해요</span>${r.alt ? ` → 대안: ${r.alt}` : ''}`); }
+  if (p.cat && r.cat !== p.cat && r.cat !== '식사') lines.push(p.cat === '음료' ? `음료 중심 가게라면 ${k} 맛 음료나 음료 + ${k} 세트로 응용해 보세요.` : `주력 분야(${p.cat})와 달라 사이드 메뉴로 두는 게 좋아요.`);
+  if (p.price) { const [lo, hi] = p.price.split('-').map(Number);
+    if (r.price > hi * 1.3) lines.push(`보통 ${r.price.toLocaleString()}원대라 가격대보다 비싸요. 미니 사이즈로 내 보세요.`);
+    else if (r.price < lo * 0.7) lines.push(`보통 ${r.price.toLocaleString()}원대라 음료와 세트로 묶으면 객단가가 맞아요.`);
+    else lines.push(`보통 ${r.price.toLocaleString()}원대라 가격대와 잘 맞아요.`); }
+  const bad = (p.ban || []).filter(b => r.ing.some(i => i.includes(b) || b.includes(i)));
+  if (bad.length) lines.push(`<span class="no">쓰지 않는 재료(${bad.join(', ')})가 들어가요.</span> 빼거나 바꿔야 해요.`);
+  return ['내 가게', `우리 가게에서 ${k}`, lines.join('<br>')];
+}
+function profileSummary() {
+  const p = loadProfile(), el = document.getElementById('pf-sum');
+  el.textContent = hasProfile(p) ? [p.cat, p.price && p.price.replace('-', '~') + '원', (p.eq || []).length ? `장비 ${p.eq.length}개` : '', (p.ban || []).length ? `금기 ${p.ban.length}개` : ''].filter(Boolean).join(' · ') : '넣으면 우리 가게에서 만들 수 있는지 알려드려요';
+}
+fillForm(loadProfile()); fillName(loadProfile()); profileSummary();
+document.getElementById('profile').addEventListener('change', () => { saveProfile(readForm()); profileSummary(); if (current) renderPlan(current, entry(current).v, entry(current).shop); });
+['pf-ban', 'pf-name'].forEach(id => document.getElementById(id).addEventListener('input', () => { saveProfile(readForm()); profileSummary(); if (current) renderPlan(current, entry(current).v, entry(current).shop); }));
+
+/* ---------- 기획 제안: 고른 디저트에 맞춰 ---------- */
+function renderPlan(k, v, st) {
+  const sv = v.season, smax = Math.max(...sv), smin = Math.min(...sv), pm = sv.indexOf(smax) + 1;
+  const seasonal = smin > 0 && smax / smin >= 1.6, b1 = ((pm + 9) % 12) + 1, b2 = ((pm + 10) % 12) + 1;
+  const J = eul(k), shopTxt = st && st.alive_max ? `전국 가게 ${st.open_now.toLocaleString()}곳 (최고 ${st.alive_max.toLocaleString()}곳)` : '';
+  const late = st && st.close1y_after !== null ? `피크 뒤에 연 가게 ${st.close1y_after}%가 1년 안에 문을 닫았어요.` : '';
+  let cards;
+  switch (v.type) {
+    case '진행중': cards = [
+      ['지금', `${k} 기간 한정 메뉴 바로 출시`, `검색량이 전년보다 ${sign(v.yoy)}. 지금이 가장 뜨거울 때예요.`],
+      ['확인', '4주마다 검색량 다시 보기', `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났어요. 꺾이면 바로 정리해요.`],
+      ['확장', seasonal ? `${pm}월 대목에 맞춘 시즌 패키지` : '반응 좋으면 정규 메뉴 후보로', shopTxt ? `${shopTxt}. 경쟁 가게가 늘어나는 속도도 같이 봐요.` : '경쟁 가게 수도 같이 지켜봐요.']];
+      break;
+    case '유행형': cards = [
+      ['피하기', `${k} 단독 신메뉴는 비추천`, `${v.peak}에 피크를 지났고 지금은 피크의 ${v.now}%예요.`],
+      ['활용', `${k} 맛을 토핑·소재로`, `음료나 다른 디저트에 ${k} 맛을 살짝 얹는 정도로 가볍게 써요.`],
+      ['교훈', '다음 유행은 더 일찍', late || `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났어요.`]];
+      break;
+    case '정착형': cards = [
+      ['정규', `${k}${J} 정규 메뉴로`, `피크가 지나도 ${v.now}%를 유지하는 오래 가는 디저트예요.`],
+      ['확장', `${k} 맛·구성 라인업`, `기본 + 시즌 맛 + 세트처럼 2~3종으로 넓혀 객단가를 올려요.`],
+      ['타이밍', v.yoy > 20 ? '다시 오르는 지금이 확장 적기' : '신메뉴보다 품질·차별화', v.yoy > 20 ? `전년보다 ${sign(v.yoy)} 다시 찾고 있어요.` : (shopTxt ? `${shopTxt}. 이미 경쟁이 있으니 맛으로 차별화해요.` : '이미 익숙한 메뉴라 맛으로 차별화해요.')]];
+      break;
+    case '시즌형': cards = [
+      ['일정', `${b1}~${b2}월 출시 고정`, `매년 ${pm}월에 연평균의 ${smax.toFixed(1)}배까지 찾아요.`],
+      ['대목', `${pm}월 한정 패키지`, '선물 세트나 시즌 한정 맛으로 대목 매출을 키워요.'],
+      ['비수기', '비수기엔 줄이거나 쉬기', `검색이 연평균보다 낮은 달엔 재고를 줄여요.${shopTxt ? ' ' + shopTxt + '.' : ''}`]];
+      break;
+    default: cards = [
+      ['주의', `${k} 신규 진입은 신중하게`, `피크(${v.peak}) 대비 ${v.now}%가 남았고 전년보다 ${v.yoy === null ? '–' : sign(v.yoy)}예요.`],
+      ['리뉴얼', '기존 메뉴를 새롭게', `이미 ${k}${reul(k)} 판다면 맛이나 모양을 바꿔 다시 알리는 편이 나아요.`],
+      ['근거', '늦게 들어가면 위험', late || '피크가 지난 뒤 들어간 가게일수록 오래 버티기 어려웠어요.']];
+  }
+  document.getElementById('p-h2').textContent = `${k} 기획 제안`;
+  const lb = document.getElementById('mk-label'); if (lb && lb.dataset.k !== k) { lb.dataset.k = k; lb.textContent = `${k}로 신메뉴 만들기`; const o = document.getElementById('mk-out'); if (o) o.innerHTML = ''; }
+  document.getElementById('p-sub').textContent = `${k}${J} '${v.type}'이라 이렇게 해보면 좋아요.`;
+  const fit = fitCard(k);
+  document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
+    `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>`;
+  document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
+}
+
+
+/* ---------- 이 디저트로 신메뉴 만들기 (AI + 원가 검증) ---------- */
+const mkBtn = document.getElementById('mk-btn'), mkMsg = document.getElementById('mk-msg'), mkOut = document.getElementById('mk-out');
+const won = n => Math.round(n).toLocaleString() + '원';
+function menuPrice(k, p) {
+  const r = REQ[k] || guessReq(k);
+  if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
+  return r ? r.price : 5500;
+}
+async function makeMenu() {
+  if (!current) return;
+  const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
+  const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
+  const price = menuPrice(k, p);
+  mkBtn.disabled = true; mkMsg.textContent = `AI가 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (20초쯤 걸려요)`; mkOut.innerHTML = '';
+  try {
+    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, note: (document.getElementById('mk-note').value || '').trim() }) });
+    const m = await res.json(); if (!res.ok || m.error) throw new Error(m.error || res.status);
+    if (current !== k) return;
+    const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
+    mkOut.innerHTML = `<div class="mk-card">
+      <span class="tag" style="background:var(--teal)">${m.kind}</span>
+      <h4>${esc(m.name)}</h4>
+      <p>${esc(m.concept || '')}</p>
+      <div class="meta">
+        <div><span>판매가 (목표)</span><b>${won(m.price)}</b></div>
+        <div><span>재료 원가</span><b>${won(m.cost)}</b></div>
+        <div><span>원가율 (목표 ${m.target}%)</span><b class="${m.pass ? 'pass' : 'fail'}">${m.rate}% ${m.pass ? '✔' : '✖'}</b></div>
+      </div>
+      <p><b>타깃</b> ${esc(m.targetCustomer || '')}</p>
+      <p><b>판매 포인트</b> ${esc(m.point || '')}</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>재료</th><th class="num-r">사용량</th><th class="num-r">단가</th><th class="num-r">원가</th><th>단가 출처</th></tr></thead><tbody>
+        ${m.recipe.map(x => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${x.unit_price}원</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : ''}">${x.source}</span></td></tr>`).join('')}
+      </tbody></table></div>
+      ${m.steps && m.steps.length ? `<p style="margin-top:10px"><b>만드는 순서</b></p><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
+      <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
+      <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
+    </div>`;
+    mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.'; MADE = true; renderProg();
+  } catch (e) {
+    const msg = String(e.message || e);
+    mkMsg.textContent = /429|RESOURCE_EXHAUSTED|quota/i.test(msg)
+      ? 'AI 무료 사용량을 다 썼어요. 잠시 뒤(하루 한도면 내일) 다시 눌러 주세요. (Gemini 사용량 한도)'
+      : /503|UNAVAILABLE|high demand/.test(msg)
+      ? 'AI 서버가 지금 붐벼요. 1~2분 뒤에 다시 눌러 주세요. (Gemini 일시적 과부하)'
+      : `만들지 못했어요: ${msg}`;
+    mkMsg.title = msg;   // 마우스를 올리면 원래 오류 문구가 보임
+  }
+  finally { mkBtn.disabled = false; }
+}
+mkBtn.addEventListener('click', makeMenu);
+
+/* ---------- 사례: 과일모찌 ---------- */
+const fm = D.kw['과일모찌'];
+new Chart(document.getElementById('c-mochi'), {
+  type: 'line',
+  data: { datasets: [{ data: fm.s.map((y, i) => ({ x: X[i], y, i })).filter(p => p.y !== null && p.x >= 2022),
+    borderColor: C.s[1], borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, fill: true, backgroundColor: 'rgba(235,104,52,.08)', tension: .25 }] },
+  options: { parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
+    scales: { x: { type: 'linear', min: 2022, max: X[X.length - 1], grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } },
+      X },
+    plugins: { tooltip: { callbacks: { title: it => fmtDate(D.dates[it[0].raw.i]), label: it => ` 피크 대비 ${it.raw.y.toFixed(1)}%` } } } }
+});
+const gp = D.groupPre;
+new Chart(document.getElementById('c-pre'), {
+  type: 'bar',
+  data: { labels: ['유행형 (중앙값)', '과일모찌', '정착형 (중앙값)'],
+    datasets: [{ data: [gp['유행형'][0], gp['과일모찌'][0], gp['정착형'][0]],
+      backgroundColor: [TYPE_COLOR['유행형'], C.s[1], TYPE_COLOR['정착형']], borderRadius: 4, maxBarThickness: 64 }] },
+  options: { scales: { x: { grid: { display: false } }, y: { min: 0, max: 60, grid: { color: C.grid }, title: { display: true, text: '피크 52주 전 검색량 (피크 대비 %)' } } },
+    plugins: { tooltip: { callbacks: { label: it => ` 피크의 ${it.raw.toFixed(1)}%` } } } },
+  plugins: [{ id: 'vals', afterDatasetsDraw(ch) { const { ctx } = ch; ctx.save(); ctx.font = '700 13px "Noto Sans KR"'; ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+    ch.getDatasetMeta(0).data.forEach((el, i) => ctx.fillText(Math.round(ch.data.datasets[0].data[i]) + '%', el.x, el.y - 6)); ctx.restore(); } }]
+});
+
+/* ---------- 발견 ④: 검색량 vs 매장 ---------- */
+const grid = document.getElementById('shop-grid');
+['탕후루', '크로플', '마카롱', '베이글'].forEach(k => {
+  const st = D.shops[k].stats, box = document.createElement('div'); box.className = 'mini';
+  box.innerHTML = `<h4>${k} <span style="font-weight:500;color:var(--ink-2);font-size:13px">${st.alive_max.toLocaleString()} → ${st.open_now.toLocaleString()}곳</span></h4><div class="chart-box"><canvas></canvas></div>`;
+  grid.appendChild(box);
+  new Chart(box.querySelector('canvas'), {
+    type: 'line',
+    data: { datasets: [
+      { label: '검색량', data: D.kw[k].s.map((y, i) => ({ x: X[i], y, i })).filter(p => p.y !== null), borderColor: C.s[0], borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: .25 },
+      { label: '영업 중 매장 수', data: shopPts(k), borderColor: C.s[1], borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: .25 }] },
+    options: { parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      scales: { x: { type: 'linear', min: 2016, max: X[X.length - 1], grid: { color: C.grid }, ticks: { stepSize: 2, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } },
+        y: { min: 0, max: 100, grid: { color: C.grid }, ticks: { stepSize: 50 } } },
+      plugins: { tooltip: { callbacks: { title: it => it[0].raw.m || fmtDate(D.dates[it[0].raw.i]),
+        label: it => it.datasetIndex === 1 ? ` 영업 중 ${it.raw.n.toLocaleString()}곳` : ` 검색량 ${it.raw.y.toFixed(0)}%` } } } }
+  });
+});
+const ORDER = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'];
+const pct = v => v === null || v === undefined ? '–' : v + '%';
+document.getElementById('shop-table').innerHTML = `<thead><tr><th>디저트</th><th>검색 최고</th><th>가게 최고</th><th class="num-r">가게 수</th><th class="num-r">늦게 연 가게<br>1년 내 폐업</th></tr></thead><tbody>` +
+  ORDER.map(k => { const s = D.shops[k].stats;
+    return `<tr data-k="${k}"><td>${k}</td><td>${fmtYM(s.search_peak)}</td><td>${k === '모찌' ? '지금' : fmtYM(s.alive_peak) + ` <small style="color:var(--ink-3)">(+${s.lag_alive}개월)</small>`}</td>
+      <td class="num-r">${s.alive_max.toLocaleString()} → ${s.open_now.toLocaleString()}곳</td><td class="num-r">${pct(s.close1y_after)}</td></tr>`; }).join('') + '</tbody>';
+
+/* ---------- About data ---------- */
+const dlg = document.getElementById('about');
+document.querySelectorAll('[data-open-about]').forEach(b => b.onclick = () => dlg.showModal());
+document.querySelector('[data-close-about]').onclick = () => dlg.close();
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+
+/* 첫 화면 */
+renderFindings('과일모찌');
+
+
+/* ---------- 실시간 분석: 목록에 없는 디저트 ---------- */
+const mean = a => { const b = a.filter(x => x !== null && !isNaN(x)); return b.length ? b.reduce((p, c) => p + c, 0) / b.length : null; };
+function rolling(a, w, minp) { const h = Math.floor(w / 2); return a.map((_, i) => { const seg = a.slice(Math.max(0, i - h), i + h + 1).filter(x => x !== null); return seg.length >= minp ? seg.reduce((p, c) => p + c, 0) / seg.length : null; }); }
+function lifecycle(dates, raw) {
+  const n = raw.length; if (n < 60 || raw.filter(x => x > 0).length < 10) return null;
+  const S = rolling(raw, 13, 7); let pk = 0; S.forEach((x, i) => { if (x !== null && x > (S[pk] ?? -1)) pk = i; });
+  const pv = S[pk]; if (!pv) return null;
+  let st = null; for (let i = pk - 1; i >= 0; i--) if (S[i] !== null && S[i] < 0.25 * pv) { st = i; break; }
+  let hf = null; for (let i = pk + 1; i < n; i++) if (S[i] !== null && S[i] < 0.5 * pv) { hf = i; break; }
+  const cur = mean(raw.slice(-13)), yago = mean(raw.slice(-65, -52));
+  const tr = rolling(raw, 52, 26), byM = [...Array(12)].map(() => []);
+  raw.forEach((x, i) => { if (tr[i]) byM[new Date(dates[i]).getMonth()].push(x / tr[i]); });
+  const season = byM.map(a => mean(a) ?? 1), smin = Math.min(...season), smax = Math.max(...season);
+  const amp = smin > 0 ? smax / smin : 1, now = +(cur / pv * 100).toFixed(1);
+  const recent = pk >= n - 13;
+  const type = recent ? '진행중' : (amp >= 2.5 && now >= 10) ? '시즌형' : now < 10 ? '유행형' : now >= 25 ? '정착형' : '관망형';
+  const pd = new Date(dates[pk]);
+  return { type, peak: `${pd.getFullYear()}.${String(pd.getMonth() + 1).padStart(2, '0')}`, peakDate: dates[pk],
+    rise: st === null ? null : pk - st, half: hf === null ? null : hf - pk, now, yoy: yago > 0 ? +((cur / yago - 1) * 100).toFixed(1) : null,
+    smonth: season.indexOf(smax) + 1, amp, season, pre52: pk >= 52 ? S[pk - 52] / pv * 100 : 0,
+    zeroShare: raw.filter(x => !x).length / n, s: S.map(x => x === null ? null : +(x / pv * 100).toFixed(2)) };
+}
+function shopAnalysis(rows, peakDate, capped) {
+  const day = 864e5, today = new Date();
+  const recs = rows.map(r => ({ o: new Date(r[1]), c: r[2] ? new Date(r[2]) : null })).filter(r => !isNaN(r.o));
+  recs.forEach(r => r.popup = r.c && (r.c - r.o) / day <= 90);
+  const perm = recs.filter(r => !r.popup);
+  const alive = [], pts = [];
+  for (let y = 2016, m = 0; new Date(y, m, 1) <= today; m++, (m === 12 && (m = 0, y++))) {
+    const end = new Date(y, m + 1, 0, 23, 59);
+    alive.push(perm.filter(r => r.o <= end && (!r.c || r.c > end)).length);
+  }
+  const mx = Math.max(0, ...alive), ip = alive.indexOf(mx);
+  alive.forEach((v, i) => pts.push({ x: 2016 + i / 12 + 1 / 24, y: mx ? v / mx * 100 : 0, n: v, m: `${2016 + Math.floor(i / 12)}년 ${i % 12 + 1}월` }));
+  const pk = new Date(peakDate), cut = new Date(today - 365 * day);
+  const c1 = xs => { xs = xs.filter(r => r.o <= cut); return xs.length >= 30 ? +(xs.filter(r => r.c && (r.c - r.o) / day <= 365).length / xs.length * 100).toFixed(1) : null; };
+  return { stats: { total: recs.length, popup: recs.filter(r => r.popup).length, open_now: perm.filter(r => !r.c).length, alive_max: mx,
+      alive_peak: `${2016 + Math.floor(ip / 12)}-${String(ip % 12 + 1).padStart(2, '0')}`,
+      close1y_before: c1(perm.filter(r => r.o < pk)), close1y_after: c1(perm.filter(r => r.o >= pk)), capped }, pts: mx ? pts : [] };
+}
+async function getJSON(path) { const r = await fetch(LIVE_API + path); const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || r.status); return j; }
+async function fetchShops(q, src, maxPages = 20) {
+  const first = await getJSON(`/shops?q=${encodeURIComponent(q)}&src=${src}&page=1`);
+  const pages = Math.min(Math.ceil(first.total / 100), maxPages), rows = [...first.rows];
+  for (let p = 2; p <= pages; p += 4) {
+    const batch = await Promise.all([p, p + 1, p + 2, p + 3].filter(x => x <= pages).map(x => getJSON(`/shops?q=${encodeURIComponent(q)}&src=${src}&page=${x}`)));
+    batch.forEach(b => rows.push(...b.rows));
+  }
+  return { rows, capped: first.total > maxPages * 100 };
+}
+const qMsg = document.getElementById('q-msg');
+async function analyzeLive(q) {
+  if (!LIVE_API) { qMsg.textContent = '실시간 검색은 준비 중이에요. 위 목록에서 골라 주세요.'; return; }
+  qMsg.textContent = `'${q}' 검색량과 전국 매장을 불러오는 중… (10초쯤 걸려요)`;
+  try {
+    const nq = q.replace(/\s+/g, '');
+    const [t, a, b] = await Promise.all([getJSON(`/trend?q=${encodeURIComponent(q)}`), fetchShops(nq, 'cafe'), fetchShops(nq, 'bakery')]);
+    const v = lifecycle(t.dates, t.ratio);
+    if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 너무 적어서 분석하기 어려워요. 다른 이름으로 검색해 보세요.`; return; }
+    const XX = t.dates.map(d => { const x = new Date(d); return x.getFullYear() + (x - new Date(x.getFullYear(), 0, 1)) / 31536000000; });
+    const sh = shopAnalysis([...a.rows, ...b.rows], v.peakDate, a.capped || b.capped);
+    LIVE[q] = { v, X: XX, dates: t.dates, shop: sh.stats.total ? sh.stats : { total: 0, popup: 0, open_now: 0, alive_max: 0, close1y_before: null, close1y_after: null },
+      shopPts: sh.pts, shopNote: `· 상호에 '${nq}'가 들어간 매장`, shopLegend: ` (상호에 '${nq}')` };
+    qMsg.textContent = `'${q}' 실시간 분석 결과예요. (네이버 데이터랩 · 행정안전부 인허가 데이터)`;
+    select(q);
+    goStep(2);
+  } catch (e) { qMsg.textContent = `불러오지 못했어요: ${e.message}`; }
+}
+document.getElementById('q-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = document.getElementById('q').value.trim();
+  if (!q) return;
+  const known = Object.keys(D.kw).find(k => k.replace(/\s/g, '') === q.replace(/\s/g, ''));
+  if (known) { qMsg.textContent = ''; select(known); return; }
+  if (LIVE[q]) { select(q); return; }
+  analyzeLive(q);
+});
+
+
+/* ---------- 시도별 지도 (디저트 타일을 누르면 바뀜, 지역을 누르면 개업·폐업) ---------- */
+const KOREA = {"paths":{"서울":"M200.0,95.0L206.0,96.1L205.7,100.1L207.2,100.8L207.8,104.5L206.7,109.4L212.5,106.9L213.1,110.5L210.0,112.8L209.6,114.5L211.3,115.0L210.1,117.3L202.5,122.1L200.8,118.4L190.7,121.6L187.7,115.6L183.2,117.5L183.8,110.9L179.2,109.5L182.0,104.7L186.4,107.8L188.2,107.2L190.1,106.0L190.5,100.1L194.0,99.1L194.8,102.1L196.2,101.8L197.6,97.0L200.0,95.0Z","부산":"M357.2,361.8L356.5,354.4L354.5,357.6L354.6,354.0L351.5,357.1L351.7,353.0L350.6,357.1L347.0,356.8L346.7,356.2L345.5,355.3L347.2,354.4L346.9,352.6L343.4,349.1L349.3,348.2L349.1,349.2L350.0,349.8L350.2,344.0L359.2,341.8L361.1,337.6L368.8,334.5L370.9,329.9L369.6,328.1L374.3,329.9L376.1,326.1L381.5,326.3L382.6,330.9L384.3,331.4L384.7,332.0L384.7,332.5L381.2,333.5L378.1,346.4L374.7,349.5L369.6,349.7L368.8,351.7L370.4,353.9L368.9,355.8L369.0,354.9L368.5,355.8L368.1,355.9L367.7,355.6L367.5,354.1L367.3,354.6L366.1,354.6L365.3,354.1L365.3,352.1L364.3,352.4L361.3,359.7L360.2,356.4L360.6,360.1L357.8,359.3L357.2,361.8ZM346.2,356.0L348.0,360.8L346.1,366.1L343.1,359.6L346.5,357.9L344.8,357.2L346.2,356.0Z","대구":"M335.4,263.4L339.5,267.7L338.7,272.0L340.7,276.2L339.8,279.2L337.5,279.3L337.2,284.3L334.3,286.0L335.0,291.9L329.6,294.8L328.7,291.1L324.8,291.3L321.8,293.7L322.1,296.7L320.2,297.7L320.1,301.0L309.2,304.1L311.6,301.1L307.6,294.6L314.1,294.5L314.0,292.4L310.1,289.0L313.2,284.1L318.2,283.4L315.5,280.3L310.1,279.7L311.4,275.0L315.9,270.7L317.7,271.6L317.0,275.1L319.7,276.3L322.3,271.5L321.9,267.0L323.9,268.9L329.2,264.4L335.4,263.4Z","인천":"M170.3,101.2L178.2,107.0L181.5,106.8L177.3,114.1L177.4,116.3L180.4,119.5L175.7,126.7L172.7,126.3L171.1,130.0L170.3,130.3L169.2,130.3L170.2,130.6L164.3,131.3L165.5,130.3L164.5,129.5L170.3,129.4L166.6,126.3L166.2,122.6L168.5,122.3L168.6,123.2L168.9,122.9L168.6,121.9L166.7,122.0L166.8,119.6L165.4,121.2L165.1,118.8L167.8,119.2L165.5,117.7L167.9,115.8L168.9,116.8L169.0,114.6L166.2,115.4L166.4,109.6L163.8,106.2L167.9,104.7L170.3,101.2ZM158.0,111.9L163.0,113.6L164.4,116.1L158.3,118.4L153.1,122.9L146.8,120.8L146.4,117.7L155.8,115.0L158.0,111.9ZM152.8,82.5L158.2,86.7L159.9,90.2L159.1,97.5L161.3,103.2L159.4,103.9L159.2,107.0L158.8,105.1L150.1,105.6L147.2,103.7L146.9,101.5L150.6,99.8L149.0,95.4L145.7,93.5L145.6,86.0L149.1,82.7L152.8,82.5ZM156.3,140.6L154.4,142.6L152.3,141.8L152.4,137.6L156.8,136.7L157.9,139.2L156.3,140.6ZM144.0,90.4L143.1,93.7L148.0,96.8L144.9,100.6L143.1,96.8L139.1,93.9L140.6,93.6L141.0,90.5L144.0,90.4ZM135.4,84.5L143.5,84.2L144.1,86.0L136.1,89.9L133.9,88.1L135.4,84.5ZM126.0,137.8L126.8,140.2L130.7,141.9L126.8,144.1L125.6,142.0L124.2,142.8L126.0,137.8Z","대전":"M230.5,216.1L231.2,219.5L234.7,220.1L237.4,217.3L236.9,219.3L239.0,219.8L237.8,221.6L238.8,224.1L240.6,222.7L243.5,225.2L240.7,226.2L240.5,229.6L238.7,231.1L237.8,241.7L233.9,245.5L229.5,241.6L229.7,238.7L227.6,238.1L227.7,243.0L225.2,246.7L223.7,242.9L221.0,241.4L221.8,238.5L218.2,235.9L220.8,230.5L221.0,223.5L225.8,221.9L227.3,216.1L230.5,216.1Z","울산":"M371.5,292.6L376.8,292.9L380.8,294.9L380.7,299.0L384.0,300.6L388.6,297.1L396.4,299.9L395.7,301.8L397.6,306.4L396.7,312.2L395.5,312.1L396.2,314.1L395.0,313.9L396.0,315.8L392.9,317.8L390.5,311.2L391.4,314.8L389.4,314.6L390.7,315.0L391.6,316.4L391.7,317.2L389.8,319.6L388.7,319.1L388.4,318.2L387.3,316.8L386.8,316.4L390.2,321.9L388.6,322.3L389.3,324.3L387.9,327.2L389.2,329.3L385.2,332.0L382.6,330.9L381.5,326.3L376.3,326.2L377.7,324.2L375.9,321.1L373.4,321.8L368.5,315.4L364.3,313.6L364.5,311.8L359.6,312.2L357.8,309.3L361.9,305.9L360.5,302.7L363.8,299.9L366.6,300.7L365.4,297.9L366.5,295.4L371.5,292.6Z","세종":"M212.1,191.9L222.8,196.5L220.5,201.0L221.8,201.4L222.4,206.4L225.6,208.8L228.8,208.2L229.3,210.8L231.0,211.3L231.4,215.4L227.3,216.1L227.2,219.4L224.8,222.7L218.5,224.3L214.3,221.0L214.0,216.0L212.0,214.1L212.3,210.8L215.0,207.2L210.8,204.4L211.3,196.0L208.5,194.1L212.1,191.9Z","경기":"M181.6,162.4L177.6,161.2L178.5,159.5L171.8,153.3L172.3,150.7L170.7,151.2L173.6,149.9L169.9,149.5L171.5,146.1L169.9,146.6L170.8,142.9L170.2,138.1L168.5,136.3L170.8,135.9L169.7,135.7L168.5,136.1L168.2,136.5L168.5,136.1L169.7,135.7L170.8,135.7L170.8,137.2L172.7,136.9L172.3,139.3L178.5,139.6L180.7,142.0L181.3,138.3L182.9,138.2L182.4,135.6L185.5,138.3L185.1,137.4L183.4,135.2L179.4,135.7L171.6,132.1L167.2,133.6L164.1,135.7L167.8,138.6L169.2,138.7L168.4,136.9L169.2,137.7L170.1,145.0L168.2,143.2L168.0,144.8L167.6,141.4L164.9,141.7L167.1,144.1L165.5,145.2L166.0,142.9L163.9,142.9L162.8,145.7L161.1,142.1L163.4,141.3L160.4,136.1L162.7,137.3L163.6,135.2L164.1,135.7L166.4,133.7L173.2,131.5L177.5,125.2L180.2,125.8L180.4,125.5L180.8,125.8L181.3,125.7L181.0,124.2L180.8,125.8L180.4,125.5L179.3,125.5L177.9,124.6L180.4,119.5L177.4,116.3L179.3,109.6L183.8,110.9L183.2,117.5L187.7,115.6L190.4,121.6L192.4,120.0L195.2,121.0L198.5,118.2L201.0,118.6L201.1,121.1L203.5,122.1L210.9,116.1L209.5,114.1L211.4,110.5L213.1,110.5L212.5,106.9L206.7,109.4L207.8,104.5L207.2,100.8L205.7,100.1L206.0,96.1L200.4,94.9L197.6,97.0L197.1,100.9L196.2,101.8L194.8,102.1L194.0,99.1L190.5,100.1L190.1,106.0L186.4,107.8L182.2,104.5L181.5,106.8L178.2,107.0L170.5,101.2L167.9,104.7L162.6,104.9L159.9,97.6L159.2,87.3L159.6,86.0L165.3,88.9L170.9,86.9L170.6,81.0L173.3,78.1L171.7,78.0L171.6,69.5L183.4,64.7L186.5,61.8L187.1,54.2L190.5,51.2L195.5,51.3L194.1,48.8L196.7,42.3L198.6,42.8L201.6,39.1L206.6,36.9L207.3,41.2L211.4,41.2L213.5,48.8L215.9,51.1L221.1,46.7L222.3,47.5L220.5,52.6L223.3,53.2L224.2,55.5L228.8,53.2L231.7,54.8L233.1,53.5L235.5,63.7L241.9,64.9L242.3,68.2L246.9,69.5L248.1,72.2L247.2,77.4L240.7,82.0L241.7,83.9L240.3,85.7L242.3,89.0L239.2,92.9L243.7,93.0L241.7,100.9L243.5,102.2L247.3,99.9L255.5,106.4L262.5,106.5L266.8,110.0L259.7,114.7L263.0,117.9L263.3,122.1L261.2,127.9L259.7,128.3L260.4,134.3L258.9,135.3L258.8,143.2L254.5,151.0L249.0,149.5L249.5,155.0L246.4,156.2L247.1,158.1L245.0,157.5L243.3,160.9L236.1,159.7L234.4,163.9L230.0,165.3L230.7,168.2L228.6,170.1L222.1,171.9L221.7,175.6L209.9,167.9L207.2,167.9L206.0,170.8L197.8,171.5L190.9,174.8L190.1,172.0L186.0,170.4L183.9,165.9L181.1,165.5L180.3,164.3L181.6,162.4Z","강원":"M328.5,50.4L343.0,71.6L346.4,74.6L350.2,82.1L364.5,97.5L363.7,101.5L369.3,107.1L369.9,109.2L369.3,111.4L372.1,115.2L371.0,114.6L370.1,115.9L371.7,115.3L375.2,119.4L376.0,123.4L380.8,127.0L381.9,132.8L386.6,137.0L388.9,141.4L387.6,142.4L387.8,147.5L389.5,150.4L382.0,153.4L378.2,157.6L379.3,161.1L375.0,160.8L373.5,158.1L367.8,155.0L364.7,158.5L353.8,155.8L351.6,160.5L347.6,159.8L346.2,157.2L342.2,155.8L339.9,162.2L329.5,156.3L322.6,156.0L319.3,152.4L313.5,154.8L310.2,149.2L306.4,149.2L303.1,151.6L300.5,149.0L303.2,147.8L306.0,143.6L300.8,144.2L295.9,140.1L292.4,143.7L289.2,141.5L287.9,144.4L282.4,146.1L280.6,140.4L276.8,139.4L272.8,142.5L273.2,148.4L261.9,150.6L258.4,144.0L259.7,138.2L258.9,135.3L260.4,134.3L259.7,128.3L261.2,127.9L263.3,122.1L263.0,117.9L259.7,114.7L266.8,109.8L262.5,106.5L255.5,106.4L247.3,99.9L242.6,101.7L241.5,99.9L242.9,98.8L243.5,92.1L239.2,92.6L242.3,89.0L240.3,85.7L241.7,83.9L240.9,81.4L247.2,77.4L247.7,70.9L242.3,68.2L241.9,64.9L235.5,63.7L233.1,53.5L231.7,54.8L228.8,53.2L224.2,55.5L223.3,53.2L220.5,52.6L222.3,47.5L221.1,46.7L215.9,51.1L213.5,48.8L211.4,41.2L207.4,41.3L205.9,36.9L208.9,33.6L210.8,34.6L217.8,31.7L222.4,33.7L229.1,31.3L235.3,32.3L238.4,35.0L245.0,31.4L253.5,32.6L261.5,30.1L264.7,34.6L273.2,34.1L279.3,37.4L280.6,33.6L284.7,34.0L291.9,30.7L302.0,21.4L304.4,13.8L304.1,5.7L308.0,3.6L312.3,9.4L313.2,14.4L316.9,20.0L316.1,21.8L320.4,27.7L324.4,39.2L327.8,43.5L326.2,45.7L327.1,45.8L327.1,44.9L327.7,44.8L328.8,46.9L328.5,50.4Z","충북":"M223.3,192.6L225.7,192.0L225.3,189.8L227.2,188.9L230.9,190.4L232.2,188.9L230.2,186.8L230.6,185.1L225.3,181.9L225.3,179.4L223.1,179.0L223.1,176.5L221.5,175.6L222.1,171.9L228.6,170.1L230.7,168.2L230.0,165.3L234.4,163.9L236.1,159.7L243.3,160.9L245.0,157.5L247.1,158.1L246.4,156.2L249.5,155.0L249.0,149.5L253.9,151.4L258.4,143.5L259.4,147.9L262.1,150.7L268.8,148.6L270.9,150.0L273.7,147.4L272.8,142.5L276.7,139.4L280.6,140.4L282.4,146.1L287.9,144.4L289.2,141.5L292.4,143.7L295.9,140.1L300.8,144.2L306.0,143.6L303.2,147.8L300.5,149.0L303.1,151.6L306.4,149.2L310.2,149.2L313.5,154.8L319.3,152.4L322.6,156.0L329.5,156.3L331.9,158.5L330.3,160.9L328.3,159.7L325.1,161.6L324.0,165.2L314.8,172.3L313.4,177.3L315.4,180.2L313.2,183.8L308.6,184.8L304.7,183.3L298.7,177.8L298.3,180.5L296.2,180.3L296.5,183.8L289.9,181.7L286.4,185.3L283.9,183.3L281.7,190.2L284.8,194.2L275.7,191.3L273.4,195.9L268.9,196.8L273.4,198.1L273.1,204.7L269.4,199.3L266.7,201.6L267.6,203.6L262.8,204.8L263.3,206.9L267.8,208.2L271.5,214.3L269.1,216.2L269.6,222.8L268.0,225.7L270.3,229.0L266.3,234.0L267.1,237.6L269.6,237.6L271.4,234.9L275.9,239.8L281.2,238.2L282.9,239.3L281.5,241.0L283.8,244.9L277.3,245.2L278.9,249.5L276.4,253.2L275.9,258.0L269.1,262.7L266.9,261.0L260.0,263.8L255.0,261.5L253.9,258.7L251.6,261.1L245.9,251.6L246.6,243.2L245.1,241.7L242.3,242.4L241.6,239.9L238.1,241.2L238.7,231.1L240.5,229.6L240.7,226.2L243.5,225.2L240.6,222.7L238.8,224.1L237.8,221.6L239.0,219.8L236.9,219.3L237.4,217.3L234.7,220.1L230.7,219.4L231.0,211.3L229.3,210.8L228.8,208.2L225.6,208.8L222.5,206.4L221.8,201.4L220.5,201.0L222.9,198.2L221.3,195.9L223.3,192.6Z","충남":"M130.2,189.4L128.7,189.6L129.5,191.9L127.0,194.2L128.2,190.2L126.3,187.7L129.1,185.9L130.3,182.4L129.4,180.4L132.2,183.7L131.5,181.8L133.4,179.4L131.7,176.4L137.4,173.6L139.7,175.2L141.0,174.9L140.3,168.7L141.7,167.2L141.6,173.1L144.1,175.9L141.2,179.7L143.0,181.3L140.2,182.5L140.6,185.0L144.6,183.4L143.0,180.7L144.2,178.7L146.8,182.0L146.8,177.3L152.3,174.7L150.0,173.1L151.1,172.7L151.2,171.3L148.8,172.3L144.3,168.9L148.8,168.0L144.1,166.5L143.8,165.0L151.4,163.0L154.1,165.1L157.6,158.5L168.5,164.8L180.5,167.4L183.4,175.4L187.0,177.0L197.8,171.5L206.0,170.8L207.2,167.9L214.6,169.8L215.2,171.9L223.1,176.5L223.1,179.0L225.3,179.4L225.3,181.9L230.6,185.1L230.2,186.8L232.2,188.9L230.9,190.4L225.4,189.7L225.9,191.6L221.3,195.9L211.5,191.6L208.5,194.1L211.3,196.0L210.8,204.4L215.0,207.2L212.3,210.8L212.0,214.1L214.0,216.0L214.3,221.0L218.5,224.3L221.0,223.5L220.8,230.5L218.2,235.9L221.8,238.5L221.0,241.4L223.7,242.9L225.2,246.7L227.7,243.1L228.3,237.8L229.8,238.8L229.5,241.6L233.9,245.5L241.3,239.9L242.3,242.4L245.4,241.9L246.7,244.5L245.9,251.6L249.4,256.9L248.2,260.8L250.0,261.8L247.6,262.5L247.8,265.0L245.9,262.4L241.2,260.9L241.4,265.8L235.2,266.7L233.4,262.1L230.7,264.1L228.7,262.7L225.6,252.0L218.6,253.7L218.3,256.7L214.9,254.9L214.2,256.4L209.5,256.2L208.1,258.6L203.2,256.1L201.8,250.4L194.7,249.3L189.1,251.2L187.3,258.9L177.8,262.4L176.9,265.0L171.2,264.5L171.4,261.9L167.4,257.2L169.6,256.2L169.5,255.6L166.8,255.4L163.4,251.0L162.3,252.2L159.3,249.8L157.8,250.9L158.5,252.1L157.2,251.3L157.2,249.1L159.9,248.1L160.1,241.2L161.7,238.5L159.1,235.1L158.1,232.0L162.6,229.9L158.4,226.4L156.1,226.5L157.4,222.4L160.3,220.9L157.5,221.6L154.8,206.5L146.9,202.3L140.9,206.5L140.2,202.8L141.7,201.2L138.4,195.6L139.9,192.0L136.3,193.2L136.6,194.7L133.2,197.6L129.9,197.2L129.2,194.7L130.7,193.3L134.1,194.5L135.4,193.1L133.4,192.8L134.4,190.9L130.2,189.4ZM147.6,205.3L146.3,207.8L147.7,208.5L147.9,213.1L150.5,215.8L150.2,219.7L152.2,221.3L151.9,225.1L148.9,222.8L146.6,223.4L146.8,220.9L144.0,220.9L144.7,214.5L142.5,206.5L146.4,203.8L147.6,205.3Z","전북":"M194.7,249.3L201.8,250.4L203.2,256.1L208.1,258.6L209.5,256.2L214.2,256.4L214.9,254.9L218.3,256.7L218.6,253.7L225.6,252.0L228.7,262.7L230.7,264.1L233.4,262.1L235.1,266.6L237.7,267.2L241.6,265.5L241.2,260.9L245.9,262.4L247.9,264.9L247.6,262.5L250.0,261.8L248.3,261.1L248.7,258.3L252.0,261.2L254.0,258.7L255.0,261.5L260.0,263.8L266.9,261.0L269.1,262.7L271.9,270.1L269.6,272.1L270.0,273.8L267.7,274.4L266.3,278.4L258.4,280.6L256.4,285.3L251.9,288.6L251.7,294.0L248.4,300.4L249.6,303.2L245.5,309.6L249.1,311.4L251.0,316.3L249.7,319.1L252.7,320.4L247.6,328.3L248.6,330.8L247.1,333.2L244.9,334.1L236.3,328.5L233.1,329.2L229.3,334.8L226.9,332.8L223.3,334.5L219.0,333.8L216.2,331.5L214.7,333.4L213.3,331.3L206.7,335.1L201.7,332.8L203.9,331.0L203.9,328.5L200.4,325.5L202.4,322.3L201.0,318.3L198.2,318.7L195.9,322.2L196.3,325.0L193.0,325.5L189.9,320.2L185.2,318.8L183.9,316.3L183.2,318.1L177.0,320.1L178.3,323.3L175.8,325.0L175.8,328.3L172.8,330.6L171.2,329.9L169.5,333.0L164.6,332.0L164.6,334.9L160.2,334.2L158.8,328.8L157.2,330.0L157.5,327.7L155.9,326.4L157.2,324.1L156.1,322.3L152.1,321.7L156.5,312.8L157.5,314.0L162.6,310.7L165.5,312.0L168.5,307.5L172.0,310.2L170.5,306.3L158.5,307.1L154.5,304.0L154.4,301.2L162.3,295.2L159.4,291.8L156.3,283.5L159.3,291.2L163.4,296.4L168.2,290.1L168.4,285.1L174.5,285.3L171.9,276.1L166.8,276.4L167.3,271.0L165.3,270.2L164.9,274.7L164.3,274.7L163.9,274.7L164.9,272.9L163.0,274.5L163.0,271.4L160.5,271.6L157.6,281.5L153.7,284.3L153.1,282.1L155.8,282.8L157.0,281.2L160.3,271.8L158.8,267.5L176.9,266.4L177.8,262.4L187.5,258.8L189.3,251.0L194.7,249.3Z","경북":"M391.2,262.2L392.5,261.1L394.9,262.0L395.0,262.3L392.0,263.2L394.3,262.8L393.5,264.5L396.5,265.9L400.7,262.4L404.3,256.5L407.2,260.4L407.3,263.3L402.0,272.1L403.2,275.0L402.0,277.6L403.2,278.2L396.4,299.9L388.6,297.1L384.0,300.6L380.7,299.0L380.8,294.9L371.7,292.5L366.3,295.7L365.5,298.8L366.6,300.7L363.8,299.9L358.9,304.1L353.1,300.9L350.1,301.6L347.5,306.0L344.0,306.1L342.7,308.3L336.0,307.2L334.7,305.5L326.4,306.4L322.5,302.6L321.8,293.7L326.1,291.1L328.7,291.1L329.3,294.7L334.4,292.9L335.4,289.4L334.3,286.0L337.2,284.3L337.5,279.3L340.6,278.4L340.6,274.3L338.7,272.0L339.5,267.7L335.4,263.4L329.2,264.4L323.9,268.9L321.9,267.0L322.3,271.5L319.7,276.3L317.0,275.1L317.7,271.6L315.9,270.7L311.4,275.0L310.1,279.7L315.5,280.3L318.2,282.9L317.2,284.4L313.2,284.1L310.1,289.0L314.0,292.4L314.1,294.5L307.6,294.6L311.5,300.4L310.5,303.2L308.6,303.7L307.6,300.5L303.9,299.5L300.3,300.7L298.7,299.5L297.7,301.1L292.2,299.6L292.4,297.7L295.7,296.6L295.5,293.1L292.0,286.6L289.5,286.1L289.1,282.8L284.8,280.9L280.0,282.1L277.6,279.1L273.1,279.4L272.7,275.7L269.8,275.7L269.6,272.1L271.9,270.1L269.0,265.3L269.1,262.7L275.9,258.0L276.4,253.2L278.9,249.5L277.3,245.2L283.8,244.9L281.5,241.0L282.9,239.3L281.2,238.2L275.9,239.8L271.4,234.9L269.6,237.6L267.1,237.6L266.3,234.0L270.3,229.0L268.0,225.7L269.6,222.8L269.1,216.2L271.5,214.3L267.8,208.2L264.9,207.9L262.7,205.0L267.6,203.6L266.7,201.6L269.4,199.3L273.1,204.7L273.4,198.1L268.9,196.8L273.4,195.9L275.7,191.3L284.8,194.2L281.7,190.2L283.9,183.3L286.4,185.3L289.9,181.7L296.5,183.8L296.2,180.3L298.3,180.5L298.7,177.8L304.7,183.3L308.6,184.8L313.2,183.8L315.4,180.2L313.4,177.3L314.8,172.3L328.3,159.7L330.3,160.9L332.0,158.4L340.1,162.2L340.3,158.1L342.2,155.8L346.2,157.2L347.6,159.8L351.6,160.5L353.8,155.8L364.7,158.5L367.8,155.0L373.5,158.1L375.0,160.8L379.3,161.1L378.2,157.6L382.0,153.4L389.5,150.4L390.7,155.1L394.8,159.2L393.1,162.2L393.6,176.0L398.7,188.2L398.4,195.2L393.4,202.8L393.4,206.4L396.7,214.2L390.3,236.2L391.3,243.3L390.2,245.4L391.8,246.9L392.2,251.6L395.6,253.8L393.8,257.6L393.1,257.7L392.5,258.0L392.1,258.7L391.0,258.7L391.0,260.2L390.8,259.9L390.2,259.9L391.2,262.2Z","경남":"M280.9,361.9L279.6,361.7L280.7,360.9L279.9,360.0L280.3,361.0L278.1,360.3L277.2,361.7L278.8,361.2L280.6,364.0L279.8,366.8L278.9,365.4L277.7,367.4L276.2,365.5L274.4,367.1L272.9,363.6L270.8,369.3L266.8,370.3L266.2,368.7L264.2,370.1L264.5,370.8L263.2,371.5L263.4,372.6L263.4,372.6L262.9,372.7L259.6,368.3L261.9,363.9L260.3,360.0L248.6,346.5L248.0,340.0L244.9,335.3L248.4,331.7L247.6,328.4L252.7,320.4L249.7,319.1L251.0,316.3L249.1,311.4L245.5,309.6L249.6,303.2L248.4,300.4L251.7,294.0L251.9,288.6L256.4,285.3L258.4,280.6L266.3,278.4L267.8,274.3L269.8,274.0L270.5,276.3L272.7,275.7L273.1,279.4L277.6,279.1L280.0,282.1L284.8,280.9L289.1,282.8L289.5,286.1L292.0,286.6L295.5,293.1L295.7,296.6L292.4,297.7L292.2,299.6L307.4,300.4L310.0,304.3L315.2,301.2L320.0,301.1L320.2,297.7L322.0,296.7L322.5,302.6L326.4,306.4L334.7,305.5L340.4,308.3L347.5,306.0L350.4,301.5L355.3,301.5L358.6,304.1L361.9,303.7L361.5,306.6L357.7,309.0L359.6,312.2L364.5,311.8L364.3,313.6L368.5,315.4L371.4,320.2L375.9,321.1L377.7,324.1L374.4,329.8L369.6,328.1L370.9,329.9L369.0,334.3L361.1,337.6L359.6,341.6L350.2,344.0L350.0,349.8L349.3,348.2L343.4,349.1L347.3,354.1L344.8,357.2L342.6,357.2L344.0,355.2L343.0,353.7L340.8,354.5L342.6,355.2L340.9,359.0L340.9,357.2L338.6,356.1L339.3,355.0L334.8,354.7L335.0,350.2L333.4,350.8L333.0,353.1L331.5,349.9L328.2,351.2L326.8,345.1L330.3,343.1L326.6,343.9L324.8,346.5L327.4,350.8L325.4,351.7L327.7,351.8L326.5,353.0L329.9,356.7L327.9,357.5L330.5,358.1L325.5,359.6L327.4,358.0L324.6,358.3L326.3,355.9L323.3,355.7L322.6,352.9L321.0,355.2L315.6,354.6L315.4,355.4L317.9,357.2L314.7,357.8L313.7,359.5L308.6,360.3L310.0,361.4L308.9,363.3L310.6,363.3L310.1,361.4L314.6,360.4L317.0,357.4L318.1,359.8L316.3,360.3L319.6,362.9L316.9,366.2L312.1,365.6L315.0,367.2L313.2,377.7L315.2,376.2L314.7,373.7L317.6,376.0L314.3,381.2L313.5,380.6L310.9,382.1L309.0,380.0L313.0,378.5L310.3,378.2L310.7,377.6L309.6,375.9L309.4,378.1L307.4,376.3L307.3,377.7L305.7,377.4L303.2,375.0L307.8,374.2L305.0,368.7L303.4,373.7L301.2,375.0L300.8,371.1L297.1,370.4L295.0,371.3L295.5,375.6L291.8,374.1L289.9,376.2L287.4,375.0L288.9,372.7L285.8,373.3L281.5,369.3L283.2,368.0L283.2,363.4L282.0,362.6L284.1,357.1L281.9,357.3L280.9,361.9ZM333.6,386.3L330.7,388.6L334.2,391.0L333.8,392.1L329.9,391.3L330.7,394.2L325.8,394.7L328.3,391.8L325.7,391.1L327.5,387.3L324.0,388.3L325.1,386.4L323.0,387.5L322.7,386.3L326.4,385.2L326.7,380.3L321.5,381.8L320.4,384.1L317.3,377.8L321.8,372.6L325.1,375.2L325.8,373.2L327.6,373.6L329.6,375.8L326.7,369.7L328.2,368.0L331.6,369.3L332.5,365.2L334.2,366.0L333.1,364.2L334.0,360.9L337.4,363.1L335.2,365.4L337.9,370.4L335.3,377.1L336.5,378.1L337.3,375.5L340.0,375.6L339.3,378.2L337.7,378.5L338.6,380.7L335.9,381.1L337.4,381.2L339.0,386.3L336.5,385.5L336.5,383.8L335.0,385.3L333.6,383.6L333.6,386.3ZM281.8,373.0L279.9,378.3L281.1,378.4L280.9,376.8L282.0,375.3L283.0,375.3L284.5,377.6L283.4,379.7L286.1,382.2L276.6,380.7L276.2,377.9L279.3,373.5L281.8,373.0ZM271.3,378.9L275.4,384.5L278.3,381.8L284.5,383.2L283.2,385.4L283.7,390.4L281.9,392.6L284.0,394.1L280.7,394.8L280.3,392.6L275.6,394.1L275.0,387.2L271.3,388.5L271.5,392.2L267.6,392.2L265.8,389.4L267.6,387.4L263.6,379.7L265.0,374.7L268.0,374.9L267.1,373.4L268.7,370.8L273.1,370.9L273.1,375.8L271.1,376.6L271.3,378.9Z","제주":"M171.3,510.7L184.3,509.1L185.3,511.6L190.6,512.9L190.2,513.2L190.1,514.0L191.2,514.8L190.3,516.8L192.0,519.4L193.0,517.2L193.8,519.0L192.0,520.0L193.1,522.1L191.4,521.6L190.6,525.9L187.8,527.8L184.9,534.1L180.2,534.3L177.4,537.2L170.6,537.6L165.8,541.6L159.5,540.9L155.6,542.7L154.3,540.9L143.8,540.9L141.4,542.7L141.1,545.3L139.3,545.6L130.4,536.3L131.0,530.5L142.6,518.0L157.3,512.9L168.6,511.4L169.5,509.4L171.3,510.7Z","전남광주":"M124.5,423.1L132.7,413.6L132.6,415.4L133.9,415.4L133.3,414.1L135.4,413.3L134.4,412.3L137.6,408.9L136.8,406.3L141.9,407.9L142.8,410.6L144.7,409.8L148.3,414.6L148.4,417.0L146.3,416.9L146.9,420.7L144.5,424.9L143.7,425.5L143.3,423.1L142.7,425.0L141.0,424.2L142.4,426.8L140.6,428.6L140.9,425.8L138.8,425.3L138.9,427.2L131.9,430.1L127.9,429.1L128.7,426.6L126.6,426.9L124.5,423.1ZM142.1,407.6L142.6,406.2L138.3,403.8L141.1,402.0L138.4,400.9L138.0,398.6L140.4,389.3L144.2,391.0L146.3,395.6L148.8,392.0L145.7,389.9L146.0,386.5L147.7,387.9L146.6,390.4L148.2,388.1L153.6,386.7L152.9,385.1L148.2,387.1L145.6,385.4L150.7,380.6L149.7,377.0L148.6,377.2L150.1,373.9L147.5,365.3L147.0,373.0L142.1,372.2L143.2,370.6L141.2,368.4L142.7,366.2L143.8,368.3L145.2,367.7L146.3,365.8L144.2,365.6L148.9,361.7L148.1,360.1L145.8,361.1L143.3,356.1L142.0,360.5L140.4,358.8L138.4,359.7L139.5,361.6L137.5,363.8L135.7,363.0L136.1,359.7L130.4,358.3L130.0,355.9L132.7,353.7L137.6,355.3L138.5,350.5L143.2,352.2L145.3,349.0L144.2,355.6L145.9,355.0L145.2,357.3L146.9,357.2L147.2,358.8L149.0,356.4L148.4,358.3L150.4,358.8L149.0,360.7L151.8,362.1L151.3,360.6L154.2,357.6L152.6,356.4L154.9,354.9L151.4,354.3L146.4,348.1L147.8,343.9L144.7,345.9L141.3,342.7L142.5,339.7L143.9,340.6L144.0,337.0L147.3,335.6L149.4,328.1L151.3,328.4L149.8,325.5L150.5,321.7L155.8,322.1L157.2,324.1L156.2,326.3L157.1,329.8L158.8,328.8L159.7,333.6L164.6,334.8L164.6,332.0L169.4,332.9L171.2,329.9L175.8,328.3L175.8,325.0L178.3,323.2L177.0,320.1L183.1,318.1L183.9,316.3L189.9,320.2L193.0,325.5L196.2,325.0L195.9,322.2L198.2,318.7L201.0,318.3L202.4,322.3L200.4,325.5L203.9,328.5L203.9,331.0L201.7,332.9L206.7,335.1L213.3,331.3L214.7,333.4L216.2,331.5L219.0,333.8L223.3,334.5L226.9,332.8L229.3,334.7L233.6,328.7L238.7,329.1L244.9,334.1L248.0,340.0L248.6,346.5L253.9,351.5L254.6,354.8L261.8,363.2L259.1,369.0L261.7,373.4L261.7,376.3L255.2,373.7L255.0,371.8L254.5,373.1L252.6,371.9L252.5,374.7L249.9,376.6L247.8,373.1L245.3,372.9L247.8,375.5L245.9,377.6L249.7,380.3L249.6,382.1L254.4,378.5L260.9,379.0L260.4,384.7L258.5,387.3L258.8,391.6L261.9,393.4L261.0,396.9L263.5,398.9L262.0,404.3L263.2,406.3L258.8,405.7L255.8,402.9L256.8,401.3L255.8,400.7L259.9,396.4L258.1,391.3L254.7,392.9L251.6,389.4L250.2,394.4L248.8,393.2L247.9,394.4L249.9,396.7L248.9,397.2L250.5,402.1L245.8,399.8L244.9,401.7L242.8,398.7L243.8,397.4L242.6,393.7L246.3,390.1L243.5,387.3L243.3,384.3L240.5,384.0L242.0,381.0L239.9,377.6L237.9,377.5L237.5,380.8L227.7,381.6L232.7,383.5L230.1,385.4L229.4,387.4L230.8,388.3L228.4,390.9L234.4,398.7L237.8,400.1L235.3,400.4L238.4,401.8L239.3,405.7L237.6,407.6L235.4,405.9L234.2,407.3L230.6,406.0L230.3,409.0L233.6,410.0L232.8,413.0L236.7,410.8L235.3,412.3L236.7,413.6L235.3,413.7L239.2,415.8L235.3,417.4L237.8,419.1L239.0,417.7L241.7,420.3L241.1,422.8L237.9,423.8L238.1,421.8L235.7,420.6L237.4,420.2L234.7,420.3L234.4,413.3L231.2,413.1L229.0,414.7L229.5,416.7L225.2,417.1L224.1,418.3L225.7,420.2L224.2,420.8L219.9,416.7L221.1,415.1L218.8,412.9L208.0,412.0L207.4,409.0L210.3,405.0L212.1,405.6L214.1,399.9L216.6,399.5L218.5,393.8L220.9,393.2L220.7,397.6L223.7,398.5L226.0,394.0L224.5,389.8L219.6,391.8L216.8,389.2L213.1,395.5L208.3,394.9L202.0,401.4L197.0,402.3L198.9,404.2L196.6,407.6L198.8,408.0L195.3,415.4L196.5,417.9L193.5,416.8L193.3,420.3L187.9,419.4L188.9,422.8L182.5,418.2L181.1,418.9L181.6,408.3L180.1,404.2L179.3,415.1L177.1,416.4L178.4,417.8L172.1,423.4L171.0,422.3L167.3,424.7L166.3,433.5L162.5,432.8L159.8,435.8L159.4,428.9L155.8,430.2L154.9,428.8L156.2,429.2L155.5,426.5L157.5,426.4L156.7,424.2L159.1,423.5L158.4,421.0L156.3,422.4L154.2,420.2L155.9,420.0L154.2,417.3L155.4,414.2L153.1,412.8L154.4,411.7L152.4,411.5L152.0,409.5L148.6,411.8L148.3,408.8L142.1,407.6ZM205.7,418.0L208.0,416.0L209.7,417.7L215.7,415.4L217.2,417.4L215.1,422.1L209.7,423.0L206.2,420.7L205.7,418.0ZM178.0,427.0L181.0,421.8L184.8,420.6L185.6,422.9L184.0,423.1L186.1,423.2L187.5,426.0L187.4,423.9L191.3,425.9L194.3,424.6L194.0,428.2L190.8,429.7L186.5,425.8L181.5,426.8L180.4,429.8L179.3,429.0L180.2,426.9L178.0,427.0ZM169.0,426.8L172.7,424.8L175.6,426.3L180.2,436.2L173.0,435.3L169.5,432.1L169.0,426.8ZM158.0,450.3L161.0,446.8L164.8,447.9L161.6,445.9L163.2,442.7L162.1,441.6L167.9,444.5L166.2,445.1L166.9,446.9L164.5,446.6L167.6,448.6L167.2,450.1L165.1,448.8L159.9,452.8L158.0,450.3ZM135.6,380.1L141.8,376.3L140.0,374.0L141.5,372.8L145.7,375.1L142.7,377.0L142.9,378.5L146.2,378.6L147.5,381.7L145.6,383.6L143.8,382.8L145.3,381.4L144.0,379.9L135.6,380.1ZM122.5,388.1L131.4,389.7L131.7,394.4L129.1,394.9L128.4,392.1L123.4,394.1L123.9,389.9L122.5,388.1ZM122.4,359.5L120.4,357.9L121.9,358.0L120.7,356.5L121.5,354.6L123.8,354.2L126.5,350.7L130.6,350.4L127.4,351.5L127.2,357.3L125.5,360.2L123.3,358.1L122.4,359.5ZM118.1,402.2L120.5,402.0L120.0,403.9L122.5,406.7L120.9,408.4L122.4,409.0L123.9,406.8L121.1,404.0L121.4,402.1L125.4,404.2L125.5,409.7L119.8,411.9L122.0,409.6L119.5,409.7L120.5,407.8L118.9,408.6L118.1,402.2ZM114.6,377.6L116.5,377.3L118.4,373.8L121.7,373.8L121.9,371.1L125.3,374.0L124.1,375.4L125.0,377.3L121.1,380.5L119.1,378.1L114.6,377.6ZM110.4,395.3L114.2,391.3L118.4,394.9L114.5,399.4L110.9,397.9L110.4,395.3ZM108.1,391.0L109.2,387.0L112.3,387.3L117.1,384.5L117.2,388.8L112.4,389.5L112.4,392.8L110.3,393.2L108.1,391.0Z"},"cent":{"서울":[193.3,108.6],"부산":[366.8,342.9],"대구":[326.4,283.7],"인천":[155.8,116.9],"대전":[228.9,233.5],"울산":[377.6,312.9],"세종":[219.4,207.7],"경기":[231.3,106.2],"강원":[296.2,83.0],"충북":[244.3,201.5],"충남":[187.3,212.6],"전북":[208.9,292.9],"경북":[330.0,231.5],"경남":[312.8,326.1],"제주":[161.8,526.8],"전남광주":[198.3,375.9]}};
+const RNAME = { '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시', '인천': '인천광역시', '대전': '대전광역시', '울산': '울산광역시', '세종': '세종시', '경기': '경기도',
+  '강원': '강원도', '충북': '충청북도', '충남': '충청남도', '전북': '전라북도', '전남광주': '전남·광주', '경북': '경상북도', '경남': '경상남도', '제주': '제주도' };
+const SHORT = { '전남광주': '전남·광주' };
+const LBL = { '인천': null, '서울': [195, 108], '경기': [228, 78], '세종': null, '대전': [229, 238], '부산': [366, 345], '울산': [381, 312], '대구': [326, 286] };
+const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁은 지역은 이름만 (숫자는 눌렀을 때)
+let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
+const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
+// 매장 수에 따라 크림 → 주황 (반투명), 옆면은 같은 색을 어둡게
+const RAMP = ['#f3efe3', '#fff0b8', '#ffd36b', '#ffa94d', '#ff7a2e', '#d94a12'];
+const SIDE = ['#cfc6b0', '#d9c27a', '#c9a038', '#c27a2c', '#b5521c', '#8f300b'];
+const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
+function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
+function zoom(f, cx, cy) {
+  const [x, y, w, h] = VB, nw = Math.min(412, Math.max(80, w * f)), nh = nw * 470 / 412;
+  cx = cx ?? x + w / 2; cy = cy ?? y + h / 2;
+  setVB([Math.max(-40, Math.min(452 - nw, cx - nw / 2)), Math.max(-40, Math.min(510 - nh, cy - nh / 2)), nw, nh]);
+}
+function mapSelect(k, r) {
+  if (!RADAR || !RADAR.shops[k]) return;
+  mapK = k; mapR = r;
+  document.querySelectorAll('#rd-tiles .tile').forEach(t => t.classList.toggle('on', t.dataset.k === k));
+  const regs = RADAR.shops[k].regions || {}, mx = Math.max(1, ...Object.values(regs).map(x => x.alive));
+  const rank = Object.entries(regs).sort((a, b) => b[1].alive - a[1].alive);
+  const svg = document.getElementById('kmap'), tip = document.getElementById('map-tip');
+  document.getElementById('ms-title').textContent = `전국 · ${k}`;
+  const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
+  const DEPTH = 12;   // 두께(층 수)
+  const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 3 ? '#b8662e' : '#e39a5c'}" fill-opacity="${i < 3 ? .5 : .32}"></use>`).join('');
+  const selD = r && KOREA.paths[r];
+  const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
+  svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+      <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
+    <g class="ground"><use href="#land" transform="translate(0,${OY + 52}) scale(1,${SY})" fill="#7a4a24" opacity=".22" filter="url(#soft)"></use></g>
+    <g class="float"><g transform="${T}">${layers}
+      <g class="edge"><use href="#land" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.4" filter="url(#glow)"></use></g>
+      <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
+      ${selD ? `<g class="selside">${Array.from({ length: 8 }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SIDE[step((regs[r] || {}).alive || 0, mx)]}" fill-opacity=".9"></path>`).join('')}
+        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,-9)" fill="${RAMP[step((regs[r] || {}).alive || 0, mx)]}"></path></g>` : ''}
+    </g><g class="lbls">` +
+    Object.entries(KOREA.cent).map(([n, xy]) => {
+      const p0 = n in LBL ? LBL[n] : xy; if (!p0) return '';
+      const [x, y] = P2(p0[0], p0[1] - (n === r ? 12 : 0));
+      const v = (regs[n] || {}).alive || 0, i = rank.findIndex(e => e[0] === n) + 1, nm = SHORT[n] || n;
+      if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
+        <rect x="${x - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x}" y="${y - 31}">${nm} ${v}곳</text></g>`;
+      return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${x}" y="${y + 12}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g></g>';
+  svg.querySelectorAll('path.top').forEach(p => {
+    p.addEventListener('click', e => { e.stopPropagation(); if (!dragged) mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r); });
+    p.addEventListener('mousemove', e => { const b = svg.parentNode.getBoundingClientRect(), x = regs[p.dataset.r] || { alive: 0, o30: 0, c30: 0 };
+      tip.hidden = false; tip.style.left = (e.clientX - b.left) + 'px'; tip.style.top = (e.clientY - b.top) + 'px';
+      tip.textContent = `${RNAME[p.dataset.r]} · ${x.alive}곳 (30일 +${x.o30} / −${x.c30})`; });
+    p.addEventListener('mouseleave', () => { tip.hidden = true; });
+  });
+  const top3 = rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => SHORT[e[0]] || e[0]);
+  document.getElementById('ms-foot').innerHTML = `<span><b>TOP 3</b>${top3.join(' · ')}에 ${esc(k)} 매장이 가장 많아요.</span><span>${RADAR.data_date} 인허가 데이터 기준</span>`;
+  document.getElementById('ms-list').innerHTML = `<ol>${rank.map(([n, x], i) => `<li data-r="${n}">${i + 1}. ${RNAME[n]}<span>${x.alive}곳 · +${x.o30}/−${x.c30}</span></li>`).join('')}</ol>`;
+  document.querySelectorAll('#ms-list li').forEach(li => li.addEventListener('click', () => mapSelect(mapK, li.dataset.r)));
+  const P = document.getElementById('map-panel');
+  if (!r) { P.hidden = true; return; }
+  const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] }, i = rank.findIndex(e => e[0] === r) + 1;
+  const share = RADAR.shops[k].open_now ? Math.round(x.alive / RADAR.shops[k].open_now * 100) : 0;
+  const net = x.o90 - x.c90;
+  const list = xs => xs.length ? `<ul>${xs.map(([n, d]) => `<li>${esc(n)}<span>${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
+  P.innerHTML = `<button class="x" type="button" aria-label="닫기">×</button>
+    <p class="mp-rank">영업 중 매장 ${x.alive ? i + '위' : '없음'}</p><h6>${RNAME[r]}</h6><p class="lbl">${esc(k)} 영업 중 매장</p>
+    <div class="big">${x.alive}<small>곳</small></div>
+    <ul class="pts"><li>전국 ${esc(k)} 매장의 ${share}%가 이 지역에 있어요.</li>
+      <li>최근 90일 ${net > 0 ? `연 곳이 ${net}곳 더 많아 늘고 있어요.` : net < 0 ? `닫은 곳이 ${-net}곳 더 많아 줄고 있어요.` : '연 곳과 닫은 곳이 같아요.'}</li></ul>
+    <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업</div><div><b class="dn">−${x.c30}</b>30일 폐업</div>
+      <div><b class="up">+${x.o90}</b>90일 개업</div><div><b class="dn">−${x.c90}</b>90일 폐업</div></div>
+    <details open><summary>최근 개업 가게</summary>${list(x.open)}</details>
+    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>`;
+  P.hidden = false;
+  P.querySelector('.x').addEventListener('click', () => mapSelect(mapK, null));
+  if (innerWidth <= 760) P.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+// 확대·축소·끌기
+let dragged = false;
+(() => {
+  const svg = document.getElementById('kmap');
+  document.querySelectorAll('.ms-ctrl button').forEach(b => b.addEventListener('click', () => {
+    const z = b.dataset.z;
+    if (z === 'in') { const c = mapR && KOREA.cent[mapR] && P2(...KOREA.cent[mapR]); zoom(0.7, c ? c[0] : undefined, c ? c[1] : undefined); }
+    else if (z === 'out') zoom(1 / 0.7);
+    else if (z === 'fit') setVB([0, 0, 412, 470]);
+    else { const L = document.getElementById('ms-list'); L.hidden = !L.hidden; b.classList.toggle('on', !L.hidden); }
+  }));
+  svg.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault();
+    const b = svg.getBoundingClientRect(), s = VB[2] / b.width; zoom(e.deltaY < 0 ? 0.85 : 1 / 0.85, VB[0] + (e.clientX - b.left) * s, VB[1] + (e.clientY - b.top) * s); }, { passive: false });
+  let st = null;
+  svg.addEventListener('pointerdown', e => { st = { x: e.clientX, y: e.clientY, vb: VB.slice() }; dragged = false; });
+  addEventListener('pointermove', e => { if (!st || VB[2] >= 412) return; const s = VB[2] / svg.getBoundingClientRect().width, dx = (e.clientX - st.x) * s, dy = (e.clientY - st.y) * s;
+    if (Math.abs(dx) + Math.abs(dy) > 3) dragged = true;
+    if (dragged) setVB([st.vb[0] - dx, st.vb[1] - dy, VB[2], VB[3]]); });
+  addEventListener('pointerup', () => { st = null; setTimeout(() => { dragged = false; }, 0); });
+  svg.addEventListener('click', () => { if (!dragged) mapSelect(mapK, null); });
+})();
+
+
+/* ---------- 앱 구조: 3단계 흐름 · 화면 전환 · 사이드바 ---------- */
+const PICKS = [
+  ['과일모찌', '🍡', '#ffe3ea', '요즘 역대 최고로 찾는 떡 디저트'],
+  ['두바이 초콜릿', '🍫', '#f1e2d2', '한 번에 터졌다 식은 유행'],
+  ['흑임자', '⚫', '#ecebe6', '몇 년째 천천히 오르는 맛'],
+  ['소금빵', '🥐', '#fff0c4', '정규 메뉴로 자리 잡은 빵'],
+];
+const GOALS = [
+  ['기간 한정', '⏳', '#ffe6d6', '유행이 뜨거울 때 4~8주만 팔기'],
+  ['정규 메뉴', '⭐', '#fff0b8', '오래 팔 대표 메뉴로 키우기'],
+  ['SNS 인증용', '📸', '#e7eefc', '사진 찍고 싶은 비주얼 메뉴'],
+  ['시즌 메뉴', '🍂', '#f3e6d4', '대목 달에 맞춰 매년 내기'],
+];
+const GOAL_OF = { '진행중': '기간 한정', '정착형': '정규 메뉴', '시즌형': '시즌 메뉴', '유행형': 'SNS 인증용', '관망형': 'SNS 인증용' };
+let STEP = 1, REACHED = 1, MADE = false, GOAL = null, GOAL_K = null;
+const ro = w => { const c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return '로'; const t = (c - 0xAC00) % 28; return t && t !== 8 ? '으로' : '로'; };
+const storeName = () => ((loadProfile() || {}).name || '').trim();
+const card = (cls, key, emo, bg, title, sub, on, badge) => `<button type="button" class="${cls}${on ? ' on' : ''}" data-k="${key}" aria-pressed="${on}">
+  <span class="art" style="background:${bg}">${emo}</span><span class="pk-t">${title}${badge ? `<em>${badge}</em>` : ''}</span><span class="pk-s">${sub}</span><span class="pk-c">${on ? '✓' : '↗'}</span></button>`;
+function renderPicks() {
+  document.getElementById('picks').innerHTML = PICKS.map(([k, e, bg, s]) => card('pick', k, e, bg, k, s, k === current, D.kw[k] && D.kw[k].type)).join('');
+  document.querySelectorAll('#picks .pick').forEach(b => b.onclick = () => select(b.dataset.k));
+  document.getElementById('pick-note').textContent = current ? `'${current}' 선택됨` : '하나를 고르면 다음으로 갈 수 있어요.';
+  document.querySelector('[data-panel="1"] [data-go="2"]').disabled = !current;
+}
+function renderGoals() {
+  if (!current) return;
+  const rec = GOAL_OF[entry(current).v.type] || '기간 한정';
+  if (GOAL_K !== current) { GOAL = rec; GOAL_K = current; }
+  document.getElementById('goals').innerHTML = GOALS.map(([g, e, bg, s]) => card('pick goal', g, e, bg, g, s, g === GOAL, g === rec ? '추천' : '')).join('');
+  document.querySelectorAll('#goals .goal').forEach(b => b.onclick = () => { GOAL = b.dataset.k; renderGoals(); });
+}
+function renderSide() {
+  const el = document.getElementById('sel-sum');
+  if (!current) { el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>'; return; }
+  const E = entry(current), v = E.v;
+  el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
+    <div class="ss-g"><div><b>${v.now}%</b>피크 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>전년 대비</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
+  const p = loadProfile();
+  document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
+  const n = storeName();
+  document.getElementById('store-name').textContent = n || '내 가게';
+  document.getElementById('store-ini').textContent = (n || '내').slice(0, 1);
+}
+function renderProg() {
+  const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: false };
+  const act = MADE ? 4 : STEP;
+  document.querySelectorAll('#prog li').forEach(li => { const p = +li.dataset.p;
+    li.className = done[p] ? 'done' : (p === act ? 'act' : ''); li.querySelector('i').textContent = done[p] ? '✓' : p; });
+  document.querySelectorAll('#stepper button').forEach(b => { const s = +b.dataset.step;
+    b.className = s === STEP ? 'act' : (s < REACHED || (s === 1 && current) ? 'done' : ''); b.querySelector('i').textContent = (s !== STEP && (s < REACHED)) ? '✓' : s;
+    b.disabled = s > REACHED + (current ? 1 : 0) || (s > 1 && !current); });
+}
+function head() {
+  const k = current || '', n = storeName();
+  const H = { 1: ['1단계 · 디저트 고르기', `${n ? n + ', ' : ''}어떤 디저트로 다음 메뉴를 만들어볼까요?`, '네이버 10년치 검색량과 전국 매장 인허가 72만 건으로 유행 타이밍을 알려드려요.'],
+              2: ['2단계 · 타이밍 진단', `${k}, 지금 출시해도 될까요?`, '검색량 흐름과 전국 매장 수로 유행 단계를 판단했어요.'],
+              3: ['3단계 · 메뉴 만들기', `${n || '우리 가게'}, ${k}${ro(k)} 메뉴를 만들어볼까요?`, '목적만 골라 주세요. 등록한 가게 정보와 원가표 단가는 그대로 활용해요.'] }[STEP];
+  document.getElementById('ph-tag').textContent = H[0]; document.getElementById('ph-title').textContent = H[1]; document.getElementById('ph-sub').textContent = H[2];
+}
+function goStep(n) {
+  if (n > 1 && !current) return;
+  STEP = n; REACHED = Math.max(REACHED, n);
+  document.querySelectorAll('.step').forEach(s => s.hidden = +s.dataset.panel !== n);
+  if (n === 3) renderGoals();
+  head(); renderProg();
+  requestAnimationFrame(() => Object.values(Chart.instances).forEach(c => c.resize()));
+  document.getElementById('ph-tag').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function setView(v) {
+  document.getElementById('view-flow').hidden = v !== 'flow';
+  document.getElementById('radar').hidden = v !== 'radar';
+  document.querySelectorAll('nav [data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
+  scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setView('flow'); goStep(+b.dataset.go); }));
+document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListener('click', () => goStep(+b.dataset.step)));
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
+document.getElementById('store-chip').onclick = () => { setView('flow'); if (current) { goStep(3); document.getElementById('profile').open = true; } };
+document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
+const __select = select;
+select = k => { __select(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
+renderPicks(); renderSide(); renderProg(); head();
+
+/* ---------- 이번 주 레이더 (live/live.json, 매주 자동 갱신) ---------- */
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function renderRadar(L) {
+  document.getElementById('rd-sub').textContent = `기준일 ${L.data_date} · ${L.updated} 자동 업데이트 · 전국 휴게음식점·제과점 인허가 데이터`;
+  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'].map(k => {
+    const s = L.shops[k]; if (!s) return '';
+    return `<button type="button" class="tile" data-k="${k}"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></button>`;
+  }).join('');
+  RADAR = L;
+  { const al = L.radar.filter(i => i.level === 'alert'), wt = L.radar.filter(i => i.level === 'watch');
+    document.getElementById('nt-title').textContent = `이번 주 레이더 · 경보 ${al.length}개 · 관찰 ${wt.length}개`;
+    document.getElementById('nt-body').textContent = `기준일 ${L.data_date} · 새로 늘어나는 가게 이름: ${(al.length ? al : wt).slice(0, 4).map(i => i.word).join(', ') || '없음'} · 지도에서 지역별 개업·폐업을 확인해 보세요.`; }
+  document.querySelectorAll('#rd-tiles .tile').forEach(t => t.addEventListener('click', () => mapSelect(t.dataset.k, null)));
+  mapSelect(mapK, mapR);
+  const group = (lv, title) => {
+    const xs = L.radar.filter(i => i.level === lv); if (!xs.length) return '';
+    return `<p class="rd-group">${title}</p>` + xs.map(i => `<div class="rd-item"><span class="w">${esc(i.word)}</span>
+      <span class="kb ${i.kind === 'menu' ? 'km' : 'kbr'}">${i.kind === 'menu' ? '메뉴' : '브랜드'}</span>
+      <span class="m">최근 3개월 ${i.recent}곳 개업 · 이전 대비 ${i.growth}배 · ${i.spread}개 시군구</span>
+      <div class="ex">예: ${i.examples.map(esc).join(', ')}</div></div>`).join('');
+  };
+  const html = group('alert', '🔔 경보 (기준을 모두 넘은 단어)') + group('watch', '👀 관찰 목록 (기준에 가까운 단어)');
+  document.getElementById('rd-list').innerHTML = html || '<p class="note">이번 주에는 새로 늘어나는 단어가 없어요.</p>';
+  // 진단 카드의 매장 숫자를 최신값으로
+  Object.entries(L.shops).forEach(([k, v]) => { if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
+  if (current) select(current);
+}
+fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(renderRadar)
+  .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
