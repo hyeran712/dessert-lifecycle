@@ -324,18 +324,24 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-chips i{width:8px;height:8px;border-radius:50%;display:inline-block}
 .ms-chips .c1{background:#ff7a2e}.ms-chips .c2{background:#ffe9a8}
 .map-wrap{position:relative;max-width:520px;margin:4px auto 0 max(0px,calc(50% - 400px));overflow:hidden;touch-action:none}
-#kmap{width:100%;height:auto;display:block;transform:perspective(1400px) rotateX(16deg);transform-origin:50% 60%;overflow:visible}
-#kmap .sides{transform:translateY(6px);opacity:.45}
-#kmap .sides path{stroke:none}
-#kmap .tops{filter:drop-shadow(0 10px 12px rgba(150,70,20,.18))}
-#kmap path.top{fill-opacity:.62;stroke:rgba(255,255,255,.9);stroke-width:1.1;stroke-linejoin:round;cursor:pointer;transition:transform .25s,fill-opacity .2s;transform-box:fill-box;transform-origin:center}
-#kmap path.top:hover{fill-opacity:.9;transform:translateY(-2px)}
-#kmap path.top.sel{fill-opacity:.95;stroke:#fff;stroke-width:2.2;transform:translateY(-7px);filter:drop-shadow(0 8px 6px rgba(120,50,10,.35))}
+#kmap{width:100%;height:auto;display:block;overflow:visible}
+#kmap .float{animation:mfloat 5s ease-in-out infinite}
+#kmap .ground{animation:mshadow 5s ease-in-out infinite;transform-origin:206px 360px}
+@keyframes mfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes mshadow{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.96);opacity:.75}}
+@media (prefers-reduced-motion:reduce){#kmap .float,#kmap .ground{animation:none}}
+#kmap path.top{fill-opacity:.6;stroke:rgba(255,255,255,.85);stroke-width:.9;stroke-linejoin:round;cursor:pointer;transition:fill-opacity .2s}
+#kmap path.top:hover{fill-opacity:.85}
+#kmap .tops path.sel{fill-opacity:.15}
+#kmap .selside path.top{fill-opacity:.95;stroke:#fff;stroke-width:2;filter:drop-shadow(0 4px 4px rgba(120,50,10,.3))}
 #kmap text{pointer-events:none;text-anchor:middle;font-family:"Noto Sans KR";paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:2.6px}
 #kmap .nm{font-size:10px;font-weight:700;fill:#3a2616}
 #kmap .ct{font-size:8.5px;font-weight:500;fill:#7a5a40}
-#kmap .lbls g{transition:transform .25s}
-#kmap .sel-t{transform:translateY(-7px)}
+#kmap .lbls{pointer-events:none}
+#kmap .pin line{stroke:#d94a12;stroke-width:1.3}
+#kmap .pin circle{fill:#fff;stroke:#d94a12;stroke-width:1.5}
+#kmap .pin rect{fill:rgba(255,255,255,.88);stroke:#ff7a2e;stroke-width:1.2;filter:drop-shadow(0 3px 5px rgba(150,70,20,.25))}
+#kmap .pt{font-size:9.5px;font-weight:700;fill:#b33e0c;stroke:none}
 .map-tip{position:absolute;pointer-events:none;background:rgba(38,48,44,.88);color:#fff;font-size:12px;padding:5px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-130%);z-index:3}
 .map-panel{position:absolute;z-index:5;right:20px;top:120px;width:280px;max-height:calc(100% - 200px);overflow:auto;
   background:rgba(255,255,255,.62);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
@@ -461,7 +467,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
             <div class="ms-chips"><span><i class="c1"></i>매장 많음</span><span><i class="c2"></i>매장 적음</span></div>
           </div>
           <div class="map-wrap">
-            <svg id="kmap" viewBox="0 0 412 550" role="img" aria-label="시도별 영업 중 매장 지도"></svg>
+            <svg id="kmap" viewBox="0 0 412 470" role="img" aria-label="시도별 영업 중 매장 지도"></svg>
             <div class="map-tip" id="map-tip" hidden></div>
           </div>
           <div class="map-panel" id="map-panel" hidden></div>
@@ -1219,16 +1225,17 @@ const RNAME = { '서울': '서울특별시', '부산': '부산광역시', '대�
 const SHORT = { '전남광주': '전남·광주' };
 const LBL = { '인천': null, '서울': [195, 108], '경기': [228, 78], '세종': null, '대전': [229, 238], '부산': [366, 345], '울산': [381, 312], '대구': [326, 286] };
 const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁은 지역은 이름만 (숫자는 눌렀을 때)
-let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 550];
+let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
+const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 매장 수에 따라 크림 → 주황 (반투명), 옆면은 같은 색을 어둡게
 const RAMP = ['#f3efe3', '#fff0b8', '#ffd36b', '#ffa94d', '#ff7a2e', '#d94a12'];
 const SIDE = ['#cfc6b0', '#d9c27a', '#c9a038', '#c27a2c', '#b5521c', '#8f300b'];
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
-  const [x, y, w, h] = VB, nw = Math.min(412, Math.max(80, w * f)), nh = nw * 550 / 412;
+  const [x, y, w, h] = VB, nw = Math.min(412, Math.max(80, w * f)), nh = nw * 470 / 412;
   cx = cx ?? x + w / 2; cy = cy ?? y + h / 2;
-  setVB([Math.max(-40, Math.min(452 - nw, cx - nw / 2)), Math.max(-40, Math.min(590 - nh, cy - nh / 2)), nw, nh]);
+  setVB([Math.max(-40, Math.min(452 - nw, cx - nw / 2)), Math.max(-40, Math.min(510 - nh, cy - nh / 2)), nw, nh]);
 }
 function mapSelect(k, r) {
   if (!RADAR || !RADAR.shops[k]) return;
@@ -1238,15 +1245,28 @@ function mapSelect(k, r) {
   const rank = Object.entries(regs).sort((a, b) => b[1].alive - a[1].alive);
   const svg = document.getElementById('kmap'), tip = document.getElementById('map-tip');
   document.getElementById('ms-title').textContent = `전국 · ${k}`;
-  const ent = Object.entries(KOREA.paths);
-  svg.innerHTML = `<g class="sides">${ent.map(([n, d]) => `<path d="${d}" fill="${SIDE[step((regs[n] || {}).alive || 0, mx)]}"></path>`).join('')}</g>` +
-    `<g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g><g class="lbls">` +
+  const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
+  const DEPTH = 12;   // 두께(층 수)
+  const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 3 ? '#b8662e' : '#e39a5c'}" fill-opacity="${i < 3 ? .5 : .32}"></use>`).join('');
+  const selD = r && KOREA.paths[r];
+  const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
+  svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+      <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
+    <g class="ground"><use href="#land" transform="translate(0,${OY + 52}) scale(1,${SY})" fill="#7a4a24" opacity=".22" filter="url(#soft)"></use></g>
+    <g class="float"><g transform="${T}">${layers}
+      <g class="edge"><use href="#land" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.4" filter="url(#glow)"></use></g>
+      <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
+      ${selD ? `<g class="selside">${Array.from({ length: 8 }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SIDE[step((regs[r] || {}).alive || 0, mx)]}" fill-opacity=".9"></path>`).join('')}
+        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,-9)" fill="${RAMP[step((regs[r] || {}).alive || 0, mx)]}"></path></g>` : ''}
+    </g><g class="lbls">` +
     Object.entries(KOREA.cent).map(([n, xy]) => {
-      const p = n in LBL ? LBL[n] : xy; if (!p) return '';
-      const v = (regs[n] || {}).alive || 0, i = rank.findIndex(e => e[0] === n) + 1;
-      const nm = SHORT[n] || n;
-      return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${p[0]}" y="${p[1]}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${p[0]}" y="${p[1] + 10}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g>';
-  if (r) { const t = svg.querySelector(`path.top[data-r="${r}"]`); t.parentNode.appendChild(t); }
+      const p0 = n in LBL ? LBL[n] : xy; if (!p0) return '';
+      const [x, y] = P2(p0[0], p0[1] - (n === r ? 12 : 0));
+      const v = (regs[n] || {}).alive || 0, i = rank.findIndex(e => e[0] === n) + 1, nm = SHORT[n] || n;
+      if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
+        <rect x="${x - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x}" y="${y - 31}">${nm} ${v}곳</text></g>`;
+      return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${x}" y="${y + 12}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g></g>';
   svg.querySelectorAll('path.top').forEach(p => {
     p.addEventListener('click', e => { e.stopPropagation(); if (!dragged) mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r); });
     p.addEventListener('mousemove', e => { const b = svg.parentNode.getBoundingClientRect(), x = regs[p.dataset.r] || { alive: 0, o30: 0, c30: 0 };
@@ -1283,9 +1303,9 @@ let dragged = false;
   const svg = document.getElementById('kmap');
   document.querySelectorAll('.ms-ctrl button').forEach(b => b.addEventListener('click', () => {
     const z = b.dataset.z;
-    if (z === 'in') { const c = mapR && KOREA.cent[mapR]; zoom(0.7, c ? c[0] : undefined, c ? c[1] : undefined); }
+    if (z === 'in') { const c = mapR && KOREA.cent[mapR] && P2(...KOREA.cent[mapR]); zoom(0.7, c ? c[0] : undefined, c ? c[1] : undefined); }
     else if (z === 'out') zoom(1 / 0.7);
-    else if (z === 'fit') setVB([0, 0, 412, 550]);
+    else if (z === 'fit') setVB([0, 0, 412, 470]);
     else { const L = document.getElementById('ms-list'); L.hidden = !L.hidden; b.classList.toggle('on', !L.hidden); }
   }));
   svg.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault();
