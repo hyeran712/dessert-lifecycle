@@ -162,6 +162,39 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .qform button{font:inherit;font-weight:900;font-size:15px;padding:0 18px;border:3px solid var(--ink);border-radius:12px;background:var(--teal);color:#fff;cursor:pointer;box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
 .qform button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 #q-msg{margin:4px 0 14px;min-height:1em}
+/* 유행 수명 막대 */
+.life{display:grid;gap:14px;margin-top:6px}
+.life-row{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center}
+.life-name{font-weight:900;font-size:14px;line-height:1.3}
+.life-name small{display:block;font-weight:500;color:var(--ink-3);font-size:12px}
+.life-track{display:flex;height:38px;align-items:stretch;min-width:0}
+.seg-up,.seg-dn{display:flex;align-items:center;padding:0 8px;font-weight:900;font-size:13px;white-space:nowrap;border:2px solid var(--ink);min-width:58px}
+.seg-up{background:var(--teal);color:#fff;border-radius:10px 0 0 10px}
+.seg-dn{background:#fff;color:var(--ink);border-left:0;border-radius:0 10px 10px 0}
+.seg-na{background:repeating-linear-gradient(45deg,#fff,#fff 6px,#f1ead2 6px,#f1ead2 12px)}
+.life-row.me .life-name{color:var(--teal-d)}
+.life-row.me .life-track{filter:drop-shadow(3px 3px 0 var(--ink))}
+/* 순위 막대 */
+.rank{display:grid;gap:5px;margin-top:10px}
+.rk{display:grid;grid-template-columns:28px 120px 1fr 64px;gap:8px;align-items:center;font-size:13.5px}
+.rk .no{font-weight:900;color:var(--ink-3);text-align:right}
+.rk .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk .bar{height:18px;border-radius:0 6px 6px 0;border:2px solid var(--ink);min-width:4px}
+.rk .pc{font-weight:900;text-align:right}
+.rk.me{background:var(--pop-y);border-radius:8px;outline:2px solid var(--ink)}
+/* 디저트 달력 */
+.cal{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+.mo{border:2px solid var(--ink);border-radius:12px;padding:10px 8px;text-align:center;position:relative;min-height:74px}
+.mo b{display:block;font-size:15px}
+.mo span{font-size:12.5px;font-weight:700}
+.mo .stk{position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-4deg);background:var(--ink);color:var(--pop-y);font-size:11px;font-weight:900;padding:1px 7px;border-radius:6px;white-space:nowrap}
+.mo .stk.go{background:var(--teal);color:#fff}
+@media (max-width:520px){
+  .life-row{grid-template-columns:1fr;gap:4px}
+  .rk{grid-template-columns:22px 92px 1fr 44px;font-size:12.5px}
+  .cal{grid-template-columns:repeat(4,1fr)}
+}
+#shop-table tr.me td{background:var(--pop-y);font-weight:900}
 /* ===== 편의점 신상 POP 테마 ===== */
 :root{
   --bg:#fff8dc; --surface:#ffffff; --ink:#1c1c1c; --ink-2:#3b3b3b; --ink-3:#6e6a5e;
@@ -334,36 +367,29 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 
   <section id="findings">
     <div class="wrap">
-      <h2>핵심 발견</h2>
-      <p class="sub">21종의 디저트를 비교해서 찾은 세 가지 규칙이에요.</p>
+      <h2 id="f-h2">핵심 발견</h2>
+      <p class="sub" id="f-sub">위에서 고른 디저트를 다른 디저트들과 비교해 볼게요.</p>
 
       <div class="card finding">
-        <h3><span class="num">①</span> 급하게 뜬 디저트는 급하게 진다</h3>
-        <p>피크 시점을 0주로 맞춰 겹쳐 보면, 유행형은 몇 달 만에 올랐다가 그만큼 빨리 내려오고 정착형은 몇 년에 걸쳐 천천히 움직여요.</p>
-        <div class="kpis">
-          <div class="kpi"><b>10주</b><span>20주 안에 뜬 디저트 9종의 반감기 (중앙값)</span></div>
-          <div class="kpi"><b>48주</b><span>40주 넘게 천천히 뜬 디저트 6종의 반감기 (중앙값)</span></div>
-          <div class="kpi"><b>0.68</b><span>상승 기간과 현재 수준의 순위 상관계수</span></div>
-        </div>
-        <div class="grid2">
-          <div><div class="chart-head"><h4>유행형</h4></div><div class="legend" id="lg-fad"></div><div class="chart-box"><canvas id="c-fad"></canvas></div></div>
-          <div><div class="chart-head"><h4>정착형</h4></div><div class="legend" id="lg-stay"></div><div class="chart-box"><canvas id="c-stay"></canvas></div></div>
-        </div>
-        <p class="note">가로축: 피크로부터 지난 주 (0 = 피크) · 세로축: 피크 대비 검색량 %</p>
+        <h3><span class="num">①</span> <span id="f1-title">유행의 수명</span></h3>
+        <p id="f1-lead"></p>
+        <div class="life" id="f1-bars"></div>
+        <p class="note">🚀 뜨는 데 걸린 기간: 검색량이 피크의 4분의 1에서 피크까지 · 📉 반토막까지: 피크에서 절반 아래로 떨어질 때까지 (단위: 주)</p>
       </div>
 
       <div class="card finding">
-        <h3><span style="color:var(--teal)">②</span> 천천히 뜬 디저트일수록 오래 남는다</h3>
-        <p>점 하나가 디저트 하나예요. 오른쪽으로 갈수록 천천히 떴고, 위로 갈수록 지금도 많이 찾아요.</p>
-        <div class="chart-box tall"><canvas id="c-scatter" aria-label="상승 기간과 현재 수준 산점도"></canvas></div>
-        <p class="note">가로축은 로그 눈금 · 아직 피크가 진행 중인 디저트와 상승 시작점이 없는 디저트는 제외</p>
+        <h3><span class="num">②</span> <span id="f2-title">지금도 찾는 디저트 순위</span></h3>
+        <p id="f2-lead"></p>
+        <div class="legend"><span><i style="background:var(--teal)"></i>20주 안에 급하게 뜸</span><span><i style="background:var(--pop-y)"></i>20~40주</span><span><i style="background:var(--pop-b)"></i>40주 넘게 천천히 뜸</span><span><i style="background:#c9c3b0"></i>아직 뜨는 중 · 꾸준</span></div>
+        <div class="rank" id="f2-rank"></div>
+        <p class="note">막대 = 지금 검색량이 그 디저트 최고점의 몇 %인지. 천천히 뜬 디저트(파랑)일수록 위쪽에 많아요.</p>
       </div>
 
       <div class="card finding">
-        <h3><span style="color:var(--teal)">③</span> 시즌형 디저트는 출시 달이 정해져 있다</h3>
-        <p>장기 추세를 걷어내고 월별 평균을 보면, 매년 같은 달에 검색이 몰리는 디저트가 있어요. (1.0 = 연평균)</p>
-        <div class="legend" id="lg-season"></div>
-        <div class="chart-box"><canvas id="c-season"></canvas></div>
+        <h3><span class="num">③</span> <span id="f3-title">디저트 달력</span></h3>
+        <p id="f3-lead"></p>
+        <div class="cal" id="f3-cal"></div>
+        <p class="note">칸이 진할수록 그 달에 많이 찾아요 (연평균 = 1.0배). 장기 추세는 빼고 계절 효과만 봤어요.</p>
       </div>
 
       <div class="card finding">
@@ -382,7 +408,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
         </div>
       </div>
 
-      <div class="card finding">
+      <div class="card finding" id="case-mochi">
         <h3><span style="color:var(--teal)">사례</span> 과일모찌, 지금 출시해도 될까?</h3>
         <p>과일모찌는 2026년 10월 현재 역대 최고 검색량을 기록 중이에요. 앞의 규칙으로 판단해 봤어요.</p>
         <div class="grid2">
@@ -621,6 +647,7 @@ function select(k) {
     document.getElementById('shop-s').textContent = parts.join(' · ');
   }
   drawMain();
+  if (typeof renderFindings === 'function' && document.getElementById('shop-table').rows.length) renderFindings(k);
 }
 document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
   range = b.dataset.range;
@@ -628,67 +655,64 @@ document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
   drawMain();
 });
 
-/* ---------- 발견 ①: 피크 기준 겹쳐 보기 ---------- */
-function aligned(k, before = 52, after = 104) {
-  const s = D.kw[k].s; let pi = 0;
-  s.forEach((v, i) => { if (v !== null && v > (s[pi] ?? -1)) pi = i; });
-  const out = [];
-  for (let i = Math.max(0, pi - before); i < Math.min(s.length, pi + after); i++) if (s[i] !== null) out.push({ x: i - pi, y: s[i] });
-  return out;
+/* ---------- 발견 ①~③: 고른 디저트 기준으로 다시 그리기 ---------- */
+const med = a => { const b = a.filter(x => x !== null && x !== undefined).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const BASE = Object.entries(D.kw).filter(([k, v]) => k !== '모찌류(합산)' && v.type !== '진행중' && v.rise);
+const FAST = BASE.filter(([, v]) => v.rise <= 20).map(([, v]) => v), SLOW = BASE.filter(([, v]) => v.rise >= 40).map(([, v]) => v);
+const AVG = { fast: { rise: med(FAST.map(v => v.rise)), half: med(FAST.map(v => v.half)), n: FAST.length },
+              slow: { rise: med(SLOW.map(v => v.rise)), half: med(SLOW.map(v => v.half)), n: SLOW.length } };
+const eul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '은' : '는'; };
+function lifeRow(name, sub, rise, half, me, maxW) {
+  const W = x => Math.max(12, x / maxW * 88);
+  const up = rise ? `<div class="seg-up" style="flex:0 0 ${W(rise)}%">🚀 ${rise}주</div>` : `<div class="seg-up" style="flex:0 0 ${W(22)}%">🚀 꾸준히</div>`;
+  const dn = half ? `<div class="seg-dn" style="flex:0 0 ${W(half)}%">📉 ${half}주</div>` : `<div class="seg-dn seg-na" style="flex:1 1 auto">아직 안 떨어짐</div>`;
+  return `<div class="life-row${me ? ' me' : ''}"><div class="life-name">${name}<small>${sub}</small></div><div class="life-track">${up}${dn}</div></div>`;
 }
-function overlay(id, lgId, ks) {
-  document.getElementById(lgId).innerHTML = ks.map((k, i) => `<span><i style="background:${C.s[i]}"></i>${k}</span>`).join('');
-  new Chart(document.getElementById(id), {
-    type: 'line',
-    data: { datasets: ks.map((k, i) => ({ label: k, data: aligned(k), borderColor: C.s[i], borderWidth: 2, pointRadius: 0,
-      pointHoverRadius: 4, pointHoverBackgroundColor: C.s[i], pointHoverBorderColor: '#fff', tension: .25 })) },
-    options: { parsing: false, interaction: { mode: 'index', axis: 'x', intersect: false },
-      scales: { x: { type: 'linear', min: -52, max: 103, grid: { color: C.grid }, ticks: { stepSize: 26 } },
-        X },
-      plugins: { tooltip: { callbacks: { title: it => `피크 ${it[0].raw.x >= 0 ? '+' : ''}${it[0].raw.x}주`,
-        label: it => ` ${it.dataset.label}: ${it.raw.y.toFixed(0)}%` } } } }
-  });
+function renderFindings(k) {
+  const v = entry(k).v, J = eul(k);
+  const others = Object.keys(D.kw).filter(n => n !== '모찌류(합산)' && n !== k).length;
+  document.getElementById('f-sub').textContent = `'${k}'을(를) 다른 디저트 ${others}종과 비교했어요. 위에서 디저트를 바꾸면 아래도 같이 바뀌어요.`;
+  // ① 유행의 수명
+  const tot = (r, h) => (r || 22) + (h || 30);
+  const maxW = Math.max(60, tot(v.rise, v.half), tot(AVG.fast.rise, AVG.fast.half), tot(AVG.slow.rise, AVG.slow.half)) * 1.02;
+  document.getElementById('f1-title').textContent = `${k}의 유행 수명`;
+  document.getElementById('f1-bars').innerHTML =
+    lifeRow(k, '지금 보는 디저트', v.rise, v.half, true, maxW) +
+    lifeRow('급하게 뜬 디저트', `${AVG.fast.n}종 중앙값 · 흑당·탕후루 등`, AVG.fast.rise, AVG.fast.half, false, maxW) +
+    lifeRow('천천히 뜬 디저트', `${AVG.slow.n}종 중앙값 · 소금빵·베이글 등`, AVG.slow.rise, AVG.slow.half, false, maxW);
+  let l1;
+  if (v.type === '진행중') l1 = `${k}${J} 아직 피크가 진행 중이에요. ` + (v.rise ? `지금까지 ${v.rise}주 동안 올랐어요. ` : '') + `급하게 뜬 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났으니, 기간 한정으로 빠르게 내는 게 안전해요.`;
+  else if (!v.rise) l1 = `${k}${J} 처음부터 꾸준히 검색된 디저트예요. 갑자기 뜬 유행이 아니라 오래 찾는 기본 메뉴에 가까워요.`;
+  else if (v.rise <= 20) l1 = `${k}${J} ${v.rise}주 만에 급하게 떴어요. 이런 디저트는 보통 ${AVG.fast.half}주 만에 반토막이 났고, ${k}${J} ${v.half ? v.half + '주' : '아직'} 만에 절반으로 줄었어요.`;
+  else if (v.rise >= 40) l1 = `${k}${J} ${v.rise}주에 걸쳐 천천히 떴어요. 천천히 뜬 디저트는 반토막까지 보통 ${AVG.slow.half}주가 걸려서, 오래 가는 편이에요.`;
+  else l1 = `${k}${J} ${v.rise}주 동안 올라서 급하게 뜬 디저트와 천천히 뜬 디저트의 중간이에요.`;
+  document.getElementById('f1-lead').textContent = l1;
+  // ② 지금도 찾는 순위
+  const list = Object.entries(D.kw).filter(([n]) => n !== '모찌류(합산)').map(([n, x]) => ({ n, now: x.now, rise: x.rise, type: x.type }));
+  if (LIVE[k]) list.push({ n: k, now: v.now, rise: v.rise, type: v.type });
+  list.sort((a, b) => b.now - a.now);
+  const col = x => x.type === '진행중' || !x.rise ? '#c9c3b0' : x.rise <= 20 ? css('--teal') : x.rise < 40 ? css('--pop-y') : css('--pop-b');
+  const mx = Math.max(...list.map(x => x.now));
+  document.getElementById('f2-rank').innerHTML = list.map((x, i) => `<div class="rk${x.n === k ? ' me' : ''}"><span class="no">${i + 1}</span><span class="nm">${x.n}</span><span class="bar" style="width:${Math.max(2, x.now / mx * 100)}%;background:${col(x)}"></span><span class="pc">${x.n === k ? '👉 ' : ''}${x.now}%</span></div>`).join('');
+  const rank = list.findIndex(x => x.n === k) + 1;
+  document.getElementById('f2-title').textContent = `지금도 찾는 디저트 순위: ${k} ${rank}위`;
+  document.getElementById('f2-lead').textContent = `${k}${J} 지금 검색량이 최고점의 ${v.now}%로, ${list.length}종 중 ${rank}위예요.` + (v.type === '진행중' ? ' 지금이 최고점 근처라 위쪽에 있어요.' : '');
+  // ③ 디저트 달력
+  const sv = v.season, smin = Math.min(...sv), smax = Math.max(...sv), pm = sv.indexOf(smax), amp = smin > 0 ? smax / smin : 1;
+  const seasonal = amp >= 1.6, go = [(pm + 10) % 12, (pm + 11) % 12];
+  const shade = x => { const t = Math.max(0, Math.min(1, (x - 0.6) / 1.6)); const c = (a, b) => Math.round(a + (b - a) * t); return [`rgb(${c(255, 255)},${c(243, 90)},${c(224, 31)})`, t > .55 ? '#fff' : css('--ink')]; };
+  document.getElementById('f3-cal').innerHTML = sv.map((x, i) => { const [bg, fg] = shade(x);
+    const stk = i === pm ? '<i class="stk">🔥 대목</i>' : (seasonal && go.includes(i) ? '<i class="stk go">출시!</i>' : '');
+    return `<div class="mo" style="background:${bg};color:${fg}">${stk}<b>${i + 1}월</b><span>${x.toFixed(1)}배</span></div>`; }).join('');
+  document.getElementById('f3-title').textContent = `${k} 달력`;
+  document.getElementById('f3-lead').textContent = seasonal
+    ? `${k}${J} ${pm + 1}월에 가장 많이 찾아요 (연평균의 ${smax.toFixed(1)}배). ${go[0] + 1}~${go[1] + 1}월에 출시하면 대목을 잡을 수 있어요.`
+    : `${k}${J} 계절을 크게 타지 않아요. 가장 많이 찾는 ${pm + 1}월도 연평균의 ${smax.toFixed(1)}배 정도라, 출시 달보다 유행 단계가 더 중요해요.`;
+  // 과일모찌 사례는 과일모찌를 볼 때만
+  document.getElementById('case-mochi').hidden = k !== '과일모찌';
+  // ④ 표에서 지금 디저트 강조
+  document.querySelectorAll('#shop-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.k === SHOPMAP[k]));
 }
-overlay('c-fad', 'lg-fad', D.groups['유행형']);
-overlay('c-stay', 'lg-stay', D.groups['정착형']);
-
-/* ---------- 발견 ②: 산점도 ---------- */
-const pts = Object.entries(D.kw).filter(([k, v]) => v.rise && v.type !== '진행중' && k !== '모찌류(합산)')
-  .map(([k, v]) => ({ x: v.rise, y: v.now, k, t: v.type }));
-const OFF = { '두바이 초콜릿': [6, 12], '흑당': [6, -6], '흑임자': [-8, -8, 'right'], '달고나': [-8, -6, 'right'], '베이글': [6, 12] };
-new Chart(document.getElementById('c-scatter'), {
-  type: 'scatter',
-  data: { datasets: [{ data: pts, pointRadius: 6, pointHoverRadius: 8, backgroundColor: pts.map(p => TYPE_COLOR[p.t]),
-    borderColor: '#fff', borderWidth: 2 }] },
-  options: { scales: {
-      x: { type: 'logarithmic', min: 7, max: 260, grid: { color: C.grid }, title: { display: true, text: '피크까지 걸린 상승 기간 (주)' },
-        ticks: { callback: v => [10, 20, 50, 100, 200].includes(v) ? v : '' } },
-      y: { min: 0, max: 40, grid: { color: C.grid }, title: { display: true, text: '현재 수준 (피크 대비 %)' } } },
-    plugins: { tooltip: { callbacks: { label: it => ` ${it.raw.k} (${it.raw.t}) · 상승 ${it.raw.x}주 · 현재 ${it.raw.y}%` } } } },
-  plugins: [{ id: 'labels', afterDatasetsDraw(ch) {
-    const { ctx } = ch; const meta = ch.getDatasetMeta(0);
-    ctx.save(); ctx.font = '12px "Noto Sans KR"'; ctx.fillStyle = C.ink;
-    const KEEP = ['흑임자','베이글','소금빵','딸기모찌','두바이 초콜릿','탕후루','약과','말차'];
-    meta.data.forEach((el, i) => { const p = pts[i], o = OFF[p.k] || [9, 4]; if (ch.width < 500 && !KEEP.includes(p.k)) return;
-      ctx.textAlign = o[2] || 'left'; ctx.fillText(p.k, el.x + o[0], el.y + o[1]); });
-    ctx.restore();
-  } }]
-});
-
-/* ---------- 발견 ③: 시즌 ---------- */
-const SK = ['쑥', '딸기모찌', '찹쌀떡'];
-document.getElementById('lg-season').innerHTML = SK.map((k, i) => `<span><i style="background:${C.s[i]}"></i>${k}</span>`).join('');
-new Chart(document.getElementById('c-season'), {
-  type: 'line',
-  data: { labels: [...Array(12)].map((_, i) => `${i + 1}월`),
-    datasets: SK.map((k, i) => ({ label: k, data: D.kw[k].season, borderColor: C.s[i], backgroundColor: C.s[i], borderWidth: 2,
-      pointRadius: 4, pointHoverRadius: 6, pointBorderColor: '#fff', pointBorderWidth: 2, tension: .3 })) },
-  options: { interaction: { mode: 'index', intersect: false },
-    scales: { x: { grid: { display: false } }, y: { min: 0, grid: { color: C.grid } } },
-    plugins: { tooltip: { callbacks: { label: it => ` ${it.dataset.label}: 연평균의 ${it.raw.toFixed(2)}배` } } } },
-  plugins: [{ id: 'avgLine', beforeDatasetsDraw(ch) { const { ctx, chartArea: a, scales: { y } } = ch; const py = y.getPixelForValue(1);
-    ctx.save(); ctx.strokeStyle = C.ink3; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke(); ctx.restore(); } }]
-});
 
 /* ---------- 사례: 과일모찌 ---------- */
 const fm = D.kw['과일모찌'];
@@ -735,7 +759,7 @@ const ORDER = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아�
 const pct = v => v === null || v === undefined ? '–' : v + '%';
 document.getElementById('shop-table').innerHTML = `<thead><tr><th>디저트</th><th>검색 피크</th><th>매장 수 최고점</th><th class="num-r">시차</th><th class="num-r">최고 → 현재</th><th class="num-r">생존율</th><th class="num-r">1년 내 폐업<br>(피크 전 / 후 개업)</th><th class="num-r">팝업 비율</th></tr></thead><tbody>` +
   ORDER.map(k => { const s = D.shops[k].stats;
-    return `<tr><td>${k}</td><td>${fmtYM(s.search_peak)}</td><td>${fmtYM(s.alive_peak)}</td><td class="num-r">${k === '모찌' ? '진행 중' : (s.lag_alive >= 0 ? '+' : '') + s.lag_alive + '개월'}</td>
+    return `<tr data-k="${k}"><td>${k}</td><td>${fmtYM(s.search_peak)}</td><td>${fmtYM(s.alive_peak)}</td><td class="num-r">${k === '모찌' ? '진행 중' : (s.lag_alive >= 0 ? '+' : '') + s.lag_alive + '개월'}</td>
       <td class="num-r">${s.alive_max.toLocaleString()} → ${s.open_now.toLocaleString()}곳</td><td class="num-r">${s.survive_now}%</td>
       <td class="num-r">${pct(s.close1y_before)} / ${pct(s.close1y_after)}</td><td class="num-r">${Math.round(s.popup / s.total * 100)}%</td></tr>`; }).join('') + '</tbody>';
 
@@ -746,6 +770,7 @@ document.querySelector('[data-close-about]').onclick = () => dlg.close();
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 
 select('과일모찌');
+renderFindings('과일모찌');
 
 
 /* ---------- 실시간 분석: 목록에 없는 디저트 ---------- */
