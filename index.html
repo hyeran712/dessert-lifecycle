@@ -308,29 +308,28 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .tile{cursor:pointer;font:inherit;text-align:left;color:inherit;transition:transform .1s}
 .tile:hover{transform:translateY(-2px)}
 .tile.on{background:var(--pop-y);box-shadow:4px 4px 0 var(--ink)}
-.mapbox{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;margin-top:18px;align-items:start}
-.map-wrap{position:relative;max-width:400px;width:100%;margin:0 auto}
+.mapbox{margin-top:18px}
+.map-wrap{position:relative;max-width:560px;margin:0 auto}
 #kmap{width:100%;height:auto;display:block}
-#kmap path{stroke:var(--ink);stroke-width:1.2;cursor:pointer;transition:filter .1s}
-#kmap path:hover{filter:brightness(.93)}
-#kmap path.sel{stroke-width:3.2}
+#kmap path{fill-opacity:.62;stroke:var(--ink);stroke-opacity:.55;stroke-width:1;cursor:pointer;transition:fill-opacity .15s}
+#kmap path:hover{fill-opacity:.85}
+#kmap path.sel{fill-opacity:.95;stroke-opacity:1;stroke-width:2.6}
 #kmap text{font-size:12px;font-weight:900;fill:var(--ink);pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:3px}
-.map-legend{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3);margin-top:6px;flex-wrap:wrap}
-.map-legend i{display:inline-block;width:18px;height:12px;border:1.5px solid var(--ink);border-radius:3px}
-.map-tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:5px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-120%)}
-.map-panel{background:var(--bg);border:2px solid var(--ink);border-radius:12px;padding:16px 18px;min-height:200px}
-.map-panel h5{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 4px}
-.map-panel .big{font-family:var(--display);font-size:34px;line-height:1.1}
-.map-panel .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-.map-panel .row div{background:#fff;border:1.5px solid var(--ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
-.map-panel .row b{display:block;font-size:18px}
+.map-legend{display:flex;justify-content:center;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3);margin-top:8px;flex-wrap:wrap}
+.map-legend i{display:inline-block;width:18px;height:12px;border:1px solid rgba(28,28,28,.5);border-radius:3px;opacity:.75}
+.map-tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:5px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-130%);z-index:3}
+.map-panel{position:absolute;z-index:4;width:250px;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:14px 16px;box-shadow:5px 5px 0 var(--ink);max-height:90%;overflow:auto}
+.map-panel .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-3)}
+.map-panel h5{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 2px;padding-right:18px}
+.map-panel .big{font-family:var(--display);font-size:28px;line-height:1.1}
+.map-panel .row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.map-panel .row div{background:var(--bg);border:1.5px solid var(--ink);border-radius:8px;padding:6px 8px;font-size:12px}
+.map-panel .row b{display:block;font-size:16px}
 .map-panel .up{color:#1a7f3c}.map-panel .dn{color:var(--teal-d)}
-.map-panel ul{list-style:none;padding:0;margin:4px 0 10px;font-size:13px}
-.map-panel li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:4px 0}
+.map-panel ul{list-style:none;padding:0;margin:2px 0 8px;font-size:12.5px}
+.map-panel li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:3px 0}
 .map-panel li span{color:var(--ink-3);flex:none}
-.map-panel .rank li{cursor:pointer}
-.map-panel .rank li:hover{background:#fff}
-@media (max-width:760px){.mapbox{grid-template-columns:minmax(0,1fr)}}
+.map-panel.flow{position:relative;width:auto;max-height:none;margin-top:10px;box-shadow:4px 4px 0 var(--ink)}
 </style>
 </head>
 <body>
@@ -411,10 +410,10 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
         <div class="mapbox">
           <div class="map-wrap">
             <svg id="kmap" viewBox="0 0 412 550" role="img" aria-label="시도별 영업 중 매장 지도"></svg>
-            <div class="map-legend" id="map-legend"></div>
             <div class="map-tip" id="map-tip" hidden></div>
+            <div class="map-panel" id="map-panel" hidden></div>
           </div>
-          <div class="map-panel" id="map-panel"></div>
+          <div class="map-legend" id="map-legend"></div>
         </div>
       </div>
       <div class="grid2">
@@ -1177,7 +1176,7 @@ function mapSelect(k, r) {
       return `<text x="${x + dx}" y="${y + 4 + dy}">${v}</text>`; }).join('');
   if (r) svg.appendChild(svg.querySelector(`path[data-r="${r}"]`));   // 선택한 지역 테두리를 맨 위로
   svg.querySelectorAll('path').forEach(p => {
-    p.addEventListener('click', () => mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r));
+    p.addEventListener('click', e => { e.stopPropagation(); mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r); });
     p.addEventListener('mousemove', e => { const b = svg.parentNode.getBoundingClientRect(), x = regs[p.dataset.r] || { alive: 0, o30: 0, c30: 0 };
       tip.hidden = false; tip.style.left = (e.clientX - b.left) + 'px'; tip.style.top = (e.clientY - b.top) + 'px';
       tip.textContent = `${RNAME[p.dataset.r]} · ${x.alive}곳 (30일 +${x.o30} / −${x.c30})`; });
@@ -1185,25 +1184,26 @@ function mapSelect(k, r) {
   });
   const step = mx / 5;
   document.getElementById('map-legend').innerHTML = `<i style="background:${RAMP[0]}"></i>0` +
-    RAMP.slice(1).map((c, i) => `<i style="background:${c}"></i>${Math.ceil(step * i) || 1}${i === 4 ? '+' : ''}`).join('') + ' <span>· 숫자 = 영업 중 매장</span>';
+    RAMP.slice(1).map((c, i) => `<i style="background:${c}"></i>${Math.ceil(step * i) || 1}${i === 4 ? '+' : ''}`).join('') + ' <span>· 숫자 = 영업 중 매장 · 지역을 누르면 개업·폐업이 나와요</span>';
   const P = document.getElementById('map-panel');
-  const list = (xs, cls) => xs.length ? `<ul>${xs.map(([n, d]) => `<li>${esc(n)}<span class="${cls}">${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0 10px">없어요.</p>';
-  if (r) {
-    const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] };
-    P.innerHTML = `<h5>${RNAME[r]} · ${esc(k)}</h5><div class="big">${x.alive}곳 <span style="font-size:14px;font-family:'Noto Sans KR';color:var(--ink-3)">영업 중</span></div>
-      <div class="row"><div>최근 30일<b><span class="up">+${x.o30}</span> / <span class="dn">−${x.c30}</span></b></div><div>최근 90일<b><span class="up">+${x.o90}</span> / <span class="dn">−${x.c90}</span></b></div></div>
-      <b style="font-size:13px">🟢 최근 개업</b>${list(x.open, 'up')}<b style="font-size:13px">🔴 최근 폐업</b>${list(x.close, 'dn')}
-      <p class="note" style="margin:0">지역을 한 번 더 누르면 전국 보기로 돌아가요. 90일 안에 닫은 팝업도 개업·폐업 수에 들어가요.</p>`;
-  } else {
-    const tot = Object.values(regs).reduce((a, x) => ({ o30: a.o30 + x.o30, c30: a.c30 + x.c30 }), { o30: 0, c30: 0 });
-    const rank = Object.entries(regs).sort((a, b) => b[1].alive - a[1].alive).slice(0, 5);
-    const hot = Object.entries(regs).filter(([, x]) => x.o30 > 0).sort((a, b) => b[1].o30 - a[1].o30)[0];
-    P.innerHTML = `<h5>전국 · ${esc(k)}</h5><div class="big">${RADAR.shops[k].open_now.toLocaleString()}곳 <span style="font-size:14px;font-family:'Noto Sans KR';color:var(--ink-3)">영업 중</span></div>
-      <div class="row"><div>최근 30일 전국<b><span class="up">+${tot.o30}</span> / <span class="dn">−${tot.c30}</span></b></div><div>요즘 가장 많이 연 곳<b>${hot ? `${RNAME[hot[0]]} +${hot[1].o30}` : '없음'}</b></div></div>
-      <b style="font-size:13px">매장이 많은 지역</b><ul class="rank">${rank.map(([n, x]) => `<li data-r="${n}">${RNAME[n]}<span>${x.alive}곳 · 30일 +${x.o30}/−${x.c30}</span></li>`).join('')}</ul>
-      <p class="note" style="margin:0">👆 지도에서 지역을 누르면 그 지역의 최근 개업·폐업 가게가 나와요.</p>`;
-    P.querySelectorAll('.rank li').forEach(li => li.addEventListener('click', () => mapSelect(mapK, li.dataset.r)));
-  }
+  if (!r) { P.hidden = true; return; }
+  const list = (xs, cls) => xs.length ? `<ul>${xs.map(([n, d]) => `<li>${esc(n)}<span class="${cls}">${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:2px 0 8px">없어요.</p>';
+  const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] };
+  P.innerHTML = `<button class="x" type="button" aria-label="닫기">×</button>
+    <h5>${RNAME[r]} · ${esc(k)}</h5><div class="big">${x.alive}곳 <span style="font-size:13px;font-family:'Noto Sans KR';color:var(--ink-3)">영업 중</span></div>
+    <div class="row"><div>최근 30일<b><span class="up">+${x.o30}</span> / <span class="dn">−${x.c30}</span></b></div><div>최근 90일<b><span class="up">+${x.o90}</span> / <span class="dn">−${x.c90}</span></b></div></div>
+    <b style="font-size:12.5px">🟢 최근 개업</b>${list(x.open, 'up')}<b style="font-size:12.5px">🔴 최근 폐업</b>${list(x.close, 'dn')}`;
+  P.hidden = false;
+  // 넓은 화면: 지도 옆 빈 곳에 띄우기 / 좁은 화면: 지도 아래에 펼치기
+  const wrap = svg.parentNode, wr = wrap.getBoundingClientRect(), cr = wrap.closest('.card').getBoundingClientRect();
+  const W = svg.clientWidth / 412, [, cy] = KOREA.cent[r] || [0, 270];
+  const side = cr.right - wr.right >= 235 ? 'R' : (wr.left - cr.left >= 235 ? 'L' : '');
+  P.classList.toggle('flow', !side);
+  if (side) {
+    P.style.left = (side === 'R' ? wr.width - 20 : -230) + 'px';
+    P.style.top = Math.max(0, Math.min(svg.clientHeight - P.offsetHeight, cy * W - 140)) + 'px';
+  } else { P.style.left = ''; P.style.top = ''; P.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  P.querySelector('.x').addEventListener('click', () => mapSelect(mapK, null));
 }
 
 /* ---------- 이번 주 레이더 (live/live.json, 매주 자동 갱신) ---------- */
@@ -1217,6 +1217,7 @@ function renderRadar(L) {
   RADAR = L;
   document.querySelectorAll('#rd-tiles .tile').forEach(t => t.addEventListener('click', () => mapSelect(t.dataset.k, null)));
   mapSelect('모찌', null);
+  document.getElementById('kmap').addEventListener('click', () => mapSelect(mapK, null));
   const group = (lv, title) => {
     const xs = L.radar.filter(i => i.level === lv); if (!xs.length) return '';
     return `<p class="rd-group">${title}</p>` + xs.map(i => `<div class="rd-item"><span class="w">${esc(i.word)}</span>
