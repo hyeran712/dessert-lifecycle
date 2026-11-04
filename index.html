@@ -970,7 +970,12 @@ async function makeMenu() {
       <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
     </div>`;
     mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.';
-  } catch (e) { mkMsg.textContent = `만들지 못했어요: ${e.message}`; }
+  } catch (e) {
+    const msg = String(e.message || e);
+    mkMsg.textContent = /503|UNAVAILABLE|high demand|429|RESOURCE_EXHAUSTED/.test(msg)
+      ? 'AI 서버가 지금 붐벼요. 1~2분 뒤에 다시 눌러 주세요. (Gemini 일시적 과부하)'
+      : `만들지 못했어요: ${msg}`;
+  }
   finally { mkBtn.disabled = false; }
 }
 mkBtn.addEventListener('click', makeMenu);
