@@ -32,7 +32,7 @@ nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
 nav a,nav button{font:inherit;font-size:14px;font-weight:500;color:var(--ink-2);text-decoration:none;padding:6px 12px;border-radius:999px;border:0;background:none;cursor:pointer}
 nav a:hover,nav button:hover{background:var(--teal-l);color:var(--teal-d)}
 nav .about{border:1px solid var(--charcoal);color:var(--charcoal);font-weight:700;font-size:12px;letter-spacing:.5px}
-.hero{padding:64px 0 36px}
+.hero{padding-top:64px;padding-bottom:36px}
 .eyebrow{font-size:13px;font-weight:700;color:var(--teal);letter-spacing:1.5px;text-transform:uppercase}
 h1{font-size:clamp(30px,5vw,48px);line-height:1.2;margin:10px 0 14px;font-weight:900;letter-spacing:-1px;color:var(--charcoal)}
 h1 em{font-style:normal;color:var(--teal)}
@@ -125,8 +125,31 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
   .result,.grid2{grid-template-columns:1fr}
   nav a.hide-sm{display:none}
 }
+.mnav{display:none}
+.hint-sm{display:none;color:var(--ink-3);font-size:13px}
 @media (max-width:520px){
   nav a{display:none}
+  .mnav{display:flex;gap:6px;overflow-x:auto;padding:8px 16px 10px;border-top:1px solid var(--line);scrollbar-width:none}
+  .mnav::-webkit-scrollbar{display:none}
+  .mnav a{flex:0 0 auto;font-size:13.5px;font-weight:700;color:var(--ink-2);text-decoration:none;padding:6px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+  .mnav a:active{background:var(--teal-l);color:var(--teal-d)}
+  .wrap{padding:0 16px}
+  .hero{padding-top:28px;padding-bottom:12px}
+  h1{font-size:30px;margin:6px 0 10px}
+  .lead{font-size:15px}
+  section{padding:16px 0 28px;scroll-margin-top:110px}
+  h2{font-size:21px}
+  .sub{margin-bottom:14px;font-size:14.5px}
+  .chip-group{margin-bottom:10px}
+  .chip-group .chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -18px;padding:0 18px 4px;scrollbar-width:none}
+  .chip-group .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font-size:13.5px;padding:6px 12px}
+  .hint-sm{display:inline}
+  .result{margin-top:14px;gap:14px}
+  .verdict h3{font-size:19px}
+  .stat b{font-size:18px}
+  .kpi b{font-size:21px}
+  .finding h3{font-size:17px}
   .card{padding:18px}
   .chart-box{height:260px}
   header .wrap{gap:10px}
@@ -146,6 +169,7 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
       <button class="about" type="button" data-open-about>ABOUT DATA</button>
     </nav>
   </div>
+  <div class="mnav" aria-label="바로가기"><a href="#diagnose">진단하기</a><a href="#radar">이번 주 레이더</a><a href="#findings">핵심 발견</a><a href="#proposal">기획 제안</a></div>
 </header>
 
 <main id="top">
@@ -158,7 +182,7 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
   <section id="diagnose">
     <div class="wrap">
       <h2>디저트 진단하기</h2>
-      <p class="sub">궁금한 디저트를 하나 골라보세요.</p>
+      <p class="sub">궁금한 디저트를 하나 골라보세요. <span class="hint-sm">줄마다 옆으로 밀면 더 있어요.</span></p>
       <div class="card">
         <div id="chips"></div>
       </div>
