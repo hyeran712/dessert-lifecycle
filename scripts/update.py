@@ -88,6 +88,32 @@ def apply_updates(new):
     return base, shops, new
 
 # ---------- 계산 ----------
+SIDO = {'서울': '서울', '부산': '부산', '대구': '대구', '인천': '인천', '대전': '대전', '울산': '울산', '세종': '세종', '경기': '경기',
+        '강원': '강원', '충청북': '충북', '충북': '충북', '충청남': '충남', '충남': '충남', '전라북': '전북', '전북': '전북',
+        '전남광주': '전남광주', '전라남': '전남광주', '전남': '전남광주', '광주': '전남광주', '경상북': '경북', '경북': '경북',
+        '경상남': '경남', '경남': '경남', '제주': '제주'}
+
+def short_sido(x):
+    x = str(x or '')
+    for k in sorted(SIDO, key=len, reverse=True):
+        if x.startswith(k): return SIDO[k]
+    return None
+
+def region_stats(d, perm, today):
+    """시도별: 영업 중 매장, 최근 30·90일 개업/폐업 수, 최근 90일 개업·폐업 가게 이름"""
+    out = {}
+    d = d.assign(r=d['시도'].map(short_sido)); perm = perm.assign(r=perm['시도'].map(short_sido))
+    t30, t90 = today - pd.Timedelta(days=30), today - pd.Timedelta(days=90)
+    for r in sorted(set(d.r.dropna())):
+        x, px = d[d.r == r], perm[perm.r == r]
+        o90 = x[(x.o > t90) & (x.o <= today)].sort_values('o', ascending=False)
+        c90 = x[(x.c > t90) & (x.c <= today)].sort_values('c', ascending=False)
+        out[r] = {'alive': int(px.c.isna().sum()),
+                  'o30': int((o90.o > t30).sum()), 'c30': int((c90.c > t30).sum()), 'o90': len(o90), 'c90': len(c90),
+                  'open': [[n, o.strftime('%m.%d')] for n, o in o90[['사업장명', 'o']].head(6).values],
+                  'close': [[n, c.strftime('%m.%d')] for n, c in c90[['사업장명', 'c']].head(6).values]}
+    return out
+
 def shop_stats(shops, today, new):
     s = shops.copy()
     s['o'] = pd.to_datetime(s['인허가일자'], errors='coerce'); s['c'] = pd.to_datetime(s['폐업일자'], errors='coerce')
@@ -104,7 +130,8 @@ def shop_stats(shops, today, new):
         out[k] = {'alive': alive, 'open_now': int(perm.c.isna().sum()), 'alive_max': max(alive),
                   'alive_peak': months[int(np.argmax(alive))].strftime('%Y-%m'), 'popup': int(d.popup.sum()), 'total': len(d),
                   'week_open': opened[['사업장명', '시도']].head(8).values.tolist(), 'week_open_n': len(opened),
-                  'week_close': closed[['사업장명', '시도']].head(8).values.tolist(), 'week_close_n': len(closed)}
+                  'week_close': closed[['사업장명', '시도']].head(8).values.tolist(), 'week_close_n': len(closed),
+                  'regions': region_stats(d, perm, today)}
     return out, months[0].strftime('%Y-%m')
 
 def radar(base, today):
