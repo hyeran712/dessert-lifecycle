@@ -195,13 +195,31 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
   .cal{grid-template-columns:repeat(4,1fr)}
 }
 #shop-table tr.me td{background:var(--pop-y);font-weight:900}
-.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .pl{border:2px solid var(--ink);border-radius:14px;padding:14px;background:var(--bg)}
 .pl .k{display:inline-block;font-size:12px;font-weight:900;background:var(--ink);color:var(--pop-y);border-radius:6px;padding:1px 8px}
 .pl b{display:block;font-size:16px;margin:8px 0 4px;line-height:1.35}
 .pl p{margin:0;font-size:13.5px;color:var(--ink-2)}
 #p-table tr.me td{background:var(--pop-y);font-weight:900}
 @media (max-width:860px){.plan{grid-template-columns:1fr}}
+.warnbox{margin-top:14px;border:2px dashed var(--ink);border-radius:10px;padding:10px 12px;background:#fff}
+.warnbox b{font-size:13px}
+.warnbox ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--ink-2)}
+.profile{margin-bottom:16px;padding:0}
+.profile summary{cursor:pointer;padding:16px 20px;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.profile summary::-webkit-details-marker{display:none}
+.profile summary::after{content:"＋";margin-left:auto;font-weight:900}
+.profile[open] summary::after{content:"－"}
+.profile summary span{font-size:13px;color:var(--ink-2)}
+.pf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 20px 20px}
+.pf-grid fieldset{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin:0;background:var(--bg)}
+.pf-grid legend{font-weight:900;font-size:13.5px;padding:0 4px}
+.pf-grid label{display:block;font-size:13.5px;padding:3px 0;cursor:pointer}
+.pf-grid input[type=text]{width:100%;font:inherit;font-size:14px;padding:8px 10px;border:2px solid var(--ink);border-radius:8px}
+.pl.fit{background:#fff;border-style:dashed}
+.pl .ok{color:#1a7f3c;font-weight:900}.pl .no{color:var(--teal-d);font-weight:900}
+@media (max-width:860px){.pf-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.pf-grid{grid-template-columns:1fr}}
 /* ===== 편의점 신상 POP 테마 ===== */
 :root{
   --bg:#fff8dc; --surface:#ffffff; --ink:#1c1c1c; --ink-2:#3b3b3b; --ink-3:#6e6a5e;
@@ -314,6 +332,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
             <div class="stat"><span>현재 수준 (피크 대비)</span><b id="st-now"></b></div>
             <div class="stat"><span>전년 같은 시기 대비</span><b id="st-yoy"></b></div>
           </div>
+          <div class="warnbox" id="warnbox" hidden><b>⚠️ 데이터 주의</b><ul id="warn-list"></ul></div>
           <div class="shopbox" id="shopbox" hidden>
             <p class="shop-k">전국 매장 데이터 <small id="shop-note"></small></p>
             <p class="shop-v" id="shop-v"></p>
@@ -442,6 +461,36 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
     <div class="wrap">
       <h2 id="p-h2">기획 제안</h2>
       <p class="sub" id="p-sub">고른 디저트의 신호에 맞는 출시 전략이에요.</p>
+      <details class="card profile" id="profile">
+        <summary><b>🏪 내 가게 프로필</b> <span id="pf-sum">넣으면 우리 가게에서 만들 수 있는지 알려드려요</span></summary>
+        <div class="pf-grid">
+          <fieldset><legend>주력 분야</legend>
+            <label><input type="radio" name="pf-cat" value="음료"> 음료 중심 카페</label>
+            <label><input type="radio" name="pf-cat" value="베이커리"> 베이커리</label>
+            <label><input type="radio" name="pf-cat" value="디저트"> 디저트 전문점</label>
+          </fieldset>
+          <fieldset><legend>보유 장비</legend>
+            <label><input type="checkbox" name="pf-eq" value="에스프레소 머신"> 에스프레소 머신</label>
+            <label><input type="checkbox" name="pf-eq" value="블렌더"> 블렌더</label>
+            <label><input type="checkbox" name="pf-eq" value="오븐"> 오븐</label>
+            <label><input type="checkbox" name="pf-eq" value="와플 기계"> 와플 기계</label>
+            <label><input type="checkbox" name="pf-eq" value="찜기"> 찜기·전자레인지</label>
+            <label><input type="checkbox" name="pf-eq" value="화구"> 화구(가스·인덕션)</label>
+            <label><input type="checkbox" name="pf-eq" value="튀김기"> 튀김기</label>
+            <label><input type="checkbox" name="pf-eq" value="아이스크림 기계"> 아이스크림 기계·냉동고</label>
+          </fieldset>
+          <fieldset><legend>주력 가격대</legend>
+            <label><input type="radio" name="pf-price" value="3000-5000"> 3천~5천 원</label>
+            <label><input type="radio" name="pf-price" value="5000-7000"> 5천~7천 원</label>
+            <label><input type="radio" name="pf-price" value="7000-10000"> 7천~1만 원</label>
+            <label><input type="radio" name="pf-price" value="10000-20000"> 1만 원 이상</label>
+          </fieldset>
+          <fieldset><legend>쓰지 않는 재료</legend>
+            <input type="text" id="pf-ban" maxlength="60" placeholder="예: 견과류, 생크림">
+            <p class="note" style="margin-top:6px">쉼표로 나눠 적어요. 이 브라우저에만 저장돼요.</p>
+          </fieldset>
+        </div>
+      </details>
       <div class="card" style="overflow-x:auto">
         <div class="plan" id="p-plan"></div>
         <h3 style="font-size:16px;margin:26px 0 8px">신호별 출시 전략 <span style="font-weight:500;color:var(--ink-3);font-size:13px">(노란 줄 = 지금 디저트)</span></h3>
@@ -650,6 +699,7 @@ function select(k) {
     if (st.capped) parts.push(`매장이 많아 ${st.total.toLocaleString()}곳까지만 분석`);
     document.getElementById('shop-s').textContent = parts.join(' · ');
   }
+  warnings(k, v, E.shop);
   drawMain();
   if (typeof renderFindings === 'function' && document.getElementById('shop-table').rows.length) renderFindings(k);
 }
@@ -666,6 +716,7 @@ const FAST = BASE.filter(([, v]) => v.rise <= 20).map(([, v]) => v), SLOW = BASE
 const AVG = { fast: { rise: med(FAST.map(v => v.rise)), half: med(FAST.map(v => v.half)), n: FAST.length },
               slow: { rise: med(SLOW.map(v => v.rise)), half: med(SLOW.map(v => v.half)), n: SLOW.length } };
 const reul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '을' : '를'; };
+const iga = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '이' : '가'; };
 const eul = w => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '은' : '는'; };
 function lifeRow(name, sub, rise, half, me, maxW) {
   const W = x => Math.max(12, x / maxW * 88);
@@ -721,6 +772,99 @@ function renderFindings(k) {
 }
 
 
+
+/* ---------- 데이터 품질 경고 ---------- */
+function warnings(k, v, st) {
+  const w = [], name = k.replace(/\s/g, '');
+  const zs = v.zeroShare ?? (v.s.filter(x => x !== null && x < 0.5).length / v.s.length);
+  if (zs > 0.3) w.push(`검색량이 0에 가까운 주가 ${Math.round(zs * 100)}%예요. 검색이 적은 단어라 유형 판단이 흔들릴 수 있어요.`);
+  if (v.type === '진행중' && (v.pre52 ?? 0) < 5) w.push('최근에 갑자기 생긴 단어라 유행형인지 정착형인지 판단하기엔 아직 일러요.');
+  if (name.length === 1) w.push(`'${k}'처럼 한 글자 단어는 다른 뜻의 검색과 가게 이름이 섞일 수 있어요.`);
+  if (st && st.total > 0 && st.total < 20) w.push(`상호에 '${name}'이 들어간 가게가 ${st.total}곳뿐이라 매장 수는 참고만 해 주세요.`);
+  if (st && st.total === 0) w.push(`상호에 '${name}'이 들어간 가게가 없어요. 메뉴로만 파는 경우는 셀 수 없어요.`);
+  if (st && st.capped) w.push('가게가 너무 많아 일부만 분석했어요.');
+  if (k === '과일모찌' || k === '모찌떡' || k === '찹쌀모찌') w.push("'모찌' 한 단어는 네이버에서 집계되지 않아 연관 검색어로 대신 봤어요.");
+  const box = document.getElementById('warnbox');
+  box.hidden = !w.length;
+  document.getElementById('warn-list').innerHTML = w.map(x => `<li>${x}</li>`).join('');
+}
+
+/* ---------- 내 가게 프로필 ---------- */
+const REQ = {
+  '흑당': { eq: ['에스프레소 머신'], cat: '음료', ing: ['흑당', '우유', '타피오카'], price: 5500, alt: '흑당 라떼' },
+  '크로플': { eq: ['와플 기계'], cat: '디저트', ing: ['크루아상 생지', '버터', '생크림'], price: 6000 },
+  '마라탕': { eq: ['화구'], cat: '식사', ing: ['마라 소스'], price: 10000 },
+  '탕후루': { eq: ['화구'], cat: '디저트', ing: ['과일', '설탕'], price: 4000, alt: '탕후루 토핑 에이드' },
+  '약과': { eq: ['튀김기'], cat: '디저트', ing: ['밀가루', '조청', '참기름'], price: 3500, alt: '약과 완제품 + 음료 세트' },
+  '요거트 아이스크림': { eq: ['아이스크림 기계'], cat: '디저트', ing: ['요거트', '과일', '그래놀라'], price: 7000, alt: '요거트 스무디' },
+  '두바이 초콜릿': { eq: [], cat: '디저트', ing: ['피스타치오', '카다이프', '초콜릿'], price: 8000 },
+  '마카롱': { eq: ['오븐'], cat: '디저트', ing: ['아몬드가루', '달걀흰자', '버터크림'], price: 3000, alt: '마카롱 완제품 납품' },
+  '뚱카롱': { eq: ['오븐'], cat: '디저트', ing: ['아몬드가루', '버터크림'], price: 4000, alt: '마카롱 완제품 납품' },
+  '소금빵': { eq: ['오븐'], cat: '베이커리', ing: ['버터', '밀가루'], price: 3500, alt: '냉동 생지 구매 후 굽기' },
+  '베이글': { eq: ['오븐'], cat: '베이커리', ing: ['밀가루', '크림치즈'], price: 4500, alt: '베이글 납품 + 크림치즈 직접' },
+  '달고나': { eq: ['화구'], cat: '음료', ing: ['설탕', '베이킹소다', '우유'], price: 5500, alt: '달고나 라떼' },
+  '피스타치오': { eq: ['에스프레소 머신'], cat: '음료', ing: ['피스타치오', '우유'], price: 6500, alt: '피스타치오 라떼' },
+  '말차': { eq: ['에스프레소 머신'], cat: '음료', ing: ['말차', '우유'], price: 6000, alt: '말차 라떼' },
+  '흑임자': { eq: ['블렌더'], cat: '음료', ing: ['흑임자', '우유'], price: 6000, alt: '흑임자 라떼' },
+  '쑥': { eq: ['블렌더'], cat: '음료', ing: ['쑥', '우유'], price: 6000, alt: '쑥 라떼' },
+  '딸기모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '딸기', '팥'], price: 4500 },
+  '찹쌀떡': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '팥'], price: 2500, alt: '찹쌀떡 완제품 + 음료 세트' },
+  '모찌떡': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '생크림'], price: 4500 },
+  '찹쌀모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '팥'], price: 4000 },
+  '과일모찌': { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루', '과일', '생크림'], price: 5500, alt: '과일모찌 완제품 납품' },
+};
+function guessReq(k) {
+  const n = k.replace(/\s/g, ''), has = (...a) => a.some(x => n.includes(x));
+  if (has('라떼', '티', '에이드', '스무디', '커피', '주스', '쉐이크')) return { eq: has('스무디', '쉐이크', '주스') ? ['블렌더'] : ['에스프레소 머신'], cat: '음료', ing: [], price: 6000 };
+  if (has('빵', '베이글', '스콘', '쿠키', '케이크', '타르트', '휘낭시에', '까눌레', '마들렌', '파이', '머핀', '브라우니')) return { eq: ['오븐'], cat: '베이커리', ing: [], price: 4000, alt: `${k} 납품받기` };
+  if (has('빙수', '아이스크림', '젤라또', '소르베')) return { eq: ['아이스크림 기계'], cat: '디저트', ing: [], price: 8000 };
+  if (has('모찌', '떡', '찹쌀')) return { eq: ['찜기'], cat: '디저트', ing: ['찹쌀가루'], price: 4000 };
+  if (has('와플', '크로플')) return { eq: ['와플 기계'], cat: '디저트', ing: [], price: 6000 };
+  if (has('도넛', '츄러스', '튀김', '꽈배기')) return { eq: ['튀김기'], cat: '디저트', ing: [], price: 3500 };
+  return null;
+}
+const PF_KEY = 'dessert-timing-profile';
+function loadProfile() { try { return JSON.parse(localStorage.getItem(PF_KEY)) || null; } catch { return null; } }
+function saveProfile(p) { try { localStorage.setItem(PF_KEY, JSON.stringify(p)); } catch {} }
+function readForm() {
+  const f = document.getElementById('profile');
+  return { cat: f.querySelector('[name=pf-cat]:checked')?.value || '', price: f.querySelector('[name=pf-price]:checked')?.value || '',
+    eq: [...f.querySelectorAll('[name=pf-eq]:checked')].map(x => x.value),
+    ban: document.getElementById('pf-ban').value.split(',').map(x => x.trim()).filter(Boolean) };
+}
+function fillForm(p) {
+  if (!p) return; const f = document.getElementById('profile');
+  f.querySelectorAll('[name=pf-cat]').forEach(x => x.checked = x.value === p.cat);
+  f.querySelectorAll('[name=pf-price]').forEach(x => x.checked = x.value === p.price);
+  f.querySelectorAll('[name=pf-eq]').forEach(x => x.checked = (p.eq || []).includes(x.value));
+  document.getElementById('pf-ban').value = (p.ban || []).join(', ');
+}
+const hasProfile = p => p && (p.cat || p.price || (p.eq || []).length || (p.ban || []).length);
+function fitCard(k) {
+  const p = loadProfile();
+  if (!hasProfile(p)) return ['내 가게', '가게 프로필을 넣어 보세요', '위의 🏪 내 가게 프로필에 장비와 가격대를 넣으면 우리 가게에서 만들 수 있는지 알려드려요.'];
+  const r = REQ[k] || guessReq(k);
+  if (!r) return ['내 가게', '이 디저트는 장비 정보가 아직 없어요', '목록에 없는 디저트라 필요한 장비를 판단하지 못했어요.'];
+  const lines = [], missing = r.eq.filter(e => !(p.eq || []).includes(e));
+  if (!r.eq.length || !missing.length) lines.push(`<span class="ok">✔ 지금 장비로 만들 수 있어요</span>`);
+  else { const m = missing.join(', '); lines.push(`<span class="no">✖ ${m}${iga(m)} 필요해요</span>${r.alt ? ` → 대안: ${r.alt}` : ''}`); }
+  if (p.cat && r.cat !== p.cat && r.cat !== '식사') lines.push(p.cat === '음료' ? `음료 중심 가게라면 ${k} 맛 음료나 음료 + ${k} 세트로 응용해 보세요.` : `주력 분야(${p.cat})와 달라 사이드 메뉴로 두는 게 좋아요.`);
+  if (p.price) { const [lo, hi] = p.price.split('-').map(Number);
+    if (r.price > hi * 1.3) lines.push(`보통 ${r.price.toLocaleString()}원대라 가격대보다 비싸요. 미니 사이즈로 내 보세요.`);
+    else if (r.price < lo * 0.7) lines.push(`보통 ${r.price.toLocaleString()}원대라 음료와 세트로 묶으면 객단가가 맞아요.`);
+    else lines.push(`보통 ${r.price.toLocaleString()}원대라 가격대와 잘 맞아요.`); }
+  const bad = (p.ban || []).filter(b => r.ing.some(i => i.includes(b) || b.includes(i)));
+  if (bad.length) lines.push(`<span class="no">쓰지 않는 재료(${bad.join(', ')})가 들어가요.</span> 빼거나 바꿔야 해요.`);
+  return ['내 가게', `우리 가게에서 ${k}`, lines.join('<br>')];
+}
+function profileSummary() {
+  const p = loadProfile(), el = document.getElementById('pf-sum');
+  el.textContent = hasProfile(p) ? [p.cat, p.price && p.price.replace('-', '~') + '원', (p.eq || []).length ? `장비 ${p.eq.length}개` : '', (p.ban || []).length ? `금기 ${p.ban.length}개` : ''].filter(Boolean).join(' · ') : '넣으면 우리 가게에서 만들 수 있는지 알려드려요';
+}
+fillForm(loadProfile()); profileSummary();
+document.getElementById('profile').addEventListener('change', () => { saveProfile(readForm()); profileSummary(); if (current) renderPlan(current, entry(current).v, entry(current).shop); });
+document.getElementById('pf-ban').addEventListener('input', () => { saveProfile(readForm()); profileSummary(); if (current) renderPlan(current, entry(current).v, entry(current).shop); });
+
 /* ---------- 기획 제안: 고른 디저트에 맞춰 ---------- */
 function renderPlan(k, v, st) {
   const sv = v.season, smax = Math.max(...sv), smin = Math.min(...sv), pm = sv.indexOf(smax) + 1;
@@ -756,7 +900,9 @@ function renderPlan(k, v, st) {
   }
   document.getElementById('p-h2').textContent = `${k} 기획 제안`;
   document.getElementById('p-sub').textContent = `${k}${J} '${v.type}'이라 이렇게 해보면 좋아요.`;
-  document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('');
+  const fit = fitCard(k);
+  document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
+    `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>`;
   document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
 }
 
@@ -838,7 +984,7 @@ function lifecycle(dates, raw) {
   return { type, peak: `${pd.getFullYear()}.${String(pd.getMonth() + 1).padStart(2, '0')}`, peakDate: dates[pk],
     rise: st === null ? null : pk - st, half: hf === null ? null : hf - pk, now, yoy: yago > 0 ? +((cur / yago - 1) * 100).toFixed(1) : null,
     smonth: season.indexOf(smax) + 1, amp, season, pre52: pk >= 52 ? S[pk - 52] / pv * 100 : 0,
-    s: S.map(x => x === null ? null : +(x / pv * 100).toFixed(2)) };
+    zeroShare: raw.filter(x => !x).length / n, s: S.map(x => x === null ? null : +(x / pv * 100).toFixed(2)) };
 }
 function shopAnalysis(rows, peakDate, capped) {
   const day = 864e5, today = new Date();
