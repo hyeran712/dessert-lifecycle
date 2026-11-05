@@ -767,6 +767,8 @@ function goStep(n) {
 function setView(v) {
   document.getElementById('view-flow').hidden = v !== 'flow';
   document.getElementById('radar').hidden = v !== 'radar';
+  document.getElementById('local').hidden = v !== 'local';
+  if (v === 'local') loadLocal();
   document.querySelectorAll('nav [data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
   scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -779,6 +781,94 @@ document.getElementById('profile').addEventListener('input', () => { renderSide(
 const __select = select;
 select = k => { __select(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
 renderPicks(); renderSide(); renderProg(); head();
+
+
+/* ---------- 우리 동네 리포트 (live/district.json) ---------- */
+const LC_KEY = 'dessert-timing-district';
+const SIDO_ORDER = ['서울', '경기', '인천', '강원', '충북', '충남', '대전', '세종', '전북', '전남광주', '경북', '대구', '경남', '부산', '울산', '제주'];
+const KW_TYPE = { '모찌': '모찌류(합산)' };   // 동네 키워드 → 검색량 분석 키워드
+let DIST = null;
+function loadLocal() {
+  if (DIST) return;
+  fetch('live/district.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
+    DIST = d;
+    const sel = document.getElementById('lc-sido'), gu = document.getElementById('lc-gu');
+    const keys = Object.keys(d.d), by = s => keys.filter(k => k.split(' ')[0] === s);
+    sel.innerHTML = SIDO_ORDER.filter(s => by(s).length).map(s => `<option value="${s}">${SIDO_NAME[s] || s}</option>`).join('');
+    const fillGu = () => { gu.innerHTML = by(sel.value).map(k => `<option value="${k}">${k.split(' ').slice(1).join(' ')}</option>`).join(''); };
+    let saved = null; try { saved = localStorage.getItem(LC_KEY); } catch {}
+    if (!saved || !d.d[saved]) saved = '서울 마포구' in d.d ? '서울 마포구' : keys[0];
+    sel.value = saved.split(' ')[0]; fillGu(); gu.value = saved;
+    sel.onchange = () => { fillGu(); renderLocal(gu.value); };
+    gu.onchange = () => renderLocal(gu.value);
+    document.getElementById('lc-msg').textContent = `전국 ${d.n}개 시군구 · 인허가 데이터 기준일 ${d.date}`;
+    renderLocal(saved);
+  }).catch(() => { document.getElementById('lc-msg').textContent = '동네 데이터를 불러오지 못했어요.'; });
+}
+const SIDO_NAME = { '서울': '서울특별시', '경기': '경기도', '인천': '인천광역시', '강원': '강원특별자치도', '충북': '충청북도', '충남': '충청남도', '대전': '대전광역시',
+  '세종': '세종특별자치시', '전북': '전북특별자치도', '전남광주': '전남광주통합특별시', '경북': '경상북도', '대구': '대구광역시', '경남': '경상남도', '부산': '부산광역시', '울산': '울산광역시', '제주': '제주특별자치도' };
+function renderLocal(key) {
+  const d = DIST, x = d.d[key], N = d.nat; if (!x) return;
+  try { localStorage.setItem(LC_KEY, key); } catch {}
+  const place = key === '세종 세종시' ? '세종시' : key.split(' ').slice(1).join(' ');
+  const full = key === '세종 세종시' ? '세종특별자치시' : `${SIDO_NAME[key.split(' ')[0]]} ${place}`;
+  const net = x.o12 - x.c12;
+  // 디저트별 빈자리: 전국 비율대로라면 몇 곳이 있을지 vs 실제
+  const rows = d.kw.map(k => {
+    const exp = N.kw[k] * x.alive / N.alive, have = x.kw[k] || 0, r = exp ? have / exp : 0;
+    const tk = KW_TYPE[k] || k, ty = D.kw[tk] && D.kw[tk].type;
+    let j = exp < 0.8 ? (have ? 'same' : null) : r < 0.5 ? 'empty' : r > 1.6 ? 'many' : 'same';
+    if (j === 'empty' && ['유행형', '관망형'].includes(ty)) j = 'over';   // 비어 있지만 유행이 지난 것
+    return { k, have, exp, r, ty, j };
+  }).filter(o => o.j);
+  const ord = { empty: 0, many: 1, same: 2, over: 3 };
+  const GENERIC = ['디저트 카페', '케이크'];
+  rows.sort((a, b) => ord[a.j] - ord[b.j] || (GENERIC.includes(a.k) - GENERIC.includes(b.k)) || b.exp - a.exp);
+  const J = { empty: '빈자리', many: '많음', same: '비슷', over: '유행 지남' };
+  const tbl = rows.slice(0, 10).map(o => `<tr><td><b>${o.k}</b>${o.ty ? ` <span class="tag" style="background:${TYPE_COLOR[o.ty]}">${o.ty}</span>` : ''}</td>
+    <td class="n">${o.have}곳</td><td class="n">${o.exp < 1 ? o.exp.toFixed(1) : Math.round(o.exp)}곳</td><td style="text-align:center"><span class="jd ${o.j}">${J[o.j]}</span></td></tr>`).join('');
+  // 사장님 체크 문장
+  const acts = [];
+  const good = rows.filter(o => o.j === 'empty' && ['정착형', '진행중', '시즌형'].includes(o.ty));
+  const over = rows.filter(o => o.j === 'over');
+  const empty = rows.filter(o => o.j === 'empty' && !GENERIC.includes(o.k));
+  if (good.length) acts.push(`<b>${good.slice(0, 2).map(o => o.k).join(', ')}</b>${iga(good[Math.min(1, good.length - 1)].k)} 전국에서는 ${good[0].ty === '진행중' ? '지금 뜨는' : '오래 찾는'} 디저트인데 우리 동네엔 적어요. ${good[0].ty === '진행중' ? '기간 한정' : '정규 메뉴'} 후보로 먼저 검토해 보세요.`);
+  else if (empty.length) acts.push(`<b>${empty.slice(0, 2).map(o => o.k).join(', ')}</b>${iga(empty[Math.min(1, empty.length - 1)].k)} 전국 평균보다 우리 동네에 적어요. 찾는 사람이 있는지 단골 반응부터 확인해 보세요.`);
+  const sat = rows.filter(o => o.j === 'many' && ['유행형', '관망형'].includes(o.ty));
+  if (over.length) acts.push(`<b>${over.slice(0, 2).map(o => o.k).join(', ')}</b>${iga(over[Math.min(1, over.length - 1)].k)} 우리 동네에 적지만 전국 유행이 이미 지났어요. 빈자리라고 바로 들이기보다 토핑이나 맛으로만 활용해 보세요.`);
+  if (sat.length) acts.push(`<b>${sat.map(o => o.k).join(', ')}</b>${iga(sat[sat.length - 1].k)} 우리 동네에 이미 많고 전국 유행도 꺾였어요. 새로 들이기보다 기존 메뉴 리뉴얼이 안전해요.`);
+  acts.push(net >= 0 ? `최근 1년 동안 연 곳(${x.o12})이 닫은 곳(${x.c12})보다 ${net}곳 많아요. 경쟁 가게가 늘고 있으니 <b>우리 가게만의 대표 메뉴</b>를 분명히 하세요.`
+                     : `최근 1년 동안 닫은 곳(${x.c12})이 연 곳(${x.o12})보다 ${-net}곳 많아요. 동네 카페 수가 줄고 있어 <b>가격 경쟁보다 단골 관리</b>가 중요한 시기예요.`);
+  if (x.surv3 !== null && N.surv3) acts.push(x.surv3 < N.surv3 - 5 ? `3~4년 전에 연 가게 중 3년을 버틴 곳이 ${x.surv3}%로 전국(${N.surv3}%)보다 낮아요. 신메뉴는 <b>장비 투자 없이 작게 시험</b>하는 걸 권해요.`
+                     : x.surv3 > N.surv3 + 5 ? `3년을 버틴 가게 비율이 ${x.surv3}%로 전국(${N.surv3}%)보다 높아요. 자리 잡은 가게가 많은 동네라 <b>품질과 차별화</b>로 승부해야 해요.`
+                     : `3년을 버틴 가게 비율이 ${x.surv3}%로 전국(${N.surv3}%)과 비슷해요.`);
+  if (x.pop12 >= 30) acts.push(`최근 1년 팝업·행사 매장이 ${x.pop12}곳이나 열렸어요. 행사가 잦은 동네라 <b>축제·시즌에 맞춘 한정 메뉴</b>가 잘 맞을 수 있어요.`);
+  const words = x.words.length ? `<div class="wchips">${x.words.map(([w, c, g]) => `<b>${esc(w)} ${c}곳${g >= 1.5 ? ` · ${g}배↑` : ''}</b>`).join('')}</div>` : '<p class="note">눈에 띄게 늘어난 단어는 아직 없어요.</p>';
+  const el = document.getElementById('lc-sheet');
+  el.innerHTML = `
+    <div class="sh-top"><span class="sh-tag">우리 동네 카페·디저트 리포트 · ${d.date.slice(0, 7).replace('-', '.')}</span>
+      <h2>${place}, 지금 어떤 디저트가<br>비어 있을까?</h2><p>${full} · 카페·디저트 가게 인허가 데이터로 정리했어요.</p></div>
+    <div class="sh-kpi">
+      <div><b>${x.alive.toLocaleString()}곳</b><span class="l">영업 중인 카페·디저트 가게 (전국 ${d.n}곳 중 ${x.rank}위)</span></div>
+      <div><b><span style="color:#1a7f3c">+${x.o12}</span> / <span style="color:var(--teal-d)">−${x.c12}</span></b><span class="l">최근 1년 개업 / 폐업 (팝업 제외)</span></div>
+      <div><b>${x.surv3 === null ? '–' : x.surv3 + '%'}</b><span class="l">3~4년 전 연 가게 중 3년 버틴 비율 (전국 ${N.surv3}%)</span></div>
+      <div><b>${x.life === null ? '–' : x.life + '개월'}</b><span class="l">최근 1년 문 닫은 가게의 영업 기간 (중앙값, 전국 ${N.life}개월)</span></div>
+    </div>
+    <div class="sh-grid">
+      <div class="sh-box"><h3><span>우리 동네 디저트 빈자리</span></h3>
+        <p class="note">*전국 비율대로라면 우리 동네에 있을 매장 수예요. 실제 매장 수와 비교했어요. (상호에 디저트 이름이 들어간 가게 기준)</p>
+        <table class="gap-t"><thead><tr><th>디저트 (전국 유행 단계)</th><th style="text-align:right">우리 동네</th><th style="text-align:right">전국 평균*</th><th style="text-align:center">판단</th></tr></thead><tbody>${tbl}</tbody></table></div>
+      <div class="sh-box"><h3><span>요즘 새로 생긴 가게</span></h3>
+        <p class="note">최근 6개월 새 가게 이름에 많이 나온 단어 (앞선 1년보다 늘어난 정도)</p>${words}
+        <p class="note" style="margin-top:6px">최근 3개월 개업 ${x.o3}곳 중 최근</p>
+        <ul>${x.recent.map(([n, dt]) => `<li>${esc(n)}<span>${dt}</span></li>`).join('') || '<li>최근 3개월 새 가게가 없어요.</li>'}</ul></div>
+    </div>
+    <div class="sh-act"><h3>사장님 체크</h3><ol>${acts.map(a => `<li>${a}</li>`).join('')}</ol></div>
+    <div class="sh-foot"><p style="margin:0">데이터: 행정안전부 지방행정 인허가(휴게음식점 중 커피숍·과자점·아이스크림·전통찻집·떡카페·기타 + 제과점, PC방·편의점 등 제외), 기준일 ${d.date}<br>90일 안에 닫은 곳은 팝업·행사 매장으로 따로 셌어요. 유행 단계는 네이버 데이터랩 검색량(2016~2026) 분석 결과예요. 실제 매출과는 다를 수 있어요.</p>
+      <p style="margin:0;text-align:right"><b>디저트 타이밍</b><br>hyeran712.github.io/dessert-lifecycle<br>기획·분석 윤혜란</p></div>`;
+  el.hidden = false;
+}
+document.getElementById('lc-print').onclick = () => { if (DIST) print(); };
 
 /* ---------- 이번 주 레이더 (live/live.json, 매주 자동 갱신) ---------- */
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

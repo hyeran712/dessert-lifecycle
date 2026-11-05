@@ -500,5 +500,58 @@ details.more #chips{padding:0 16px 14px}
   .stepper button{padding:5px 8px;font-size:13px}
   .step-nav .btn{flex:1}
 }
+
+/* ===== 우리 동네 리포트 ===== */
+.lc-pick{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.lc-pick .fld{margin:0;flex:1 1 180px}
+.lc-pick select{display:block;width:100%;margin-top:6px;font:inherit;font-size:15px;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:#fff}
+.sheet{background:#fff8dc;border:3px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:14px;box-shadow:6px 6px 0 var(--ink)}
+.sh-top{background:var(--pop-y);border-bottom:3px solid var(--ink);padding:26px 30px 22px}
+.sh-tag{display:inline-block;font-size:12px;font-weight:900;letter-spacing:1.5px;background:var(--ink);color:var(--pop-y);padding:5px 10px;border-radius:6px}
+.sh-top h2{display:block;background:none;padding:0;font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,40px);line-height:1.2;margin:12px 0 6px}
+.sh-top p{margin:0;font-weight:500}
+.sh-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:20px 30px 4px}
+.sh-kpi div{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:12px 14px;box-shadow:3px 3px 0 var(--ink)}
+.sh-kpi b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.15}
+.sh-kpi .l{display:block;font-size:12.5px;color:var(--ink-2);margin-top:4px}
+.sh-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;padding:18px 30px 0}
+.sh-box{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:16px 18px}
+.sh-box h3{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 4px}
+.sh-box h3 span{background:var(--pop-y);padding:0 5px}
+.sh-box .note{margin:0 0 10px}
+.gap-t{width:100%;min-width:0;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
+.gap-t td:first-child{white-space:normal}
+.gap-t th:nth-child(2),.gap-t th:nth-child(3){width:64px}.gap-t th:nth-child(4){width:70px}
+.gap-t td:first-child{word-break:keep-all}
+.gap-t td:first-child .tag{display:inline-block;margin-top:2px}
+.gap-t th{font-size:12px;text-align:left;color:var(--ink-3);font-weight:700;border-bottom:2px solid var(--ink);padding:5px 4px}
+.gap-t td{padding:6px 4px;border-bottom:1px dashed var(--line)}
+.gap-t td.n{text-align:right;font-weight:700}
+.gap-t .tag{font-size:10.5px}
+.jd{display:inline-block;font-size:11.5px;font-weight:900;padding:2px 8px;border-radius:6px;border:1.5px solid var(--ink)}
+.jd.empty{background:var(--pop-y)}.jd.over{background:#ece7da;color:var(--ink-3);border-color:var(--ink-3)}.jd.many{background:var(--ink);color:#fff}.jd.same{background:#fff}
+.sh-box ul{list-style:none;margin:0;padding:0;font-size:13px}
+.sh-box li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.sh-box li span{color:var(--ink-3);flex:none}
+.wchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.wchips b{font-size:12.5px;background:#fff3c4;border:1.5px solid var(--ink);border-radius:999px;padding:3px 10px}
+.sh-act{margin:16px 30px 0;background:var(--ink);color:#fff;border-radius:14px;padding:18px 22px}
+.sh-act h3{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 8px;color:var(--pop-y)}
+.sh-act ol{margin:0;padding-left:20px;font-size:14px;line-height:1.7}
+.sh-act ol b{color:var(--pop-y)}
+.sh-foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 30px 20px;font-size:11.5px;color:var(--ink-2);line-height:1.6}
+.sh-foot b{color:var(--ink);font-size:13px}
+@media (max-width:760px){.sh-kpi{grid-template-columns:1fr 1fr;padding:16px 16px 4px}.sh-grid{grid-template-columns:minmax(0,1fr);padding:14px 16px 0}.sh-top{padding:20px 18px}.sh-act{margin:14px 16px 0}.sh-foot{padding:12px 16px 18px}}
+@media print{
+  @page{size:A4;margin:10mm}
+  body{background:#fff}
+  header,.notice,#view-flow,#radar,footer,dialog,#local > .tagpill,#local > h1,#local > .ph-sub,.lc-pick,#lc-msg{display:none!important}
+  main.wrap{padding:0;max-width:none}
+  #local{display:block!important}
+  .sheet{zoom:.74;box-shadow:none;margin:0;border-width:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sh-kpi{grid-template-columns:repeat(4,minmax(0,1fr))}.sh-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+  .sh-box,.sh-act{break-inside:avoid}
+  .gap-t{font-size:12.5px}.sh-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+}
 </style>
 </head>

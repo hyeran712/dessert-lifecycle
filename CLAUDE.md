@@ -46,6 +46,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
   - 2단계 `[data-panel="2"]#findings`: 판정 `.result`, 그래프 `#c-main`, 핵심 발견 ①~④, 과일모찌 사례 `#case-mochi`
   - 3단계 `[data-panel="3"]#proposal`: 목적 카드 `#goals`, 기획 카드 `#p-plan`, 내 가게 프로필 `#profile`, 요청사항 `#mk-note`, 신메뉴 버튼 `#mk-btn`, 결과 `#mk-out`, 전략표 `#p-table`
   - 오른쪽 사이드바 `#side`: 진행 단계 `#prog`, 고른 디저트 요약 `#sel-sum`
+- `#local`: 우리 동네 리포트(사장님용). 시도 `#lc-sido`·시군구 `#lc-gu` 고르면 `#lc-sheet`에 한 장 리포트, `#lc-print`로 A4 PDF 저장(인쇄용 CSS는 head.html 끝)
 - `#radar`: 별도 화면. 디저트 타일 `#rd-tiles`, 3D 지도 `#mapstage`(`#kmap` SVG, 팝업 `#map-panel`, 확대 버튼 `.ms-ctrl`), 새 가게 이름 `#rd-list`
 
 ## 동작 핵심 (src/app.js)
@@ -70,6 +71,12 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `/volume`: 네이버 검색광고 API `keywordstool`(최근 한 달 PC·모바일 검색 수 + 연관 키워드 20개). 비밀 변수 `NAVER_AD_KEY`(액세스라이선스), `NAVER_AD_SECRET`(비밀키), `NAVER_AD_CUSTOMER`(CUSTOMER_ID)가 필요 — 2026-11-05 등록 완료(소금빵 월 26,640회 확인). 레이더 화면 `#opp`(renderOpportunity)가 디저트별 /volume 합계 ÷ 영업 중 매장으로 "가게당 검색 수" 순위를 보여 준다 (VOL_TERMS: 붕어빵=붕어빵+잉어빵)
 - 이 작업 환경(클라우드)에서는 workers.dev와 data.go.kr에 직접 접속이 안 될 수 있다 → 사용자가 브라우저로 확인하거나, 테스트용 복사본에서 Playwright로 응답을 흉내 낸다
 
+## 우리 동네 리포트 데이터
+- `live/district.json`: `scripts/district.py`가 행정안전부 인허가 **전체 데이터**(휴게음식점+제과점 원본 CSV)로 만든 시군구 255곳 통계 (기준일 2026-11-02)
+- 카페·디저트 = 커피숍·과자점·아이스크림·전통찻집·떡카페·기타 휴게음식점·제과점 (PC방·편의점·운동시설 등 이름으로 제외), 90일 안에 닫은 곳은 팝업으로 따로
+- 지표: 영업 중 수·순위, 최근 1년 개업/폐업(팝업 제외), 3년 생존율, 폐업 가게 영업 기간 중앙값, 디저트 키워드별 매장 수(전국 비율 대비 빈자리/많음), 최근 6개월 새 가게 이름 단어
+- 아직 주간 자동 갱신 안 됨 (원본 전체 파일이 저장소에 없음). 갱신하려면 원본 CSV를 받아 `python scripts/district.py 휴게음식점.csv 제과점.csv`
+
 ## 주간 레이더 (GitHub Actions)
 - `.github/workflows/weekly-radar.yml`: 매주 월요일 08:23(한국 시간) `scripts/update.py` 실행 → `live/` 커밋
 - 행정안전부 인허가 API(휴게음식점 `rest_cafes`, 제과점 `bakeries`)에서 `DAT_UPDT_PNT` 이후 바뀐 가게를 받아 매장 수·시도별 통계(`regions`)·가게 이름 경보를 다시 계산
@@ -91,6 +98,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 ## 다음에 할 수 있는 일 (사용자와 이야기한 것)
 - (나중에) v1 파일·링크 정리 — 사용자가 말할 때까지 그대로
 - 포트폴리오 카드 사진 교체본은 `hyeran712.github.io`의 `claude/confident-davinci-cb9r7f` 브랜치에 올려 둠 (main 반영은 사용자 확인 후)
+- 동네 리포트를 주간 자동 갱신으로 (radar_base처럼 바뀐 가게만 반영)
 - 포트폴리오 메인(`hyeran712.github.io`)의 디저트 타이밍 카드 이미지를 새 디자인으로 교체
 - 네이버 검색광고 API(월간 검색 수)를 붙여 "검색 수 대비 매장이 부족한 디저트", 연관 키워드로 신메뉴 형태 찾기
 - 원가표에 디저트 재료 단가 계속 추가 (생딸기·포장용기 실제 가격으로)
