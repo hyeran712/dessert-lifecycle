@@ -61,7 +61,8 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - Gemini는 홍콩(HKG)에서 막혀서 `GeminiProxy` Durable Object(locationHint 'wnam')를 거쳐 호출한다. 확인: `/where` → `gemini`가 미국 공항 코드면 정상
 - 503/429면 재시도 후 `gemini-flash-latest` → `gemini-flash-lite-latest`로 넘어감
 - `PRICE`: 사용자의 카페 원가표 [재료단가] 시트 단가 + 디저트 재료(2026-11-04 식봄 판매가). 생딸기·포장용기·얼음·빨대는 예시값. `ALIAS`로 재료 이름을 맞춤
-- 엔드포인트: `GET /trend?q=`, `GET /shops?q=&src=cafe|bakery&page=`, `POST /menu`, `GET /where`
+- 엔드포인트: `GET /trend?q=`, `GET /shops?q=&src=cafe|bakery&page=`, `GET /volume?q=`, `POST /menu`, `GET /where`
+- `/volume`: 네이버 검색광고 API `keywordstool`(최근 한 달 PC·모바일 검색 수 + 연관 키워드 20개). 비밀 변수 `NAVER_AD_KEY`(액세스라이선스), `NAVER_AD_SECRET`(비밀키), `NAVER_AD_CUSTOMER`(CUSTOMER_ID)가 필요 — 2026-11-05 기준 아직 등록 안 됨
 - 이 작업 환경(클라우드)에서는 workers.dev와 data.go.kr에 직접 접속이 안 될 수 있다 → 사용자가 브라우저로 확인하거나, 테스트용 복사본에서 Playwright로 응답을 흉내 낸다
 
 ## 주간 레이더 (GitHub Actions)

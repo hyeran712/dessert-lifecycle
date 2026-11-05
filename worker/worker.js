@@ -7,9 +7,11 @@
  *   NAVER_SECRET  NAVER API HUB Client Secret
  *   DATA_GO_KEY   공공데이터포털 인증키 (Decoding)
  *   GEMINI_KEY    Google AI Studio Gemini API 키 (신메뉴 제안용)
+ *   NAVER_AD_KEY, NAVER_AD_SECRET, NAVER_AD_CUSTOMER   네이버 검색광고 API 액세스라이선스·비밀키·CUSTOMER_ID (월간 검색 수용)
  *
  * GET /trend?q=과일모찌                  → 2016년부터 주간 검색량 (최고점 = 100)
  * GET /shops?q=과일모찌&src=cafe&page=1  → 상호에 단어가 들어간 휴게음식점(cafe)·제과점(bakery) 100곳씩
+ * GET /volume?q=소금빵                  → 네이버 검색광고: 최근 한 달 검색 수(PC·모바일) + 연관 키워드
  * POST /menu  {keyword, type, kind, price, targetRate, profile}  → AI 신메뉴 제안 + 원가 검증(목표 원가율을 넘으면 최대 3번 다시)
  */
 import { DurableObject } from 'cloudflare:workers';
@@ -64,6 +66,25 @@ async function trend(q, env) {
   const data = await res.json();
   const r = (data.results || [])[0] || { data: [] };
   return { q, dates: r.data.map(d => d.period), ratio: r.data.map(d => d.ratio) };
+}
+
+// ---------- 월간 검색 수 (네이버 검색광고 API) ----------
+const num = v => typeof v === 'number' ? v : 5;   // '< 10'으로 오면 5로 본다
+async function volume(q, env) {
+  if (!env.NAVER_AD_KEY || !env.NAVER_AD_SECRET || !env.NAVER_AD_CUSTOMER)
+    return { ok: false, error: '검색광고 키(NAVER_AD_KEY · NAVER_AD_SECRET · NAVER_AD_CUSTOMER)가 아직 Worker에 없어요.' };
+  const path = '/keywordstool', ts = String(Date.now());
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.NAVER_AD_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(`${ts}.GET.${path}`)))));
+  const hint = q.replace(/\s+/g, '');
+  const res = await fetch(`https://api.searchad.naver.com${path}?hintKeywords=${encodeURIComponent(hint)}&showDetail=1`, {
+    headers: { 'X-Timestamp': ts, 'X-API-KEY': env.NAVER_AD_KEY, 'X-Customer': String(env.NAVER_AD_CUSTOMER), 'X-Signature': sig } });
+  if (!res.ok) throw new Error(`검색광고 API 오류 ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const list = ((await res.json()).keywordList || []).map(x => ({ keyword: x.relKeyword, pc: num(x.monthlyPcQcCnt), mobile: num(x.monthlyMobileQcCnt),
+    total: num(x.monthlyPcQcCnt) + num(x.monthlyMobileQcCnt), comp: x.compIdx }));
+  const me = list.find(x => x.keyword === hint) || null;
+  const related = list.filter(x => x !== me).sort((a, b) => b.total - a.total).slice(0, 20);
+  return { ok: true, q: hint, month: me, related };
 }
 
 async function shops(q, src, page, env) {
@@ -221,8 +242,9 @@ export default {
     try {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
+      else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
-      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page='] }, 200, origin);
+      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q='] }, 200, origin);
       const resp = json(data, 200, origin, 86400);
       ctx.waitUntil(cache.put(key, resp.clone()));
       return resp;
