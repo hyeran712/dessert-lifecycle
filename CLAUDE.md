@@ -49,6 +49,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `goStep(n)`, `setView('flow'|'radar')`: 단계·화면 전환 (숨긴 차트는 전환 후 `Chart.instances` resize)
 - `analyzeLive(q)`: 목록에 없는 디저트를 Worker로 실시간 분석 (`LIVE_API`)
 - `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
+- 신메뉴 결과 아래 [♡ 보관함에 저장] [↻ 다른 메뉴]: 보관함은 localStorage `dessert-timing-saved`(최대 30개, `#saved` 카드·사이드바 `#side-saved`), 다른 메뉴는 앞서 나온 이름 3개를 note에 붙여 다시 요청(`makeMenu(true)`). 카드 HTML은 `menuCard(m)` 하나로 결과·보관함 공용. 로그인·여러 기기 동기화가 필요해지면 Supabase 검토
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
 - 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
 - Chart.js 4.4.1 (cdnjs). 차트 선명도용 `Chart.defaults.devicePixelRatio = 2`

@@ -83,8 +83,7 @@ const main = new Chart(document.getElementById('c-main'), {
     parsing: false, animation: { duration: 400 },
     interaction: { mode: 'nearest', axis: 'x', intersect: false },
     scales: {
-      x: { type: 'linear', grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } },
-      X
+      x: { type: 'linear', grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } }
     },
     plugins: { tooltip: { callbacks: {
       title: it => it[0].raw.m || fmtDate(it[0].raw.d || D.dates[it[0].raw.i]),
@@ -365,19 +364,10 @@ function menuPrice(k, p) {
   if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
   return r ? r.price : 5500;
 }
-async function makeMenu() {
-  if (!current) return;
-  const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
-  const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
-  const price = menuPrice(k, p);
-  mkBtn.disabled = true; mkMsg.textContent = `AI가 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (20초쯤 걸려요)`; mkOut.innerHTML = '';
-  try {
-    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, note: (document.getElementById('mk-note').value || '').trim() }) });
-    const m = await res.json(); if (!res.ok || m.error) throw new Error(m.error || res.status);
-    if (current !== k) return;
-    const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
-    mkOut.innerHTML = `<div class="mk-card">
+// AI가 만든 메뉴 카드 (결과 화면과 보관함에서 같이 씀)
+function menuCard(m) {
+  const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
+  return `<div class="mk-card">
       <span class="tag" style="background:var(--teal)">${m.kind}</span>
       <h4>${esc(m.name)}</h4>
       <p>${esc(m.concept || '')}</p>
@@ -395,6 +385,44 @@ async function makeMenu() {
       <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
       <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
     </div>`;
+}
+// ---------- 내 메뉴 보관함 (이 브라우저에만 저장) ----------
+const SAVE_KEY = 'dessert-timing-saved';
+let LAST_MENU = null; const MADE_NAMES = {};
+const loadSaved = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } };
+const storeSaved = xs => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(xs)); } catch { } };
+function saveMenu(x) {
+  if (!x) return; const xs = loadSaved();
+  xs.unshift({ id: Date.now(), at: new Date().toISOString().slice(0, 10), k: x.k, goal: x.goal, m: x.m }); storeSaved(xs.slice(0, 30)); renderSaved(); renderProg();
+}
+function renderSaved() {
+  const xs = loadSaved(), box = document.getElementById('saved-list');
+  document.getElementById('saved-n').textContent = xs.length ? `${xs.length}개` : '';
+  const sc = document.getElementById('side-saved'); if (sc) { sc.textContent = xs.length ? `♡ 보관함에 메뉴 ${xs.length}개` : '';
+    sc.onclick = e => { e.preventDefault(); if (current) goStep(3); setTimeout(() => document.getElementById('saved').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }; }
+  if (!xs.length) { box.innerHTML = '<p class="note">마음에 드는 메뉴를 만들면 ♡ 보관함에 저장을 눌러 보세요. 이 브라우저에 저장돼요.</p>'; return; }
+  box.innerHTML = xs.map(x => `<details class="sv" data-id="${x.id}"><summary><span class="sv-n">${esc(x.m.name)}</span>
+      <span class="sv-m">${esc(x.k)}${x.goal ? ' · ' + esc(x.goal) : ''} · ${won(x.m.price)} · 원가율 ${x.m.rate}% · ${x.at}</span>
+      <button type="button" class="sv-x" title="보관함에서 지우기" aria-label="지우기">×</button></summary>${menuCard(x.m)}</details>`).join('');
+  box.querySelectorAll('.sv-x').forEach(b => b.onclick = e => { e.preventDefault(); const id = +b.closest('.sv').dataset.id;
+    if (confirm('이 메뉴를 보관함에서 지울까요?')) { storeSaved(loadSaved().filter(x => x.id !== id)); renderSaved(); renderProg(); } });
+}
+async function makeMenu(again) {
+  if (!current) return;
+  const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
+  const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
+  const price = menuPrice(k, p);
+  mkBtn.disabled = true; mkMsg.textContent = `AI가 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (20초쯤 걸려요)`; mkOut.innerHTML = '';
+  try {
+    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
+    const m = await res.json(); if (!res.ok || m.error) throw new Error(m.error || res.status);
+    if (current !== k) return;
+    LAST_MENU = { m, k, goal: GOAL }; (MADE_NAMES[k] = MADE_NAMES[k] || []).push(m.name);
+    mkOut.innerHTML = menuCard(m) + `<div class="mk-act"><button type="button" class="btn primary" id="mk-save">♡ 보관함에 저장</button>
+      <button type="button" class="btn line" id="mk-again">↻ 마음에 안 들어요, 다른 메뉴</button></div>`;
+    document.getElementById('mk-save').onclick = e => { saveMenu(LAST_MENU); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; };
+    document.getElementById('mk-again').onclick = () => makeMenu(true);
     mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.'; MADE = true; renderProg();
   } catch (e) {
     const msg = String(e.message || e);
@@ -407,7 +435,7 @@ async function makeMenu() {
   }
   finally { mkBtn.disabled = false; }
 }
-mkBtn.addEventListener('click', makeMenu);
+mkBtn.addEventListener('click', () => makeMenu(false));
 
 /* ---------- 사례: 과일모찌 ---------- */
 const fm = D.kw['과일모찌'];
@@ -416,8 +444,7 @@ new Chart(document.getElementById('c-mochi'), {
   data: { datasets: [{ data: fm.s.map((y, i) => ({ x: X[i], y, i })).filter(p => p.y !== null && p.x >= 2022),
     borderColor: C.s[1], borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, fill: true, backgroundColor: 'rgba(235,104,52,.08)', tension: .25 }] },
   options: { parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
-    scales: { x: { type: 'linear', min: 2022, max: X[X.length - 1], grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } },
-      X },
+    scales: { x: { type: 'linear', min: 2022, max: X[X.length - 1], grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } } },
     plugins: { tooltip: { callbacks: { title: it => fmtDate(D.dates[it[0].raw.i]), label: it => ` 피크 대비 ${it.raw.y.toFixed(1)}%` } } } }
 });
 const gp = D.groupPre;
@@ -702,7 +729,7 @@ function renderSide() {
   document.getElementById('store-ini').textContent = (n || '내').slice(0, 1);
 }
 function renderProg() {
-  const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: false };
+  const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: loadSaved().length > 0 };
   const act = MADE ? 4 : STEP;
   document.querySelectorAll('#prog li').forEach(li => { const p = +li.dataset.p;
     li.className = done[p] ? 'done' : (p === act ? 'act' : ''); li.querySelector('i').textContent = done[p] ? '✓' : p; });
@@ -794,3 +821,4 @@ async function renderOpportunity(L) {
 }
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
+renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)

@@ -156,7 +156,7 @@
         <summary><b>🏪 내 가게 프로필</b> <span id="pf-sum">넣으면 우리 가게에서 만들 수 있는지 알려드려요</span></summary>
         <div class="pf-grid">
           <fieldset><legend>가게 이름</legend>
-            <input type="text" id="pf-name" maxlength="20" placeholder="예: 진작다이닝">
+            <input type="text" id="pf-name" maxlength="20">
             <p class="note" style="margin-top:6px">위쪽 가게 표시와 제목에 써요.</p>
           </fieldset>
           <fieldset><legend>주력 분야</legend>
@@ -196,6 +196,11 @@
             </div>
             <div id="mk-out"></div>
           </div>
+          <div class="card" id="saved">
+            <h2>내 메뉴 보관함 <span id="saved-n" style="font-size:15px;color:var(--ink-3)"></span></h2>
+            <p class="sub">저장한 메뉴를 눌러 레시피·원가를 다시 볼 수 있어요. 이 브라우저에만 저장돼요.</p>
+            <div id="saved-list"></div>
+          </div>
           <div class="card" style="overflow-x:auto">
         <h3 style="font-size:16px;margin:0 0 8px">신호별 출시 전략 <span style="font-weight:500;color:var(--ink-3);font-size:13px">(노란 줄 = 지금 디저트)</span></h3>
         <table id="p-table">
@@ -223,6 +228,7 @@
             <li data-p="4"><i>4</i>레시피 확인·저장</li>
           </ol>
           <div class="sel-sum" id="sel-sum"></div>
+          <a href="#saved" class="note" id="side-saved" style="display:block;margin-top:8px;font-weight:700"></a>
         </div>
         <details class="card side-card"><summary><b>이 분석에 쓰인 데이터</b></summary>
           <p class="note">네이버 데이터랩 주간 검색량(2016~2026), 행정안전부 인허가(휴게음식점 65만 + 제과점 7만 건), 내 원가표 재료 단가.</p></details>

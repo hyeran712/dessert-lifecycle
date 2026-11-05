@@ -233,6 +233,17 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .mk-card .pass{color:#1a7f3c}.mk-card .fail{color:var(--teal-d)}
 .mk-card table{min-width:0;font-size:13.5px;margin-top:6px}
 .mk-card td,.mk-card th{padding:7px 8px}
+.mk-act{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+#saved-list{display:grid;gap:10px}
+.sv{border:2px solid var(--ink);border-radius:12px;background:#fff}
+.sv summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:12px 14px}
+.sv summary::-webkit-details-marker{display:none}
+.sv-n{font-weight:900;font-size:16px}
+.sv-m{grid-column:1;font-size:12.5px;color:var(--ink-2)}
+.sv-x{grid-column:2;grid-row:1/3;align-self:center;border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--ink-3);padding:4px 8px}
+.sv-x:hover{color:var(--teal-d)}
+.sv[open] summary{border-bottom:2px dashed rgba(28,28,28,.15)}
+.sv .mk-card{margin:0;border:0;border-radius:0 0 12px 12px}
 .mk-card .src{font-size:11.5px;border-radius:5px;padding:0 6px;border:1px solid var(--ink)}
 .mk-card .src.ai{background:var(--teal-l)}
 .mk-card ol{margin:6px 0 0;padding-left:20px;font-size:14px}
