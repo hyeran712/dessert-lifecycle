@@ -466,6 +466,24 @@ main h1,#radar h1{font-family:var(--display);font-weight:400;font-size:clamp(26p
 .rc li.warn::before{content:"!";color:#ff5a1f}
 .rc .go{margin-top:auto;font-weight:800;font-size:13px}
 @media (max-width:760px){#rec-out{grid-template-columns:1fr;gap:16px}}
+.decide{border-width:3px;margin-bottom:22px}
+.dc-top{display:flex;gap:16px;align-items:center}
+.dc-sig{flex:none;width:64px;height:64px;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font-size:30px;box-shadow:3px 3px 0 var(--ink)}
+.dc-sig.go{background:#3fbf6b}.dc-sig.mid{background:#ffd400}.dc-sig.stop{background:#ff5a1f}
+.dc-k{margin:0;font-size:13px;font-weight:800;color:var(--ink-3)}
+.decide h3{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.25;margin:2px 0 0}
+.dc-do{display:grid;grid-template-columns:88px 1fr;gap:8px 14px;margin:18px 0 12px;padding:14px 16px;background:var(--bg);border:2px solid var(--ink);border-radius:12px}
+.dc-do dt{font-weight:900}.dc-do dd{margin:0}
+.dc-ctx{margin:0 0 14px;font-size:14px;color:var(--ink-2)}
+.dc-go{display:flex;gap:10px;flex-wrap:wrap}
+#v-title{display:none}
+.sowhat{margin:4px 0 12px;padding:10px 14px;background:#fff3b0;border-left:5px solid var(--ink);border-radius:6px;font-weight:700}
+.sowhat::before{content:"그래서? ";font-weight:900;color:#ff5a1f}
+details.ev{margin-top:12px;border:2px dashed rgba(28,28,28,.25);border-radius:12px;padding:10px 14px}
+details.ev > summary{cursor:pointer;font-weight:800}
+details.ev > summary small{font-weight:500;color:var(--ink-3)}
+details.ev[open] > summary{margin-bottom:12px}
+@media (max-width:760px){.dc-sig{width:52px;height:52px;font-size:24px}.decide h3{font-size:22px}.dc-do{grid-template-columns:64px 1fr}}
 .picks,.goals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .pick{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px 12px 14px;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .pick:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}

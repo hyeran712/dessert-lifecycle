@@ -57,12 +57,39 @@ GROUPS.forEach(([name, ks]) => {
   chipsEl.appendChild(g);
 });
 
+// 2단계 맨 위 결론 카드: 신호등 + 언제·어떻게·주의 (사장님이 바로 결정할 수 있게)
+function renderDecision(k, v, E) {
+  const m = v.smonth, now = new Date().getMonth() + 1, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
+  const r = REQ[k] || guessReq(k) || {}, alt = r.alt, st = E.shop, p = loadProfile() || {};
+  let sig, title, rows;
+  if (v.type === '진행중') { sig = 'go'; title = '지금 내세요. 기간 한정으로 빠르게';
+    rows = [['언제', '이번 달 안에. 지금이 찾는 사람이 가장 많을 때예요'], ['어떻게', '4~8주만 파는 기간 한정 메뉴로'], ['주의', '4주마다 검색량을 다시 보고, 작년보다 덜 찾기 시작하면 바로 정리하세요']]; }
+  else if (v.type === '정착형') { sig = 'go'; title = '정규 메뉴로 내도 좋아요';
+    rows = [['언제', '서두를 필요 없어요. 준비되면 언제든'], ['어떻게', '정규 메뉴로 두고 맛·구성을 2~3가지로 넓히기'], ['주의', '이미 파는 가게가 많을 수 있어요. 동네 리포트로 주변 가게 수를 확인하세요']]; }
+  else if (v.type === '시즌형') { const d = (m - now + 12) % 12;
+    if (d >= 1 && d <= 3) { sig = 'go'; title = `지금 준비하세요. ${m}월 대목용 시즌 메뉴로`; }
+    else if (d === 0) { sig = 'mid'; title = `대목(${m}월)이 이미 왔어요. 낸다면 짧게만`; }
+    else { sig = 'mid'; title = `아직 일러요. ${before}월에 준비를 시작하세요`; }
+    rows = [['언제', `${before}~${before2}월에 출시 (대목 ${m}월의 1~2달 전)`], ['어떻게', '대목 앞뒤 2~3달만 파는 시즌 메뉴로, 매년 같은 때 다시'], ['주의', '대목이 지나면 찾는 사람이 확 줄어요. 재고를 넉넉히 잡지 마세요']]; }
+  else if (v.type === '유행형') { sig = 'stop'; title = '단독 신메뉴로는 내지 마세요';
+    rows = [['언제', '새로 내기엔 늦었어요. 유행이 이미 지나갔어요'], ['어떻게', alt ? `꼭 쓰고 싶다면 '${alt}'처럼 다른 메뉴의 맛·토핑으로만` : '다른 메뉴의 맛이나 토핑 소재로만 가볍게'], ['주의', '탕후루는 유행 정점 뒤에 연 가게의 29%가 1년 안에 닫았어요']]; }
+  else { sig = 'mid'; title = '크게 말고, 작게 시험해 보세요';
+    rows = [['언제', '급할 것 없어요. 반응을 보며 천천히'], ['어떻게', '새 메뉴보다는 기존 메뉴 리뉴얼이나 한정 수량으로'], ['주의', v.yoy !== null && v.yoy < 0 ? `작년 이맘때보다 ${Math.abs(Math.round(v.yoy))}% 덜 찾고 있어요` : '찾는 사람이 다시 늘지 지켜보세요']]; }
+  const miss = (r.eq || []).filter(e => !(p.eq || []).includes(e));
+  if ((p.eq || []).length && miss.length) rows.push(['우리 가게', alt ? `${miss.join('·')}${iga(miss[miss.length - 1])} 없으면 '${alt}'${ro(alt)} 대신할 수 있어요` : `${miss.join('·')}${iga(miss[miss.length - 1])} 필요해요`]);
+  const S = document.getElementById('dc-sig'); S.className = 'dc-sig ' + sig; S.textContent = { go: '✓', mid: '!', stop: '✕' }[sig];
+  document.getElementById('dc-title').textContent = title;
+  document.getElementById('dc-do').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
+  const ctx = [`${k}: ${v.type}`, v.yoy !== null ? `작년 이맘때보다 ${sign(v.yoy)}` : '', st && st.open_now ? `전국 전문점 ${st.open_now.toLocaleString()}곳 영업 중` : ''].filter(Boolean);
+  document.getElementById('dc-ctx').textContent = ctx.join(' · ');
+  document.getElementById('dc-btn').textContent = sig === 'stop' ? '그래도 메뉴 만들어 보기 →' : '이 디저트로 메뉴 만들기 →';
+}
 function verdict(k, v) {
   const m = v.smonth, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
   const sIdx = Math.max(...v.season).toFixed(1);
   switch (v.type) {
     case '진행중': return ['지금 뜨는 중이에요. 시즌 한정으로 바로 출시하세요',
-      `최근 13주 검색량이 전년 같은 시기보다 ${sign(v.yoy)} 늘어 역대 최고 수준이에요. 피크 1년 전 검색량이 피크의 ${Math.round(v.pre52)}%로, 바닥에서 갑자기 튄 유행형(1%)보다는 기반이 있고 정착형(48%)보다는 낮아요. 기간 한정으로 먼저 내고 4주마다 검색량을 다시 확인하세요.`];
+      `최근 3개월 검색량이 작년 이맘때보다 ${sign(v.yoy)} 늘어 역대 최고 수준이에요. 피크 1년 전 검색량이 피크의 ${Math.round(v.pre52)}%로, 바닥에서 갑자기 튄 유행형(1%)보다는 기반이 있고 정착형(48%)보다는 낮아요. 기간 한정으로 먼저 내고 4주마다 검색량을 다시 확인하세요.`];
     case '유행형': return ['유행이 지나갔어요. 신규 출시는 권하지 않아요',
       `${v.peak}에 피크를 찍고 ${v.half}주 만에 절반으로 줄었고, 지금은 피크의 ${v.now}%만 남았어요.` +
       (v.rise <= 20 ? ` 피크까지 ${v.rise}주 만에 급상승한 전형적인 반짝 유행이었어요.` : '') +
@@ -138,6 +165,7 @@ function select(k) {
   const badge = document.getElementById('v-badge');
   badge.textContent = v.type; badge.style.background = TYPE_COLOR[v.type];
   document.getElementById('v-title').textContent = t;
+  renderDecision(k, v, E);
   document.getElementById('v-body').textContent = body;
   document.getElementById('st-peak').textContent = v.peak;
   document.getElementById('st-rise').innerHTML = v.rise ? `${v.rise}<small>주</small>` : '<small>꾸준히 검색</small>';
@@ -220,6 +248,20 @@ function renderFindings(k) {
   document.getElementById('f3-lead').textContent = seasonal
     ? `${k}${J} ${pm + 1}월에 가장 많이 찾아요 (연평균의 ${smax.toFixed(1)}배). ${go[0] + 1}~${go[1] + 1}월에 출시하면 대목을 잡을 수 있어요.`
     : `${k}${J} 계절을 크게 타지 않아요. 가장 많이 찾는 ${pm + 1}월도 연평균의 ${smax.toFixed(1)}배 정도라, 출시 달보다 유행 단계가 더 중요해요.`;
+  // '그래서?' 한 줄: 근거를 사장님 결정으로 바꿔 말하기
+  document.getElementById('f1-so').textContent = v.type === '진행중' ? '아직 오르는 중이라 언제 꺾일지 몰라요. 오래 팔 메뉴보다 짧게 파는 한정 메뉴가 안전해요.'
+    : !v.rise ? '갑자기 뜬 유행이 아니라 오래 찾는 맛이에요. 정규 메뉴로 두기 좋아요.'
+    : v.rise <= 20 ? '급하게 뜬 만큼 빨리 식는 편이에요. 큰 투자보다는 짧게 파는 메뉴로 생각하세요.'
+    : v.rise >= 40 ? '천천히 오른 만큼 오래 가는 편이에요. 길게 팔 메뉴로 생각해도 돼요.'
+    : '빠르지도 느리지도 않은 편이에요. 반응을 보면서 판매 기간을 정하세요.';
+  document.getElementById('f2-so').textContent = v.now >= 25 ? `지금도 최고 때의 ${v.now}%만큼 찾아서, 찾는 사람은 충분해요.`
+    : v.now >= 10 ? `최고 때의 ${v.now}%만 남았어요. 찾는 사람이 줄고 있으니 크게 걸지 마세요.`
+    : `최고 때의 ${v.now}%로 거의 안 찾아요. 새로 내기엔 손님이 적어요.`;
+  document.getElementById('f3-so').textContent = v.type === '유행형' ? '대목 달이 있긴 하지만, 유행이 식은 영향이 더 커요. 달력만 보고 새로 내지 마세요.' : seasonal ? `${go[0] + 1}~${go[1] + 1}월에 내고, ${pm + 1}월 대목이 지나면 내리세요.` : '언제 내도 큰 차이가 없어요. 출시 달보다 지금 유행 단계를 보고 정하세요.';
+  document.getElementById('f4-so').textContent = v.type === '진행중' ? '아직 가게가 몰리기 전이에요. 남들보다 먼저 들어가야 유리해요.'
+    : v.type === '시즌형' ? '계절을 타는 디저트라 전문점을 새로 차리기보다, 지금 가게의 시즌 메뉴로 내는 게 안전해요.'
+    : v.type === '정착형' ? '검색이 정점을 지나도 가게가 계속 늘어요. 오래 팔 메뉴로 괜찮아요.'
+    : '검색이 꺾인 뒤에 연 가게는 1년 안에 많이 닫았어요. 지금 새 가게나 단독 메뉴로 들어가는 건 피하세요.';
   renderPlan(k, v, entry(k).shop);
   // 과일모찌 사례는 과일모찌를 볼 때만
   document.getElementById('case-mochi').hidden = k !== '과일모찌';
@@ -980,3 +1022,4 @@ fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promi
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
 renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
+document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));

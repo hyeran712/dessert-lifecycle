@@ -60,16 +60,23 @@
 
         <!-- 2단계 -->
         <section class="step" data-panel="2" id="findings" hidden>
+      <div class="card decide" id="decide" aria-live="polite">
+        <div class="dc-top"><span class="dc-sig" id="dc-sig"></span><div><p class="dc-k">결론</p><h3 id="dc-title"></h3></div></div>
+        <dl class="dc-do" id="dc-do"></dl>
+        <p class="dc-ctx" id="dc-ctx"></p>
+        <div class="dc-go"><button type="button" class="btn primary" data-go="3" id="dc-btn">이 디저트로 메뉴 만들기 →</button><button type="button" class="btn line" data-go="1">다른 디저트 고르기</button></div>
+      </div>
+      <h2 class="sec-h">왜 이렇게 판단했나요?</h2>
       <div class="result">
         <div class="card verdict" aria-live="polite">
           <span class="badge" id="v-badge"></span>
           <h3 id="v-title"></h3>
           <p id="v-body"></p>
           <div class="stats">
-            <div class="stat"><span>검색량 피크</span><b id="st-peak"></b></div>
-            <div class="stat"><span>피크까지 상승 기간</span><b id="st-rise"></b></div>
-            <div class="stat"><span>현재 수준 (피크 대비)</span><b id="st-now"></b></div>
-            <div class="stat"><span>전년 같은 시기 대비</span><b id="st-yoy"></b></div>
+            <div class="stat"><span>가장 많이 찾은 때</span><b id="st-peak"></b></div>
+            <div class="stat"><span>뜨는 데 걸린 기간</span><b id="st-rise"></b></div>
+            <div class="stat"><span>지금 인기 (최고 때 대비)</span><b id="st-now"></b></div>
+            <div class="stat"><span>작년 이맘때보다</span><b id="st-yoy"></b></div>
           </div>
           <div class="warnbox" id="warnbox" hidden><b>⚠️ 데이터 주의</b><ul id="warn-list"></ul></div>
           <div class="shopbox" id="shopbox" hidden>
@@ -88,13 +95,14 @@
           </div>
           <div class="chart-box tall"><canvas id="c-main" aria-label="선택한 디저트의 주간 검색량 추이"></canvas></div>
           <div class="legend" id="lg-main"></div>
-          <p class="note">13주 이동평균 · 각자 최고점 = 100 · 매장 수는 상호에 키워드가 들어간 상설 매장(인허가 기준)</p>
+          <p class="note">최근 3개월 평균으로 매끄럽게 그렸어요 · 가장 많이 찾은 때 = 100 · 매장 수는 이름에 디저트 이름이 들어간 상설 가게(인허가 기준)</p>
         </div>
       </div>
           <h2 class="sec-h" id="f-h2">핵심 발견</h2>
           <p class="sub" id="f-sub">고른 디저트를 다른 디저트들과 비교해 볼게요.</p>
       <div class="card finding">
         <h3><span class="num">①</span> <span id="f1-title">유행의 수명</span></h3>
+        <p class="sowhat" id="f1-so"></p>
         <p id="f1-lead"></p>
         <div class="life" id="f1-bars"></div>
         <p class="note">🚀 뜨는 데 걸린 기간: 검색량이 피크의 4분의 1에서 피크까지 · 📉 반토막까지: 피크에서 절반 아래로 떨어질 때까지 (단위: 주)</p>
@@ -102,6 +110,7 @@
 
       <div class="card finding">
         <h3><span class="num">②</span> <span id="f2-title">지금도 찾는 디저트 순위</span></h3>
+        <p class="sowhat" id="f2-so"></p>
         <p id="f2-lead"></p>
         <div class="legend"><span><i style="background:var(--teal)"></i>20주 안에 급하게 뜸</span><span><i style="background:var(--pop-y)"></i>20~40주</span><span><i style="background:var(--pop-b)"></i>40주 넘게 천천히 뜸</span><span><i style="background:#c9c3b0"></i>아직 뜨는 중 · 꾸준</span></div>
         <div class="rank" id="f2-rank"></div>
@@ -110,6 +119,7 @@
 
       <div class="card finding">
         <h3><span class="num">③</span> <span id="f3-title">디저트 달력</span></h3>
+        <p class="sowhat" id="f3-so"></p>
         <p id="f3-lead"></p>
         <div class="cal" id="f3-cal"></div>
         <p class="note">칸이 진할수록 그 달에 많이 찾아요 (연평균 = 1.0배). 장기 추세는 빼고 계절 효과만 봤어요.</p>
@@ -117,18 +127,21 @@
 
       <div class="card finding">
         <h3><span style="color:var(--teal)">④</span> 검색 피크를 따라가면 늦어요</h3>
+        <p class="sowhat" id="f4-so"></p>
         <p>실제 가게 수(전국 인허가 72만 건)로 확인했어요.</p>
         <div class="kpis">
           <div class="kpi"><b>1,123 → 139곳</b><span>탕후루 가게, 최고 → 지금</span></div>
           <div class="kpi"><b>2.6배</b><span>피크 뒤에 연 탕후루 가게의 1년 내 폐업률</span></div>
           <div class="kpi"><b>57%</b><span>모찌 가게 중 팝업 매장</span></div>
         </div>
+        <details class="ev" id="ev4"><summary>근거 자세히 보기 <small>(디저트별 검색량·가게 수 그래프와 표)</small></summary>
         <div class="legend"><span><i style="background:var(--s1)"></i>검색량</span><span><i style="background:var(--s2)"></i>가게 수</span></div>
         <div class="grid2" id="shop-grid"></div>
         <p class="note">크로플·마카롱은 검색이 꺼지고 2년 뒤에야 가게 수가 최고였어요.</p>
         <div style="overflow-x:auto;margin-top:18px">
           <table class="small" id="shop-table"></table>
         </div>
+        </details>
       </div>
 
       <div class="card finding" id="case-mochi">

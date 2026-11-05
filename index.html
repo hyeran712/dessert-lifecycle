@@ -466,6 +466,24 @@ main h1,#radar h1{font-family:var(--display);font-weight:400;font-size:clamp(26p
 .rc li.warn::before{content:"!";color:#ff5a1f}
 .rc .go{margin-top:auto;font-weight:800;font-size:13px}
 @media (max-width:760px){#rec-out{grid-template-columns:1fr;gap:16px}}
+.decide{border-width:3px;margin-bottom:22px}
+.dc-top{display:flex;gap:16px;align-items:center}
+.dc-sig{flex:none;width:64px;height:64px;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font-size:30px;box-shadow:3px 3px 0 var(--ink)}
+.dc-sig.go{background:#3fbf6b}.dc-sig.mid{background:#ffd400}.dc-sig.stop{background:#ff5a1f}
+.dc-k{margin:0;font-size:13px;font-weight:800;color:var(--ink-3)}
+.decide h3{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.25;margin:2px 0 0}
+.dc-do{display:grid;grid-template-columns:88px 1fr;gap:8px 14px;margin:18px 0 12px;padding:14px 16px;background:var(--bg);border:2px solid var(--ink);border-radius:12px}
+.dc-do dt{font-weight:900}.dc-do dd{margin:0}
+.dc-ctx{margin:0 0 14px;font-size:14px;color:var(--ink-2)}
+.dc-go{display:flex;gap:10px;flex-wrap:wrap}
+#v-title{display:none}
+.sowhat{margin:4px 0 12px;padding:10px 14px;background:#fff3b0;border-left:5px solid var(--ink);border-radius:6px;font-weight:700}
+.sowhat::before{content:"그래서? ";font-weight:900;color:#ff5a1f}
+details.ev{margin-top:12px;border:2px dashed rgba(28,28,28,.25);border-radius:12px;padding:10px 14px}
+details.ev > summary{cursor:pointer;font-weight:800}
+details.ev > summary small{font-weight:500;color:var(--ink-3)}
+details.ev[open] > summary{margin-bottom:12px}
+@media (max-width:760px){.dc-sig{width:52px;height:52px;font-size:24px}.decide h3{font-size:22px}.dc-do{grid-template-columns:64px 1fr}}
 .picks,.goals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .pick{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px 12px 14px;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .pick:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}
@@ -642,16 +660,23 @@ details.more #chips{padding:0 16px 14px}
 
         <!-- 2단계 -->
         <section class="step" data-panel="2" id="findings" hidden>
+      <div class="card decide" id="decide" aria-live="polite">
+        <div class="dc-top"><span class="dc-sig" id="dc-sig"></span><div><p class="dc-k">결론</p><h3 id="dc-title"></h3></div></div>
+        <dl class="dc-do" id="dc-do"></dl>
+        <p class="dc-ctx" id="dc-ctx"></p>
+        <div class="dc-go"><button type="button" class="btn primary" data-go="3" id="dc-btn">이 디저트로 메뉴 만들기 →</button><button type="button" class="btn line" data-go="1">다른 디저트 고르기</button></div>
+      </div>
+      <h2 class="sec-h">왜 이렇게 판단했나요?</h2>
       <div class="result">
         <div class="card verdict" aria-live="polite">
           <span class="badge" id="v-badge"></span>
           <h3 id="v-title"></h3>
           <p id="v-body"></p>
           <div class="stats">
-            <div class="stat"><span>검색량 피크</span><b id="st-peak"></b></div>
-            <div class="stat"><span>피크까지 상승 기간</span><b id="st-rise"></b></div>
-            <div class="stat"><span>현재 수준 (피크 대비)</span><b id="st-now"></b></div>
-            <div class="stat"><span>전년 같은 시기 대비</span><b id="st-yoy"></b></div>
+            <div class="stat"><span>가장 많이 찾은 때</span><b id="st-peak"></b></div>
+            <div class="stat"><span>뜨는 데 걸린 기간</span><b id="st-rise"></b></div>
+            <div class="stat"><span>지금 인기 (최고 때 대비)</span><b id="st-now"></b></div>
+            <div class="stat"><span>작년 이맘때보다</span><b id="st-yoy"></b></div>
           </div>
           <div class="warnbox" id="warnbox" hidden><b>⚠️ 데이터 주의</b><ul id="warn-list"></ul></div>
           <div class="shopbox" id="shopbox" hidden>
@@ -670,13 +695,14 @@ details.more #chips{padding:0 16px 14px}
           </div>
           <div class="chart-box tall"><canvas id="c-main" aria-label="선택한 디저트의 주간 검색량 추이"></canvas></div>
           <div class="legend" id="lg-main"></div>
-          <p class="note">13주 이동평균 · 각자 최고점 = 100 · 매장 수는 상호에 키워드가 들어간 상설 매장(인허가 기준)</p>
+          <p class="note">최근 3개월 평균으로 매끄럽게 그렸어요 · 가장 많이 찾은 때 = 100 · 매장 수는 이름에 디저트 이름이 들어간 상설 가게(인허가 기준)</p>
         </div>
       </div>
           <h2 class="sec-h" id="f-h2">핵심 발견</h2>
           <p class="sub" id="f-sub">고른 디저트를 다른 디저트들과 비교해 볼게요.</p>
       <div class="card finding">
         <h3><span class="num">①</span> <span id="f1-title">유행의 수명</span></h3>
+        <p class="sowhat" id="f1-so"></p>
         <p id="f1-lead"></p>
         <div class="life" id="f1-bars"></div>
         <p class="note">🚀 뜨는 데 걸린 기간: 검색량이 피크의 4분의 1에서 피크까지 · 📉 반토막까지: 피크에서 절반 아래로 떨어질 때까지 (단위: 주)</p>
@@ -684,6 +710,7 @@ details.more #chips{padding:0 16px 14px}
 
       <div class="card finding">
         <h3><span class="num">②</span> <span id="f2-title">지금도 찾는 디저트 순위</span></h3>
+        <p class="sowhat" id="f2-so"></p>
         <p id="f2-lead"></p>
         <div class="legend"><span><i style="background:var(--teal)"></i>20주 안에 급하게 뜸</span><span><i style="background:var(--pop-y)"></i>20~40주</span><span><i style="background:var(--pop-b)"></i>40주 넘게 천천히 뜸</span><span><i style="background:#c9c3b0"></i>아직 뜨는 중 · 꾸준</span></div>
         <div class="rank" id="f2-rank"></div>
@@ -692,6 +719,7 @@ details.more #chips{padding:0 16px 14px}
 
       <div class="card finding">
         <h3><span class="num">③</span> <span id="f3-title">디저트 달력</span></h3>
+        <p class="sowhat" id="f3-so"></p>
         <p id="f3-lead"></p>
         <div class="cal" id="f3-cal"></div>
         <p class="note">칸이 진할수록 그 달에 많이 찾아요 (연평균 = 1.0배). 장기 추세는 빼고 계절 효과만 봤어요.</p>
@@ -699,18 +727,21 @@ details.more #chips{padding:0 16px 14px}
 
       <div class="card finding">
         <h3><span style="color:var(--teal)">④</span> 검색 피크를 따라가면 늦어요</h3>
+        <p class="sowhat" id="f4-so"></p>
         <p>실제 가게 수(전국 인허가 72만 건)로 확인했어요.</p>
         <div class="kpis">
           <div class="kpi"><b>1,123 → 139곳</b><span>탕후루 가게, 최고 → 지금</span></div>
           <div class="kpi"><b>2.6배</b><span>피크 뒤에 연 탕후루 가게의 1년 내 폐업률</span></div>
           <div class="kpi"><b>57%</b><span>모찌 가게 중 팝업 매장</span></div>
         </div>
+        <details class="ev" id="ev4"><summary>근거 자세히 보기 <small>(디저트별 검색량·가게 수 그래프와 표)</small></summary>
         <div class="legend"><span><i style="background:var(--s1)"></i>검색량</span><span><i style="background:var(--s2)"></i>가게 수</span></div>
         <div class="grid2" id="shop-grid"></div>
         <p class="note">크로플·마카롱은 검색이 꺼지고 2년 뒤에야 가게 수가 최고였어요.</p>
         <div style="overflow-x:auto;margin-top:18px">
           <table class="small" id="shop-table"></table>
         </div>
+        </details>
       </div>
 
       <div class="card finding" id="case-mochi">
@@ -1005,12 +1036,39 @@ GROUPS.forEach(([name, ks]) => {
   chipsEl.appendChild(g);
 });
 
+// 2단계 맨 위 결론 카드: 신호등 + 언제·어떻게·주의 (사장님이 바로 결정할 수 있게)
+function renderDecision(k, v, E) {
+  const m = v.smonth, now = new Date().getMonth() + 1, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
+  const r = REQ[k] || guessReq(k) || {}, alt = r.alt, st = E.shop, p = loadProfile() || {};
+  let sig, title, rows;
+  if (v.type === '진행중') { sig = 'go'; title = '지금 내세요. 기간 한정으로 빠르게';
+    rows = [['언제', '이번 달 안에. 지금이 찾는 사람이 가장 많을 때예요'], ['어떻게', '4~8주만 파는 기간 한정 메뉴로'], ['주의', '4주마다 검색량을 다시 보고, 작년보다 덜 찾기 시작하면 바로 정리하세요']]; }
+  else if (v.type === '정착형') { sig = 'go'; title = '정규 메뉴로 내도 좋아요';
+    rows = [['언제', '서두를 필요 없어요. 준비되면 언제든'], ['어떻게', '정규 메뉴로 두고 맛·구성을 2~3가지로 넓히기'], ['주의', '이미 파는 가게가 많을 수 있어요. 동네 리포트로 주변 가게 수를 확인하세요']]; }
+  else if (v.type === '시즌형') { const d = (m - now + 12) % 12;
+    if (d >= 1 && d <= 3) { sig = 'go'; title = `지금 준비하세요. ${m}월 대목용 시즌 메뉴로`; }
+    else if (d === 0) { sig = 'mid'; title = `대목(${m}월)이 이미 왔어요. 낸다면 짧게만`; }
+    else { sig = 'mid'; title = `아직 일러요. ${before}월에 준비를 시작하세요`; }
+    rows = [['언제', `${before}~${before2}월에 출시 (대목 ${m}월의 1~2달 전)`], ['어떻게', '대목 앞뒤 2~3달만 파는 시즌 메뉴로, 매년 같은 때 다시'], ['주의', '대목이 지나면 찾는 사람이 확 줄어요. 재고를 넉넉히 잡지 마세요']]; }
+  else if (v.type === '유행형') { sig = 'stop'; title = '단독 신메뉴로는 내지 마세요';
+    rows = [['언제', '새로 내기엔 늦었어요. 유행이 이미 지나갔어요'], ['어떻게', alt ? `꼭 쓰고 싶다면 '${alt}'처럼 다른 메뉴의 맛·토핑으로만` : '다른 메뉴의 맛이나 토핑 소재로만 가볍게'], ['주의', '탕후루는 유행 정점 뒤에 연 가게의 29%가 1년 안에 닫았어요']]; }
+  else { sig = 'mid'; title = '크게 말고, 작게 시험해 보세요';
+    rows = [['언제', '급할 것 없어요. 반응을 보며 천천히'], ['어떻게', '새 메뉴보다는 기존 메뉴 리뉴얼이나 한정 수량으로'], ['주의', v.yoy !== null && v.yoy < 0 ? `작년 이맘때보다 ${Math.abs(Math.round(v.yoy))}% 덜 찾고 있어요` : '찾는 사람이 다시 늘지 지켜보세요']]; }
+  const miss = (r.eq || []).filter(e => !(p.eq || []).includes(e));
+  if ((p.eq || []).length && miss.length) rows.push(['우리 가게', alt ? `${miss.join('·')}${iga(miss[miss.length - 1])} 없으면 '${alt}'${ro(alt)} 대신할 수 있어요` : `${miss.join('·')}${iga(miss[miss.length - 1])} 필요해요`]);
+  const S = document.getElementById('dc-sig'); S.className = 'dc-sig ' + sig; S.textContent = { go: '✓', mid: '!', stop: '✕' }[sig];
+  document.getElementById('dc-title').textContent = title;
+  document.getElementById('dc-do').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
+  const ctx = [`${k}: ${v.type}`, v.yoy !== null ? `작년 이맘때보다 ${sign(v.yoy)}` : '', st && st.open_now ? `전국 전문점 ${st.open_now.toLocaleString()}곳 영업 중` : ''].filter(Boolean);
+  document.getElementById('dc-ctx').textContent = ctx.join(' · ');
+  document.getElementById('dc-btn').textContent = sig === 'stop' ? '그래도 메뉴 만들어 보기 →' : '이 디저트로 메뉴 만들기 →';
+}
 function verdict(k, v) {
   const m = v.smonth, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
   const sIdx = Math.max(...v.season).toFixed(1);
   switch (v.type) {
     case '진행중': return ['지금 뜨는 중이에요. 시즌 한정으로 바로 출시하세요',
-      `최근 13주 검색량이 전년 같은 시기보다 ${sign(v.yoy)} 늘어 역대 최고 수준이에요. 피크 1년 전 검색량이 피크의 ${Math.round(v.pre52)}%로, 바닥에서 갑자기 튄 유행형(1%)보다는 기반이 있고 정착형(48%)보다는 낮아요. 기간 한정으로 먼저 내고 4주마다 검색량을 다시 확인하세요.`];
+      `최근 3개월 검색량이 작년 이맘때보다 ${sign(v.yoy)} 늘어 역대 최고 수준이에요. 피크 1년 전 검색량이 피크의 ${Math.round(v.pre52)}%로, 바닥에서 갑자기 튄 유행형(1%)보다는 기반이 있고 정착형(48%)보다는 낮아요. 기간 한정으로 먼저 내고 4주마다 검색량을 다시 확인하세요.`];
     case '유행형': return ['유행이 지나갔어요. 신규 출시는 권하지 않아요',
       `${v.peak}에 피크를 찍고 ${v.half}주 만에 절반으로 줄었고, 지금은 피크의 ${v.now}%만 남았어요.` +
       (v.rise <= 20 ? ` 피크까지 ${v.rise}주 만에 급상승한 전형적인 반짝 유행이었어요.` : '') +
@@ -1086,6 +1144,7 @@ function select(k) {
   const badge = document.getElementById('v-badge');
   badge.textContent = v.type; badge.style.background = TYPE_COLOR[v.type];
   document.getElementById('v-title').textContent = t;
+  renderDecision(k, v, E);
   document.getElementById('v-body').textContent = body;
   document.getElementById('st-peak').textContent = v.peak;
   document.getElementById('st-rise').innerHTML = v.rise ? `${v.rise}<small>주</small>` : '<small>꾸준히 검색</small>';
@@ -1168,6 +1227,20 @@ function renderFindings(k) {
   document.getElementById('f3-lead').textContent = seasonal
     ? `${k}${J} ${pm + 1}월에 가장 많이 찾아요 (연평균의 ${smax.toFixed(1)}배). ${go[0] + 1}~${go[1] + 1}월에 출시하면 대목을 잡을 수 있어요.`
     : `${k}${J} 계절을 크게 타지 않아요. 가장 많이 찾는 ${pm + 1}월도 연평균의 ${smax.toFixed(1)}배 정도라, 출시 달보다 유행 단계가 더 중요해요.`;
+  // '그래서?' 한 줄: 근거를 사장님 결정으로 바꿔 말하기
+  document.getElementById('f1-so').textContent = v.type === '진행중' ? '아직 오르는 중이라 언제 꺾일지 몰라요. 오래 팔 메뉴보다 짧게 파는 한정 메뉴가 안전해요.'
+    : !v.rise ? '갑자기 뜬 유행이 아니라 오래 찾는 맛이에요. 정규 메뉴로 두기 좋아요.'
+    : v.rise <= 20 ? '급하게 뜬 만큼 빨리 식는 편이에요. 큰 투자보다는 짧게 파는 메뉴로 생각하세요.'
+    : v.rise >= 40 ? '천천히 오른 만큼 오래 가는 편이에요. 길게 팔 메뉴로 생각해도 돼요.'
+    : '빠르지도 느리지도 않은 편이에요. 반응을 보면서 판매 기간을 정하세요.';
+  document.getElementById('f2-so').textContent = v.now >= 25 ? `지금도 최고 때의 ${v.now}%만큼 찾아서, 찾는 사람은 충분해요.`
+    : v.now >= 10 ? `최고 때의 ${v.now}%만 남았어요. 찾는 사람이 줄고 있으니 크게 걸지 마세요.`
+    : `최고 때의 ${v.now}%로 거의 안 찾아요. 새로 내기엔 손님이 적어요.`;
+  document.getElementById('f3-so').textContent = v.type === '유행형' ? '대목 달이 있긴 하지만, 유행이 식은 영향이 더 커요. 달력만 보고 새로 내지 마세요.' : seasonal ? `${go[0] + 1}~${go[1] + 1}월에 내고, ${pm + 1}월 대목이 지나면 내리세요.` : '언제 내도 큰 차이가 없어요. 출시 달보다 지금 유행 단계를 보고 정하세요.';
+  document.getElementById('f4-so').textContent = v.type === '진행중' ? '아직 가게가 몰리기 전이에요. 남들보다 먼저 들어가야 유리해요.'
+    : v.type === '시즌형' ? '계절을 타는 디저트라 전문점을 새로 차리기보다, 지금 가게의 시즌 메뉴로 내는 게 안전해요.'
+    : v.type === '정착형' ? '검색이 정점을 지나도 가게가 계속 늘어요. 오래 팔 메뉴로 괜찮아요.'
+    : '검색이 꺾인 뒤에 연 가게는 1년 안에 많이 닫았어요. 지금 새 가게나 단독 메뉴로 들어가는 건 피하세요.';
   renderPlan(k, v, entry(k).shop);
   // 과일모찌 사례는 과일모찌를 볼 때만
   document.getElementById('case-mochi').hidden = k !== '과일모찌';
@@ -1928,6 +2001,7 @@ fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promi
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
 renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
+document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));
 </script>
 </body>
 </html>
