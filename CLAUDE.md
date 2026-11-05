@@ -9,7 +9,7 @@
 
 ## 사이트 주소
 - 새 버전(단계형): https://hyeran712.github.io/dessert-lifecycle/
-- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 사용자가 둘 중 하나를 고르면 정리할 예정
+- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). v1과 맨 아래 링크는 당분간 그대로 둔다
 - 포트폴리오 메인: https://hyeran712.github.io (다른 저장소 `hyeran712/hyeran712.github.io`, `#dessert` 카드)
 
 ## 파일 구조
@@ -81,7 +81,8 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - 커밋 메시지는 한국어로, 무엇을 바꿨는지 한 줄
 
 ## 다음에 할 수 있는 일 (사용자와 이야기한 것)
-- 새 버전과 v1 중 하나로 정리
+- (나중에) v1 파일·링크 정리 — 사용자가 말할 때까지 그대로
+- 포트폴리오 카드 사진 교체본은 `hyeran712.github.io`의 `claude/confident-davinci-cb9r7f` 브랜치에 올려 둠 (main 반영은 사용자 확인 후)
 - 포트폴리오 메인(`hyeran712.github.io`)의 디저트 타이밍 카드 이미지를 새 디자인으로 교체
 - 네이버 검색광고 API(월간 검색 수)를 붙여 "검색 수 대비 매장이 부족한 디저트", 연관 키워드로 신메뉴 형태 찾기
 - 원가표에 디저트 재료 단가 계속 추가 (생딸기·포장용기 실제 가격으로)
