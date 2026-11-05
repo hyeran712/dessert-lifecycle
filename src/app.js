@@ -414,7 +414,7 @@ function runRec() {
   saveProfile(p); fillForm(p); if (typeof profileSummary === 'function') profileSummary();
   const xs = recommend(p);
   document.getElementById('rec-out').innerHTML = xs.map((x, i) => `<button type="button" class="rc" data-k="${x.k}"><span class="rc-no">추천 ${i + 1}</span>
-    <span class="rc-em">${EMO[x.k] || "🍰"}</span><span class="rc-nm">${esc(x.k)}</span>
+    ${IMG[x.k] ? `<span class="rc-ph">${photo(x.k)}</span>` : `<span class="rc-em">${EMO[x.k] || "🍰"}</span>`}<span class="rc-nm">${esc(x.k)}</span>
     <ul>${x.why.map(w => typeof w === 'string' ? `<li>${esc(w)}</li>` : `<li class="warn">${esc(w.w)}</li>`).join('')}</ul>
     <span class="go">타이밍 진단 보기 →</span></button>`).join('');
   document.querySelectorAll('#rec-out .rc').forEach(b => b.onclick = () => { select(b.dataset.k); goStep(2); });
@@ -765,8 +765,11 @@ const GOAL_OF = { '진행중': '기간 한정', '정착형': '정규 메뉴', '�
 let STEP = 1, REACHED = 1, MADE = false, GOAL = null, GOAL_K = null;
 const ro = w => { const c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return '로'; const t = (c - 0xAC00) % 28; return t && t !== 8 ? '으로' : '로'; };
 const storeName = () => ((loadProfile() || {}).name || '').trim();
+// 디저트 사진 (AI로 만든 이미지, 크림 배경 480px webp · img/menu/)
+const IMG = {'과일모찌': 'img/menu/strawberry-cream-mochi.webp', '딸기모찌': 'img/menu/strawberry-white-bean-mochi.webp', '찹쌀모찌': 'img/menu/red-bean-mochi.webp', '모찌떡': 'img/menu/cream-mochi.webp', '찹쌀떡': 'img/menu/red-bean-rice-cakes.webp', '약과': 'img/menu/yakgwa.webp', '두바이 초콜릿': 'img/menu/pistachio-kataifi-chocolate.webp', '소금빵': 'img/menu/salt-bread.webp', '베이글': 'img/menu/cream-cheese-bagels.webp', '크로플': 'img/menu/croffle-no-cream.webp', '탕후루': 'img/menu/tanghulu.webp', '마카롱': 'img/menu/pastel-macarons.webp', '뚱카롱': 'img/menu/fat-macarons.webp', '흑당': 'img/menu/brown-sugar-bubble-tea.webp', '달고나': 'img/menu/dalgona-latte.webp', '요거트 아이스크림': 'img/menu/yogurt-ice-cream.webp', '피스타치오': 'img/menu/pistachio-latte.webp', '말차': 'img/menu/matcha-latte.webp', '흑임자': 'img/menu/black-sesame-latte.webp', '쑥': 'img/menu/mugwort-latte.webp', '붕어빵': 'img/menu/bungeoppang.webp', '땅콩빵': 'img/menu/peanut-shaped-buns.webp'};
+const photo = (k, cls = '') => IMG[k] ? `<img src="${IMG[k]}" alt="${k}" loading="lazy"${cls ? ` class="${cls}"` : ''}>` : '';
 const card = (cls, key, emo, bg, title, sub, on, badge) => `<button type="button" class="${cls}${on ? ' on' : ''}" data-k="${key}" aria-pressed="${on}">
-  <span class="art" style="background:${bg}">${emo}</span><span class="pk-t">${title}${badge ? `<em>${badge}</em>` : ''}</span><span class="pk-s">${sub}</span><span class="pk-c">${on ? '✓' : '↗'}</span></button>`;
+  ${IMG[key] ? `<span class="art ph">${photo(key)}</span>` : `<span class="art" style="background:${bg}">${emo}</span>`}<span class="pk-t">${title}${badge ? `<em>${badge}</em>` : ''}</span><span class="pk-s">${sub}</span><span class="pk-c">${on ? '✓' : '↗'}</span></button>`;
 function renderPicks() {
   document.getElementById('picks').innerHTML = PICKS.map(([k, e, bg, s]) => card('pick', k, e, bg, k, s, k === current, D.kw[k] && D.kw[k].type)).join('');
   document.querySelectorAll('#picks .pick').forEach(b => b.onclick = () => select(b.dataset.k));
@@ -784,7 +787,7 @@ function renderSide() {
   const el = document.getElementById('sel-sum');
   if (!current) { el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>'; return; }
   const E = entry(current), v = E.v;
-  el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
+  el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
     <div class="ss-g"><div><b>${v.now}%</b>피크 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>전년 대비</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
   const p = loadProfile();
   document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';

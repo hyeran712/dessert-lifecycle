@@ -25,6 +25,7 @@ src/data.json    분석 결과 데이터(디저트 21종 수명주기, 매장 �
 build.sh         src/ 네 파일을 합쳐 index.html 생성  ← 수정 후 반드시 실행
 index.html       배포되는 파일 (직접 고치지 말 것, build.sh가 만듦)
 v1.html          예전 버전 스냅샷 (따로 손대지 않음)
+img/menu/        디저트 사진 22장 (사용자가 AI로 만든 크림 배경 이미지 → 480px webp). app.js `IMG`·`photo(k)`로 대표 카드·추천 카드·사이드바에 씀
 live/live.json   주간 레이더 결과 (GitHub Actions가 매주 갱신, 손으로 고치지 말 것)
 live/radar_base.csv.gz, live/state.json   레이더 원본·진행 상태
 scripts/update.py, scripts/radar_core.py  주간 레이더 계산
@@ -55,6 +56,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
 - 신메뉴 결과 아래 [♡ 보관함에 저장] [↻ 다른 메뉴]: 보관함은 localStorage `dessert-timing-saved`(최대 30개, `#saved` 카드·사이드바 `#side-saved`), 다른 메뉴는 앞서 나온 이름 3개를 note에 붙여 다시 요청(`makeMenu(true)`). 카드 HTML은 `menuCard(m)` 하나로 결과·보관함 공용. 로그인·여러 기기 동기화가 필요해지면 Supabase 검토
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
+- 1단계 맨 위 `#rec`: 가게 종류·장비·가격대 → `recommend(p)`가 REQ·유형·대목 월로 점수 매겨 3개 추천(카드 누르면 2단계). 고른 값은 프로필에도 저장
 - 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
 - Chart.js 4.4.1 (cdnjs). 차트 선명도용 `Chart.defaults.devicePixelRatio = 2`
 
