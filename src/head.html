@@ -446,6 +446,26 @@ main h1,#radar h1{font-family:var(--display);font-weight:400;font-size:clamp(26p
 .step h2,.sec-h{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 4px}
 .sec-h{margin-top:30px}
 .step .sub{margin:0 0 16px}
+.rq{margin:0 0 14px}
+.rq > b{display:block;font-size:14px;margin-bottom:7px}
+.rq > b small{font-weight:500;color:var(--ink-3)}
+.rq-o{display:flex;flex-wrap:wrap;gap:7px}
+.rq-o button{font:inherit;font-size:14px;padding:7px 14px;border-radius:999px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+.rq-o button[aria-pressed="true"]{background:var(--ink);color:#ffd400;font-weight:700}
+.rq-go{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+#rec-out{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+#rec-out:empty{display:none}
+.rc{position:relative;text-align:left;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:16px 14px 12px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column;gap:6px}
+.rc:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #ff5a1f}
+.rc .rc-no{position:absolute;top:-12px;left:12px;font-family:"Black Han Sans";font-size:14px;background:#ffd400;border:2px solid var(--ink);border-radius:999px;padding:0 10px}
+.rc .rc-em{font-size:34px;line-height:1}
+.rc .rc-nm{font-family:"Black Han Sans";font-size:21px}
+.rc ul{margin:0;padding:0;list-style:none;font-size:13px;color:var(--ink-2)}
+.rc li{padding-left:16px;position:relative;margin:3px 0}
+.rc li::before{content:"✓";position:absolute;left:0;color:#1a7f3c;font-weight:900}
+.rc li.warn::before{content:"!";color:#ff5a1f}
+.rc .go{margin-top:auto;font-weight:800;font-size:13px}
+@media (max-width:760px){#rec-out{grid-template-columns:1fr;gap:16px}}
 .picks,.goals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .pick{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px 12px 14px;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .pick:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}

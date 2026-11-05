@@ -446,6 +446,26 @@ main h1,#radar h1{font-family:var(--display);font-weight:400;font-size:clamp(26p
 .step h2,.sec-h{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 4px}
 .sec-h{margin-top:30px}
 .step .sub{margin:0 0 16px}
+.rq{margin:0 0 14px}
+.rq > b{display:block;font-size:14px;margin-bottom:7px}
+.rq > b small{font-weight:500;color:var(--ink-3)}
+.rq-o{display:flex;flex-wrap:wrap;gap:7px}
+.rq-o button{font:inherit;font-size:14px;padding:7px 14px;border-radius:999px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+.rq-o button[aria-pressed="true"]{background:var(--ink);color:#ffd400;font-weight:700}
+.rq-go{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+#rec-out{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+#rec-out:empty{display:none}
+.rc{position:relative;text-align:left;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:16px 14px 12px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column;gap:6px}
+.rc:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #ff5a1f}
+.rc .rc-no{position:absolute;top:-12px;left:12px;font-family:"Black Han Sans";font-size:14px;background:#ffd400;border:2px solid var(--ink);border-radius:999px;padding:0 10px}
+.rc .rc-em{font-size:34px;line-height:1}
+.rc .rc-nm{font-family:"Black Han Sans";font-size:21px}
+.rc ul{margin:0;padding:0;list-style:none;font-size:13px;color:var(--ink-2)}
+.rc li{padding-left:16px;position:relative;margin:3px 0}
+.rc li::before{content:"✓";position:absolute;left:0;color:#1a7f3c;font-weight:900}
+.rc li.warn::before{content:"!";color:#ff5a1f}
+.rc .go{margin-top:auto;font-weight:800;font-size:13px}
+@media (max-width:760px){#rec-out{grid-template-columns:1fr;gap:16px}}
 .picks,.goals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .pick{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px 12px 14px;cursor:pointer;transition:transform .1s,box-shadow .1s}
 .pick:hover{transform:translateY(-2px);box-shadow:4px 4px 0 var(--ink)}
@@ -538,12 +558,21 @@ details.more #chips{padding:0 16px 14px}
       <div class="flow-main">
         <!-- 1단계 -->
         <section class="step" data-panel="1" id="diagnose">
+          <div class="card" id="rec">
+            <h2>우리 가게에 맞는 디저트 추천</h2>
+            <p class="sub">세 가지만 골라 주세요. 검색 흐름·가진 장비·가격대를 같이 보고, 지금 팔기 좋은 디저트 3개를 골라 드려요.</p>
+            <div class="rq"><b>① 가게 종류</b><div class="rq-o" data-q="cat"></div></div>
+            <div class="rq"><b>② 가진 장비 <small>(여러 개 고를 수 있어요)</small></b><div class="rq-o" data-q="eq"></div></div>
+            <div class="rq"><b>③ 팔고 싶은 가격대</b><div class="rq-o" data-q="price"></div></div>
+            <div class="rq-go"><button type="button" class="btn primary" id="rec-btn">추천 받기 →</button><span class="note" id="rec-msg">고른 내용은 3단계 '내 가게 프로필'에도 그대로 들어가요.</span></div>
+            <div id="rec-out"></div>
+          </div>
           <div class="card">
-            <h2>어떤 디저트를 살펴볼까요?</h2>
-            <p class="sub">하나를 골라 주세요. 목록에 없으면 검색하면 실시간으로 분석해요.</p>
+            <h2>직접 고르기</h2>
+            <p class="sub">생각해 둔 디저트가 있으면 바로 골라 주세요. 목록에 없으면 검색하면 실시간으로 분석해요.</p>
             <div class="picks" id="picks"></div>
             <form id="q-form" class="qform" autocomplete="off">
-              <input id="q" type="search" maxlength="20" placeholder="다른 디저트 검색 (예: 휘낭시에, 붕어빵)" aria-label="디저트 이름">
+              <input id="q" type="search" maxlength="20" placeholder="다른 디저트 검색 (예: 휘낭시에, 까눌레)" aria-label="디저트 이름">
               <button type="submit">분석하기</button>
             </form>
             <p id="q-msg" class="note" aria-live="polite"></p>
@@ -1215,6 +1244,59 @@ function renderPlan(k, v, st) {
 /* ---------- 이 디저트로 신메뉴 만들기 (AI + 원가 검증) ---------- */
 const mkBtn = document.getElementById('mk-btn'), mkMsg = document.getElementById('mk-msg'), mkOut = document.getElementById('mk-out');
 const won = n => Math.round(n).toLocaleString() + '원';
+/* ---------- 1단계: 우리 가게에 맞는 디저트 추천 ---------- */
+const EMO = { '과일모찌': '🍡', '딸기모찌': '🍓', '찹쌀모찌': '🍡', '모찌떡': '🍡', '찹쌀떡': '🍙', '약과': '🍪', '두바이 초콜릿': '🍫', '소금빵': '🥐', '베이글': '🥯',
+  '크로플': '🧇', '탕후루': '🍢', '마카롱': '🍬', '뚱카롱': '🍬', '흑당': '🧋', '달고나': '🍯', '요거트 아이스크림': '🍦', '피스타치오': '🥜', '말차': '🍵', '흑임자': '⚫', '쑥': '🌿' };
+function recommend(p) {
+  const now = new Date().getMonth() + 1, have = p.eq || [];
+  const [lo, hi] = p.price ? p.price.split('-').map(Number) : [0, 1e9];
+  return Object.entries(REQ).filter(([k, r]) => r.cat !== '식사' && D.kw[k]).map(([k, r]) => {
+    const v = D.kw[k], why = []; let s = 0;
+    if (v.type === '진행중') { s += 3; why.push(`지금 검색이 역대 최고 수준 (전년 대비 ${sign(v.yoy)})`); }
+    else if (v.type === '정착형') { s += 2; why.push('몇 년째 꾸준히 찾는 정착형이라 정규 메뉴로 좋아요'); }
+    else if (v.type === '시즌형') { const d = (v.smonth - now + 12) % 12;
+      if (d >= 1 && d <= 3) { s += 2.5; why.push(`대목(${v.smonth}월)까지 ${d}개월, 지금 준비하기 딱 좋아요`); }
+      else if (d === 0) { s += 1; why.push(`지금이 대목(${v.smonth}월)이에요`); }
+      else { s -= 0.5; why.push({ w: `대목은 ${v.smonth}월이라 지금은 조금 일러요` }); } }
+    else if (v.type === '유행형') { s -= 3; why.push({ w: '유행이 이미 식어서 단독 메뉴는 위험해요' }); }
+    else { s -= 0.5; why.push({ w: '검색 피크가 지나 신중하게 보세요' }); }
+    const miss = r.eq.filter(e => !have.includes(e));
+    if (!miss.length) { s += 2; why.push(r.eq.length ? `가진 장비(${r.eq.join('·')})로 바로 만들 수 있어요` : '특별한 장비 없이 만들 수 있어요'); }
+    else if (r.alt) { s -= 1; why.push({ w: `${miss.join('·')}${iga(miss[miss.length - 1])} 없으면 '${r.alt}'${ro(r.alt)} 대신해요` }); }
+    else s -= 4;
+    if (p.cat && r.cat === p.cat) s += 1.5; else if (p.cat === '디저트' && r.cat === '베이커리') s += 0.5;
+    if (p.price && r.price >= lo && r.price <= hi) { s += 1; why.push(`고른 가격대에 맞아요 (보통 ${won(r.price)})`); }
+    return { k, s, why };
+  }).sort((a, b) => b.s - a.s).slice(0, 3);
+}
+const REC = { cat: '', eq: [], price: '' };
+function renderRecForm() {
+  const f = document.getElementById('profile'), lab = x => x.closest('label').textContent.trim();
+  [['cat', 'pf-cat'], ['eq', 'pf-eq'], ['price', 'pf-price']].forEach(([q, nm]) => {
+    const box = document.querySelector(`.rq-o[data-q="${q}"]`);
+    box.innerHTML = [...f.querySelectorAll(`[name=${nm}]`)].map(x => `<button type="button" data-v="${x.value}" aria-pressed="${q === 'eq' ? REC.eq.includes(x.value) : REC[q] === x.value}">${lab(x)}</button>`).join('');
+    box.querySelectorAll('button').forEach(b => b.onclick = () => {
+      const v = b.dataset.v;
+      if (q === 'eq') REC.eq = REC.eq.includes(v) ? REC.eq.filter(x => x !== v) : [...REC.eq, v]; else REC[q] = REC[q] === v ? '' : v;
+      renderRecForm();
+    });
+  });
+}
+function runRec() {
+  const msg = document.getElementById('rec-msg');
+  if (!REC.cat) { msg.textContent = '① 가게 종류를 먼저 골라 주세요.'; return; }
+  const p = Object.assign(loadProfile() || {}, { cat: REC.cat, eq: REC.eq, price: REC.price });
+  saveProfile(p); fillForm(p); if (typeof profileSummary === 'function') profileSummary();
+  const xs = recommend(p);
+  document.getElementById('rec-out').innerHTML = xs.map((x, i) => `<button type="button" class="rc" data-k="${x.k}"><span class="rc-no">추천 ${i + 1}</span>
+    <span class="rc-em">${EMO[x.k] || "🍰"}</span><span class="rc-nm">${esc(x.k)}</span>
+    <ul>${x.why.map(w => typeof w === 'string' ? `<li>${esc(w)}</li>` : `<li class="warn">${esc(w.w)}</li>`).join('')}</ul>
+    <span class="go">타이밍 진단 보기 →</span></button>`).join('');
+  document.querySelectorAll('#rec-out .rc').forEach(b => b.onclick = () => { select(b.dataset.k); goStep(2); });
+  msg.textContent = REC.eq.length ? '카드를 누르면 바로 타이밍 진단으로 넘어가요.' : '장비를 고르지 않아서 장비 없이 만들 수 있는 걸 앞에 뒀어요. 카드를 누르면 진단으로 넘어가요.';
+}
+document.getElementById('rec-btn').addEventListener('click', runRec);
+{ const p0 = loadProfile(); if (p0) { REC.cat = p0.cat || ''; REC.eq = p0.eq || []; REC.price = p0.price || ''; } }
 function menuPrice(k, p) {
   const r = REQ[k] || guessReq(k);
   if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
@@ -1596,7 +1678,7 @@ function renderProg() {
 }
 function head() {
   const k = current || '', n = storeName();
-  const H = { 1: ['1단계 · 디저트 고르기', `${n ? n + ', ' : ''}어떤 디저트로 다음 메뉴를 만들어볼까요?`, '네이버 10년치 검색량과 전국 매장 인허가 72만 건으로 유행 타이밍을 알려드려요.'],
+  const H = { 1: ['1단계 · 디저트 고르기', `${n || '우리 가게'}, 다음엔 뭘 팔까요?`, '가게 정보를 고르면 지금 팔기 좋은 디저트를 추천해요. 네이버 10년치 검색량과 전국 매장 72만 곳 데이터로 판단해요.'],
               2: ['2단계 · 타이밍 진단', `${k}, 지금 출시해도 될까요?`, '검색량 흐름과 전국 매장 수로 유행 단계를 판단했어요.'],
               3: ['3단계 · 메뉴 만들기', `${n || '우리 가게'}, ${k}${ro(k)} 메뉴를 만들어볼까요?`, '목적만 골라 주세요. 등록한 가게 정보와 원가표 단가는 그대로 활용해요.'] }[STEP];
   document.getElementById('ph-tag').textContent = H[0]; document.getElementById('ph-title').textContent = H[1]; document.getElementById('ph-sub').textContent = H[2];
@@ -1679,6 +1761,7 @@ async function renderOpportunity(L) {
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
+renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
 </script>
 </body>
 </html>

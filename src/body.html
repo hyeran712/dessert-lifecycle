@@ -34,12 +34,21 @@
       <div class="flow-main">
         <!-- 1단계 -->
         <section class="step" data-panel="1" id="diagnose">
+          <div class="card" id="rec">
+            <h2>우리 가게에 맞는 디저트 추천</h2>
+            <p class="sub">세 가지만 골라 주세요. 검색 흐름·가진 장비·가격대를 같이 보고, 지금 팔기 좋은 디저트 3개를 골라 드려요.</p>
+            <div class="rq"><b>① 가게 종류</b><div class="rq-o" data-q="cat"></div></div>
+            <div class="rq"><b>② 가진 장비 <small>(여러 개 고를 수 있어요)</small></b><div class="rq-o" data-q="eq"></div></div>
+            <div class="rq"><b>③ 팔고 싶은 가격대</b><div class="rq-o" data-q="price"></div></div>
+            <div class="rq-go"><button type="button" class="btn primary" id="rec-btn">추천 받기 →</button><span class="note" id="rec-msg">고른 내용은 3단계 '내 가게 프로필'에도 그대로 들어가요.</span></div>
+            <div id="rec-out"></div>
+          </div>
           <div class="card">
-            <h2>어떤 디저트를 살펴볼까요?</h2>
-            <p class="sub">하나를 골라 주세요. 목록에 없으면 검색하면 실시간으로 분석해요.</p>
+            <h2>직접 고르기</h2>
+            <p class="sub">생각해 둔 디저트가 있으면 바로 골라 주세요. 목록에 없으면 검색하면 실시간으로 분석해요.</p>
             <div class="picks" id="picks"></div>
             <form id="q-form" class="qform" autocomplete="off">
-              <input id="q" type="search" maxlength="20" placeholder="다른 디저트 검색 (예: 휘낭시에, 붕어빵)" aria-label="디저트 이름">
+              <input id="q" type="search" maxlength="20" placeholder="다른 디저트 검색 (예: 휘낭시에, 까눌레)" aria-label="디저트 이름">
               <button type="submit">분석하기</button>
             </form>
             <p id="q-msg" class="note" aria-live="polite"></p>

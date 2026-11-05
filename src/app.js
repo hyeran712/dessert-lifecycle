@@ -369,6 +369,59 @@ function renderPlan(k, v, st) {
 /* ---------- 이 디저트로 신메뉴 만들기 (AI + 원가 검증) ---------- */
 const mkBtn = document.getElementById('mk-btn'), mkMsg = document.getElementById('mk-msg'), mkOut = document.getElementById('mk-out');
 const won = n => Math.round(n).toLocaleString() + '원';
+/* ---------- 1단계: 우리 가게에 맞는 디저트 추천 ---------- */
+const EMO = { '과일모찌': '🍡', '딸기모찌': '🍓', '찹쌀모찌': '🍡', '모찌떡': '🍡', '찹쌀떡': '🍙', '약과': '🍪', '두바이 초콜릿': '🍫', '소금빵': '🥐', '베이글': '🥯',
+  '크로플': '🧇', '탕후루': '🍢', '마카롱': '🍬', '뚱카롱': '🍬', '흑당': '🧋', '달고나': '🍯', '요거트 아이스크림': '🍦', '피스타치오': '🥜', '말차': '🍵', '흑임자': '⚫', '쑥': '🌿' };
+function recommend(p) {
+  const now = new Date().getMonth() + 1, have = p.eq || [];
+  const [lo, hi] = p.price ? p.price.split('-').map(Number) : [0, 1e9];
+  return Object.entries(REQ).filter(([k, r]) => r.cat !== '식사' && D.kw[k]).map(([k, r]) => {
+    const v = D.kw[k], why = []; let s = 0;
+    if (v.type === '진행중') { s += 3; why.push(`지금 검색이 역대 최고 수준 (전년 대비 ${sign(v.yoy)})`); }
+    else if (v.type === '정착형') { s += 2; why.push('몇 년째 꾸준히 찾는 정착형이라 정규 메뉴로 좋아요'); }
+    else if (v.type === '시즌형') { const d = (v.smonth - now + 12) % 12;
+      if (d >= 1 && d <= 3) { s += 2.5; why.push(`대목(${v.smonth}월)까지 ${d}개월, 지금 준비하기 딱 좋아요`); }
+      else if (d === 0) { s += 1; why.push(`지금이 대목(${v.smonth}월)이에요`); }
+      else { s -= 0.5; why.push({ w: `대목은 ${v.smonth}월이라 지금은 조금 일러요` }); } }
+    else if (v.type === '유행형') { s -= 3; why.push({ w: '유행이 이미 식어서 단독 메뉴는 위험해요' }); }
+    else { s -= 0.5; why.push({ w: '검색 피크가 지나 신중하게 보세요' }); }
+    const miss = r.eq.filter(e => !have.includes(e));
+    if (!miss.length) { s += 2; why.push(r.eq.length ? `가진 장비(${r.eq.join('·')})로 바로 만들 수 있어요` : '특별한 장비 없이 만들 수 있어요'); }
+    else if (r.alt) { s -= 1; why.push({ w: `${miss.join('·')}${iga(miss[miss.length - 1])} 없으면 '${r.alt}'${ro(r.alt)} 대신해요` }); }
+    else s -= 4;
+    if (p.cat && r.cat === p.cat) s += 1.5; else if (p.cat === '디저트' && r.cat === '베이커리') s += 0.5;
+    if (p.price && r.price >= lo && r.price <= hi) { s += 1; why.push(`고른 가격대에 맞아요 (보통 ${won(r.price)})`); }
+    return { k, s, why };
+  }).sort((a, b) => b.s - a.s).slice(0, 3);
+}
+const REC = { cat: '', eq: [], price: '' };
+function renderRecForm() {
+  const f = document.getElementById('profile'), lab = x => x.closest('label').textContent.trim();
+  [['cat', 'pf-cat'], ['eq', 'pf-eq'], ['price', 'pf-price']].forEach(([q, nm]) => {
+    const box = document.querySelector(`.rq-o[data-q="${q}"]`);
+    box.innerHTML = [...f.querySelectorAll(`[name=${nm}]`)].map(x => `<button type="button" data-v="${x.value}" aria-pressed="${q === 'eq' ? REC.eq.includes(x.value) : REC[q] === x.value}">${lab(x)}</button>`).join('');
+    box.querySelectorAll('button').forEach(b => b.onclick = () => {
+      const v = b.dataset.v;
+      if (q === 'eq') REC.eq = REC.eq.includes(v) ? REC.eq.filter(x => x !== v) : [...REC.eq, v]; else REC[q] = REC[q] === v ? '' : v;
+      renderRecForm();
+    });
+  });
+}
+function runRec() {
+  const msg = document.getElementById('rec-msg');
+  if (!REC.cat) { msg.textContent = '① 가게 종류를 먼저 골라 주세요.'; return; }
+  const p = Object.assign(loadProfile() || {}, { cat: REC.cat, eq: REC.eq, price: REC.price });
+  saveProfile(p); fillForm(p); if (typeof profileSummary === 'function') profileSummary();
+  const xs = recommend(p);
+  document.getElementById('rec-out').innerHTML = xs.map((x, i) => `<button type="button" class="rc" data-k="${x.k}"><span class="rc-no">추천 ${i + 1}</span>
+    <span class="rc-em">${EMO[x.k] || "🍰"}</span><span class="rc-nm">${esc(x.k)}</span>
+    <ul>${x.why.map(w => typeof w === 'string' ? `<li>${esc(w)}</li>` : `<li class="warn">${esc(w.w)}</li>`).join('')}</ul>
+    <span class="go">타이밍 진단 보기 →</span></button>`).join('');
+  document.querySelectorAll('#rec-out .rc').forEach(b => b.onclick = () => { select(b.dataset.k); goStep(2); });
+  msg.textContent = REC.eq.length ? '카드를 누르면 바로 타이밍 진단으로 넘어가요.' : '장비를 고르지 않아서 장비 없이 만들 수 있는 걸 앞에 뒀어요. 카드를 누르면 진단으로 넘어가요.';
+}
+document.getElementById('rec-btn').addEventListener('click', runRec);
+{ const p0 = loadProfile(); if (p0) { REC.cat = p0.cat || ''; REC.eq = p0.eq || []; REC.price = p0.price || ''; } }
 function menuPrice(k, p) {
   const r = REQ[k] || guessReq(k);
   if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
@@ -750,7 +803,7 @@ function renderProg() {
 }
 function head() {
   const k = current || '', n = storeName();
-  const H = { 1: ['1단계 · 디저트 고르기', `${n ? n + ', ' : ''}어떤 디저트로 다음 메뉴를 만들어볼까요?`, '네이버 10년치 검색량과 전국 매장 인허가 72만 건으로 유행 타이밍을 알려드려요.'],
+  const H = { 1: ['1단계 · 디저트 고르기', `${n || '우리 가게'}, 다음엔 뭘 팔까요?`, '가게 정보를 고르면 지금 팔기 좋은 디저트를 추천해요. 네이버 10년치 검색량과 전국 매장 72만 곳 데이터로 판단해요.'],
               2: ['2단계 · 타이밍 진단', `${k}, 지금 출시해도 될까요?`, '검색량 흐름과 전국 매장 수로 유행 단계를 판단했어요.'],
               3: ['3단계 · 메뉴 만들기', `${n || '우리 가게'}, ${k}${ro(k)} 메뉴를 만들어볼까요?`, '목적만 골라 주세요. 등록한 가게 정보와 원가표 단가는 그대로 활용해요.'] }[STEP];
   document.getElementById('ph-tag').textContent = H[0]; document.getElementById('ph-title').textContent = H[1]; document.getElementById('ph-sub').textContent = H[2];
@@ -833,3 +886,4 @@ async function renderOpportunity(L) {
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
+renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
