@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#ffd400">
 <title>디저트 타이밍</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2048%2048%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20stroke%3D%22%231c1c1c%22%20stroke-width%3D%222.4%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22%3E%20%3Cpath%20d%3D%22M21%2027%20L35.72%2018.50%20A17%2017%200%201%201%2021.00%2010.00%20Z%22%20fill%3D%22%23ffd9e0%22/%3E%20%3Ccircle%20cx%3D%2221%22%20cy%3D%2227%22%20r%3D%2211.5%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%223%203%22%20opacity%3D%22.9%22/%3E%20%3Cg%20fill%3D%22%23ff3b4e%22%20stroke-width%3D%221.6%22%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%2222%22%20r%3D%222.4%22/%3E%3Ccircle%20cx%3D%2213%22%20cy%3D%2236%22%20r%3D%222.4%22/%3E%3Ccircle%20cx%3D%2227%22%20cy%3D%2240%22%20r%3D%222.4%22/%3E%3Ccircle%20cx%3D%2235%22%20cy%3D%2231%22%20r%3D%222.4%22/%3E%3C/g%3E%20%3Cg%20transform%3D%22translate%284%20-4%29%22%3E%3Cpath%20d%3D%22M21%2027%20L21.00%2010.00%20A17%2017%200%200%201%2035.72%2018.50%20Z%22%20fill%3D%22%23ffd400%22/%3E%20%3Ccircle%20cx%3D%2226.00%22%20cy%3D%2218.34%22%20r%3D%223%22%20fill%3D%22%23ff3b4e%22%20stroke-width%3D%221.8%22/%3E%3C/g%3E%20%3C/svg%3E">
 <meta name="description" content="네이버 10년치 검색량으로 본 디저트 수명주기와 출시 타이밍">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -422,7 +423,8 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 
 /* ===== 앱 구조 (단계형 흐름) ===== */
 .appbar .wrap{gap:14px}
-.logo-dot{display:inline-block;width:10px;height:10px;background:var(--teal);border:2px solid var(--ink);border-radius:3px;margin-right:6px;vertical-align:2px}
+.logo{display:inline-grid;grid-template-columns:auto auto;align-items:center;column-gap:8px}.logo small{grid-column:2}
+.logo-mark{grid-row:1/3;width:38px;height:38px;display:block}
 .store{display:inline-flex;align-items:center;gap:8px;padding-left:14px;border-left:2px solid rgba(28,28,28,.25);font-weight:900;font-size:15px;cursor:pointer;white-space:nowrap}
 .store i{font-style:normal;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:#fff;border:2px solid var(--ink);font-size:12px}
 nav .nb{border:2px solid var(--ink);background:#fff;border-radius:8px;padding:6px 12px;font-weight:800}
@@ -591,7 +593,7 @@ details.more #chips{padding:0 16px 14px}
 /* ===== 휴대폰 화면 (640px 이하): 앱처럼 아래쪽 메뉴 바, 위쪽은 로고·내 가게만 ===== */
 @media (max-width:640px){
   header .wrap{height:54px;gap:8px}
-  .logo{font-size:20px;white-space:nowrap}
+  .logo{font-size:20px;white-space:nowrap}.logo-mark{width:30px;height:30px}
   .store{display:inline-flex;margin-left:auto;padding-left:0;border-left:0;font-size:14px}
   .store #store-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#fff;border-top:3px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
@@ -630,8 +632,7 @@ details.more #chips{padding:0 16px 14px}
 <body>
 <header class="appbar">
   <div class="wrap">
-    <a class="logo" href="#" data-go="1"><i class="logo-dot"></i>디저트 <b>타이밍</b><small>지금 출시해도 될까?</small></a>
-    <span class="store" id="store-chip"><i id="store-ini">내</i><span id="store-name">내 가게</span></span>
+    <a class="logo" href="#" data-go="1"><svg class="logo-mark" aria-hidden="true" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" stroke="#1c1c1c" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"> <path d="M21 27 L35.72 18.50 A17 17 0 1 1 21.00 10.00 Z" fill="#ffd9e0"/> <circle cx="21" cy="27" r="11.5" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 3" opacity=".9"/> <g fill="#ff3b4e" stroke-width="1.6"><circle cx="11" cy="22" r="2.4"/><circle cx="13" cy="36" r="2.4"/><circle cx="27" cy="40" r="2.4"/><circle cx="35" cy="31" r="2.4"/></g> <g transform="translate(4 -4)"><path d="M21 27 L21.00 10.00 A17 17 0 0 1 35.72 18.50 Z" fill="#ffd400"/> <circle cx="26.00" cy="18.34" r="3" fill="#ff3b4e" stroke-width="1.8"/></g> </svg><span>디저트 <b>타이밍</b></span><small>지금 출시해도 될까?</small></a>
     <nav>
       <button type="button" class="nb" data-view="flow" aria-pressed="true">메뉴 개발</button>
       <button type="button" class="nb" data-view="radar" aria-pressed="false">이번 주 레이더</button>
@@ -1904,8 +1905,6 @@ function renderSide() {
   const p = loadProfile();
   document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
   const n = storeName();
-  document.getElementById('store-name').textContent = n || '내 가게';
-  document.getElementById('store-ini').textContent = (n || '내').slice(0, 1);
 }
 function renderProg() {
   const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: loadSaved().length > 0 };
@@ -1944,7 +1943,6 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
 document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListener('click', () => goStep(+b.dataset.step)));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
-document.getElementById('store-chip').onclick = () => { setView('flow'); if (current) { goStep(3); document.getElementById('profile').open = true; } };
 document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
 const __select = select;
 select = k => { __select(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };

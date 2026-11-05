@@ -896,8 +896,6 @@ function renderSide() {
   const p = loadProfile();
   document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
   const n = storeName();
-  document.getElementById('store-name').textContent = n || '내 가게';
-  document.getElementById('store-ini').textContent = (n || '내').slice(0, 1);
 }
 function renderProg() {
   const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: loadSaved().length > 0 };
@@ -936,7 +934,6 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
 document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListener('click', () => goStep(+b.dataset.step)));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
-document.getElementById('store-chip').onclick = () => { setView('flow'); if (current) { goStep(3); document.getElementById('profile').open = true; } };
 document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
 const __select = select;
 select = k => { __select(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
