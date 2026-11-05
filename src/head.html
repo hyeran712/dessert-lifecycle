@@ -322,13 +322,21 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-chips span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.55);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);color:#3b4440;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .ms-chips i{width:8px;height:8px;border-radius:50%;display:inline-block}
-.ms-chips .c1{background:#ff7a2e}.ms-chips .c2{background:#ffe9a8}
-.map-wrap{position:relative;max-width:520px;margin:4px auto 0 -30px;overflow:hidden;touch-action:none}
+.ms-chips .c1{background:#f4a166}.ms-chips .c2{background:#fdf3e2;box-shadow:inset 0 0 0 1px #e3d6c2}
+.map-wrap{position:relative;max-width:580px;padding-right:60px;box-sizing:border-box;margin:4px auto 0 -30px;overflow:hidden;touch-action:none}
 #kmap{width:100%;height:auto;display:block;overflow:visible}
-#kmap path.top{fill-opacity:.6;stroke:rgba(255,255,255,.4);stroke-width:.9;stroke-linejoin:round;cursor:pointer;transition:fill-opacity .2s}
-#kmap path.top:hover{fill-opacity:.85}
-#kmap .tops path.sel{fill-opacity:.15}
-#kmap .selside path.top{fill-opacity:.95;stroke:rgba(255,255,255,.6);stroke-width:2;filter:drop-shadow(0 4px 4px rgba(120,50,10,.3))}
+#kmap path.top{fill-opacity:.72;stroke:none;cursor:pointer;transition:fill-opacity .2s}
+#kmap path.top:hover{fill-opacity:.95}
+#kmap .groove{pointer-events:none;fill:none;stroke-width:.7;stroke-linejoin:round}
+#kmap .groove use:first-child{stroke-opacity:.7}#kmap .groove use:last-child{stroke-opacity:.28}
+#kmap .tops path.sel{fill-opacity:.25}
+#kmap .selside{animation:rise .45s cubic-bezier(.2,.9,.3,1.15)}
+#kmap .selside path.top{fill-opacity:.88;stroke:rgba(255,255,255,.55);stroke-width:.8;filter:drop-shadow(0 8px 7px rgba(120,50,10,.22))}
+#kmap .sel-pin{animation:rise .45s cubic-bezier(.2,.9,.3,1.15)}
+#kmap .sel-pin line{stroke:#ff5a1f;stroke-width:1.4}#kmap .sel-pin circle{fill:#fff;stroke:#ff5a1f;stroke-width:1.8}
+#kmap .sel-pin rect{fill:rgba(255,255,255,.94);filter:drop-shadow(0 4px 6px rgba(90,60,30,.18))}
+#kmap .sel-pin text{font-size:11px;font-weight:800;fill:#ff5a1f;letter-spacing:1.5px;stroke:none}
+@keyframes rise{from{transform:translateY(12px);opacity:.4}to{transform:none;opacity:1}}
 #kmap text{pointer-events:none;text-anchor:middle;font-family:"Noto Sans KR";paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:2.6px}
 #kmap .nm{font-size:10px;font-weight:700;fill:#3a2616}
 #kmap .ct{font-size:8.5px;font-weight:500;fill:#7a5a40}
@@ -373,7 +381,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 @media (max-width:760px){
   .mapstage{padding:16px 14px 0;min-height:0}
   .ms-head{flex-direction:column}.ms-chips{justify-content:flex-start}
-  .map-wrap{margin:4px auto 0}
+  .map-wrap{margin:4px auto 0;padding-right:0}
   .map-panel{position:relative!important;right:auto;top:auto;width:auto;max-height:none;margin:8px 0 12px}
   .ms-ctrl{position:relative!important;left:auto;bottom:auto;width:max-content;margin:6px auto 0}
   .ms-list{position:relative!important;left:auto;bottom:auto;width:auto;margin:8px 0}

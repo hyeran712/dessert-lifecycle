@@ -555,9 +555,9 @@ const LBL = { '인천': null, '서울': [195, 108], '경기': [228, 78], '세종
 const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁은 지역은 이름만 (숫자는 눌렀을 때)
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
-// 매장 수에 따라 크림 → 주황 (반투명), 옆면은 같은 색을 어둡게
-const RAMP = ['#f3efe3', '#fff0b8', '#ffd36b', '#ffa94d', '#ff7a2e', '#d94a12'];
-const SIDE = ['#cfc6b0', '#d9c27a', '#c9a038', '#c27a2c', '#b5521c', '#8f300b'];
+// 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
+const RAMP = ['#fdfcf8', '#fdf3e2', '#fde6c8', '#fbd4a6', '#f8bd85', '#f4a166'];
+const SEL_TOP = '#ff7a3d', SEL_SIDE = '#c94a1c';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -576,22 +576,26 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 12;   // 두께(층 수)
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 3 ? '#b8662e' : '#e39a5c'}" fill-opacity="${i < 3 ? .5 : .32}"></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#bfb4a2' : '#ece6db'}" fill-opacity="${i < 2 ? .6 : .5}"></use>`).join('');
+  const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
   svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
-    <g class="ground"><use href="#land" transform="translate(0,${OY + 52}) scale(1,${SY})" fill="#7a4a24" opacity=".22" filter="url(#soft)"></use></g>
+    <g class="ground"><use href="#land" transform="translate(8,${OY + 46}) scale(1,${SY})" fill="#6b5a48" opacity=".16" filter="url(#soft)"></use></g>
     <g class="float"><g transform="${T}">${layers}
-      <g class="edge"><use href="#land" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2.4" filter="url(#glow)"></use></g>
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
-      ${selD ? `<g class="selside">${Array.from({ length: 8 }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SIDE[step((regs[r] || {}).alive || 0, mx)]}" fill-opacity=".9"></path>`).join('')}
-        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,-9)" fill="${RAMP[step((regs[r] || {}).alive || 0, mx)]}"></path></g>` : ''}
+      <g class="groove"><use href="#land" transform="translate(0,.9)" stroke="#fff"></use><use href="#land" stroke="#9c8c78"></use></g>
+      ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
+        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +
     Object.entries(KOREA.cent).map(([n, xy]) => {
       const p0 = n in LBL ? LBL[n] : xy; if (!p0) return '';
-      const [x, y] = P2(p0[0], p0[1] - (n === r ? 12 : 0));
+      const [x, y] = P2(p0[0], p0[1] - (n === r ? LIFT : 0));
       const v = (regs[n] || {}).alive || 0, i = rank.findIndex(e => e[0] === n) + 1, nm = SHORT[n] || n;
+      if (n === r) { const t = `${nm} · ${v}곳`, w = t.length * 9.5 + 22, ty = Math.max(24, y - 58);
+        return `<g class="sel-pin"><line x1="${x}" y1="${y}" x2="${x}" y2="${ty + 10}"></line><circle cx="${x}" cy="${y}" r="3.4"></circle>
+        <rect x="${x - w / 2}" y="${ty - 12}" width="${w}" height="24" rx="3"></rect><text x="${x}" y="${ty + 4}">${t}</text></g>`; }
       if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
         <rect x="${x - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x}" y="${y - 31}">${nm} ${v}곳</text></g>`;
       return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${x}" y="${y + 12}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g></g>';
