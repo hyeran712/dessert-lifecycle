@@ -450,7 +450,7 @@ const grid = document.getElementById('shop-grid');
         label: it => it.datasetIndex === 1 ? ` 영업 중 ${it.raw.n.toLocaleString()}곳` : ` 검색량 ${it.raw.y.toFixed(0)}%` } } } }
   });
 });
-const ORDER = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'];
+const ORDER = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌', '소금빵'];
 const pct = v => v === null || v === undefined ? '–' : v + '%';
 document.getElementById('shop-table').innerHTML = `<thead><tr><th>디저트</th><th>검색 최고</th><th>가게 최고</th><th class="num-r">가게 수</th><th class="num-r">늦게 연 가게<br>1년 내 폐업</th></tr></thead><tbody>` +
   ORDER.map(k => { const s = D.shops[k].stats;
@@ -742,7 +742,7 @@ renderPicks(); renderSide(); renderProg(); head();
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function renderRadar(L) {
   document.getElementById('rd-sub').textContent = `기준일 ${L.data_date} · ${L.updated} 자동 업데이트 · 전국 휴게음식점·제과점 인허가 데이터`;
-  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌', '소금빵'].map(k => {
+  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌', '소금빵', '붕어빵', '땅콩빵'].map(k => {
     const s = L.shops[k]; if (!s) return '';
     return `<button type="button" class="tile" data-k="${k}"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></button>`;
   }).join('');
@@ -763,7 +763,7 @@ function renderRadar(L) {
   document.getElementById('rd-list').innerHTML = html || '<p class="note">이번 주에는 새로 늘어나는 단어가 없어요.</p>';
   // 진단 카드의 매장 숫자를 최신값으로
   Object.entries(L.shops).forEach(([k, v]) => {
-    // 분석 노트북에 없던 디저트(소금빵)는 레이더 숫자로 매장 정보를 만든다
+    // 분석 노트북에 없던 디저트(소금빵·붕어빵·땅콩빵)는 레이더 숫자로 매장 정보를 만든다
     if (!D.shops[k] && v.alive_max) D.shops[k] = { alive: v.alive, stats: { total: v.total, popup: v.popup, open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak, close1y_before: null, close1y_after: null } };
     if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
   if (current) select(current);

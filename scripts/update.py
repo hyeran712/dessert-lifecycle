@@ -23,7 +23,7 @@ DEFAULT_ENDPOINTS = {'휴게음식점': 'https://apis.data.go.kr/1741000/rest_ca
                      '제과점': 'https://apis.data.go.kr/1741000/bakeries/info'}
 KW = {'탕후루': ['탕후루'], '흑당': ['흑당', '타이거슈가', '쩐주단', '흑화당'], '크로플': ['크로플'], '마카롱': ['마카롱'],
       '요거트 아이스크림': ['요아정', '요거트아이스크림', '요거트퍼플'], '베이글': ['베이글'], '모찌': ['모찌'],
-      '소금빵': ['소금빵']}
+      '소금빵': ['소금빵'], '붕어빵': ['붕어빵', '잉어빵'], '땅콩빵': ['땅콩빵']}
 
 def log(*a): print('[update]', *a, flush=True)
 
@@ -190,7 +190,7 @@ def main():
             state.setdefault('since', {})[src] = (now - dt.timedelta(days=3)).strftime('%Y%m%d%H%M%S')  # 2일 지연 + 여유
         new = pd.concat(frames, ignore_index=True) if frames else new
         # KW에 새로 넣은 디저트는 과거 가게까지 한 번 받아 둔다 (state.json의 backfilled에 기록)
-        done = set(state.get('backfilled', [k for k in KW if k != '소금빵']))
+        done = set(state.get('backfilled', ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌']))   # 노트북에서 이미 받아 둔 7종
         for k in [k for k in KW if k not in done]:
             for w in KW[k]:
                 for src, url in eps.items():
