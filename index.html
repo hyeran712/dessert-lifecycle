@@ -588,6 +588,32 @@ details.more #chips{padding:0 16px 14px}
 .sh-foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 30px 20px;font-size:11.5px;color:var(--ink-2);line-height:1.6}
 .sh-foot b{color:var(--ink);font-size:13px}
 @media (max-width:760px){.sh-kpi{grid-template-columns:1fr 1fr;padding:16px 16px 4px}.sh-grid{grid-template-columns:minmax(0,1fr);padding:14px 16px 0}.sh-top{padding:20px 18px}.sh-act{margin:14px 16px 0}.sh-foot{padding:12px 16px 18px}}
+/* ===== 휴대폰 화면 (640px 이하): 앱처럼 아래쪽 메뉴 바, 위쪽은 로고·내 가게만 ===== */
+@media (max-width:640px){
+  header .wrap{height:54px;gap:8px}
+  .logo{font-size:20px;white-space:nowrap}
+  .store{display:inline-flex;margin-left:auto;padding-left:0;border-left:0;font-size:14px}
+  .store #store-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#fff;border-top:3px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  nav .nb,nav .nb.ghost{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:10px;padding:6px 2px;font-size:11.5px;line-height:1.2;background:transparent;white-space:nowrap}
+  nav .nb::before{font-size:19px;line-height:1}
+  nav .nb[data-view="flow"]::before{content:"🍰"}nav .nb[data-view="radar"]::before{content:"📡"}nav .nb[data-view="local"]::before{content:"📍"}nav .nb[data-open-about]::before{content:"📊"}
+  nav .nb[aria-pressed="true"]{background:var(--pop-y);color:var(--ink)}
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  .notice{flex-direction:row;align-items:center;gap:10px;padding:10px 36px 10px 12px;border-left-width:6px;margin-bottom:16px}
+  .notice p{display:none}.notice b{font-size:13.5px}
+  .notice .btn{padding:7px 12px;font-size:13px}
+  .stepper{flex-wrap:nowrap;gap:4px;padding:6px;margin-bottom:16px}
+  .stepper li{flex:1;min-width:0}
+  .stepper button{width:100%;justify-content:center;gap:4px;padding:6px 2px;font-size:12px;white-space:nowrap}
+  .stepper button i{width:22px;height:22px;font-size:11px}
+  .side{display:none}
+  .step-nav{justify-content:stretch}.step-nav .note{flex-basis:100%;text-align:center}
+  #p-table{min-width:0!important;width:100%}#p-table thead{display:none}
+  #p-table tr{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+  #p-table td{display:block;padding:0;border:0;white-space:normal;background:none}#p-table tr.me{background:var(--pop-y);border-radius:8px}
+  #p-table td:first-child{grid-column:1/3;font-weight:800}
+}
 @media print{
   @page{size:A4;margin:10mm}
   body{background:#fff}
