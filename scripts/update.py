@@ -74,6 +74,30 @@ def fetch_by_name(url, key, word):
         page += 1; time.sleep(0.2)
     return rows
 
+# ---------- 설·추석 날짜 (한국천문연구원 특일 정보) ----------
+HOLI_URL = 'https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo'
+HOLI = LIVE / 'holidays.json'
+
+def update_holidays(key, now):
+    """올해~2년 뒤 설날·추석 당일을 받아 live/holidays.json에 저장. 실패하면 기존 파일을 그대로 둔다."""
+    out = []
+    try:
+        for y in range(now.year, now.year + 3):
+            r = requests.get(HOLI_URL, params={'ServiceKey': key, 'solYear': y, 'numOfRows': 100, '_type': 'json'}, timeout=30)
+            r.raise_for_status()
+            items = ((r.json().get('response', {}).get('body', {}).get('items') or {}).get('item')) or []
+            if isinstance(items, dict): items = [items]
+            for name in ('설날', '추석'):
+                days = sorted(str(i['locdate']) for i in items if str(i.get('dateName', '')).strip() == name)
+                if days:   # 연휴 3일 중 가운데가 당일
+                    d = days[len(days) // 2]
+                    out.append([f'{d[:4]}-{d[4:6]}-{d[6:8]}', name])
+        if out:
+            HOLI.write_text(json.dumps({'updated': now.strftime('%Y-%m-%d'), 'items': out}, ensure_ascii=False))
+            log(f'설·추석 날짜 {len(out)}개 저장')
+    except Exception as e:
+        log(f'설·추석 날짜를 받지 못했어요 (기존 값 유지): {e}')
+
 def to_frame(items, src):
     if not items: return pd.DataFrame(columns=['관리번호', '사업장명', '인허가일자', '폐업일자', '영업상태명', '주소', 'src'])
     d = pd.DataFrame(items)
@@ -189,6 +213,7 @@ def main():
             frames.append(to_frame(items, src))
             state.setdefault('since', {})[src] = (now - dt.timedelta(days=3)).strftime('%Y%m%d%H%M%S')  # 2일 지연 + 여유
         new = pd.concat(frames, ignore_index=True) if frames else new
+        update_holidays(key, now)
         # KW에 새로 넣은 디저트는 과거 가게까지 한 번 받아 둔다 (state.json의 backfilled에 기록)
         done = set(state.get('backfilled', ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌']))   # 노트북에서 이미 받아 둔 7종
         for k in [k for k in KW if k not in done]:
