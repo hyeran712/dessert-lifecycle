@@ -21,7 +21,7 @@ const sign = v => (v > 0 ? '+' : '') + Math.round(v) + '%';
 
 /* ---------- 매장 데이터 ---------- */
 const SHOPMAP = {'탕후루':'탕후루','흑당':'흑당','크로플':'크로플','마카롱':'마카롱','요거트 아이스크림':'요거트 아이스크림','베이글':'베이글',
-  '과일모찌':'모찌','찹쌀모찌':'모찌','모찌떡':'모찌','딸기모찌':'모찌'};
+  '과일모찌':'모찌','찹쌀모찌':'모찌','모찌떡':'모찌','딸기모찌':'모찌','소금빵':'소금빵'};
 const shopPts = key => { const a = D.shops[key].alive, mx = Math.max(...a);
   return a.map((v, i) => ({ x: 2016 + i / 12 + 1 / 24, y: v / mx * 100, n: v, m: `${2016 + Math.floor(i / 12)}년 ${i % 12 + 1}월` })); };
 const fmtYM = s => s.replace('-', '.');
@@ -106,7 +106,7 @@ const LIVE = {};          // 실시간으로 분석한 디저트
 const LIVE_API = 'https://dessert-timing.yhr9232.workers.dev';     // Cloudflare Worker 주소 (예: https://dessert-timing.xxx.workers.dev)
 function entry(k) {
   if (LIVE[k]) return LIVE[k];
-  const sk = SHOPMAP[k];
+  const sk = SHOPMAP[k] && D.shops[SHOPMAP[k]] ? SHOPMAP[k] : null;   // 소금빵은 주간 레이더(live.json)를 불러온 뒤에 생김
   return { v: D.kw[k], X, dates: D.dates, shop: sk ? D.shops[sk].stats : null, shopPts: sk ? shopPts(sk) : [],
            shopNote: sk === '모찌' ? "· 상호에 '모찌'가 들어간 매장" : '· 인허가 기준 상설 매장', shopLegend: sk === '모찌' ? " (상호에 '모찌')" : '' };
 }
@@ -742,7 +742,7 @@ renderPicks(); renderSide(); renderProg(); head();
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function renderRadar(L) {
   document.getElementById('rd-sub').textContent = `기준일 ${L.data_date} · ${L.updated} 자동 업데이트 · 전국 휴게음식점·제과점 인허가 데이터`;
-  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌'].map(k => {
+  document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌', '소금빵'].map(k => {
     const s = L.shops[k]; if (!s) return '';
     return `<button type="button" class="tile" data-k="${k}"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></button>`;
   }).join('');
@@ -762,7 +762,10 @@ function renderRadar(L) {
   const html = group('alert', '🔔 경보 (기준을 모두 넘은 단어)') + group('watch', '👀 관찰 목록 (기준에 가까운 단어)');
   document.getElementById('rd-list').innerHTML = html || '<p class="note">이번 주에는 새로 늘어나는 단어가 없어요.</p>';
   // 진단 카드의 매장 숫자를 최신값으로
-  Object.entries(L.shops).forEach(([k, v]) => { if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
+  Object.entries(L.shops).forEach(([k, v]) => {
+    // 분석 노트북에 없던 디저트(소금빵)는 레이더 숫자로 매장 정보를 만든다
+    if (!D.shops[k] && v.alive_max) D.shops[k] = { alive: v.alive, stats: { total: v.total, popup: v.popup, open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak, close1y_before: null, close1y_after: null } };
+    if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
   if (current) select(current);
 }
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(renderRadar)

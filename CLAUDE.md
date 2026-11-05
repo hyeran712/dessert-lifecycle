@@ -67,6 +67,8 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 ## 주간 레이더 (GitHub Actions)
 - `.github/workflows/weekly-radar.yml`: 매주 월요일 08:23(한국 시간) `scripts/update.py` 실행 → `live/` 커밋
 - 행정안전부 인허가 API(휴게음식점 `rest_cafes`, 제과점 `bakeries`)에서 `DAT_UPDT_PNT` 이후 바뀐 가게를 받아 매장 수·시도별 통계(`regions`)·가게 이름 경보를 다시 계산
+- 디저트 8종: 노트북 7종 + 소금빵(2026-11-05 추가). `KW`에 새 디저트를 넣으면 다음 실행 때 상호 LIKE 검색으로 과거 가게까지 한 번 받고 `state.json`의 `backfilled`에 기록
+- 소금빵은 `src/data.json`에 매장 통계가 없어서, 화면이 live.json으로 `D.shops['소금빵']`를 만든다. 과거 가게를 받은 뒤 노트북 방식으로 검색 피크·1년 내 폐업률을 계산해 data.json에 넣을 예정
 - 손으로 다시 계산만: `python scripts/update.py --offline` (이때 `live/state.json` 변경은 커밋하지 않기)
 
 ## 분석 방법 요약 (README·About data와 일치시킬 것)

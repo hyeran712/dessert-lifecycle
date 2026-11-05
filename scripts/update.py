@@ -22,7 +22,8 @@ KST = dt.timezone(dt.timedelta(hours=9))
 DEFAULT_ENDPOINTS = {'휴게음식점': 'https://apis.data.go.kr/1741000/rest_cafes/info',
                      '제과점': 'https://apis.data.go.kr/1741000/bakeries/info'}
 KW = {'탕후루': ['탕후루'], '흑당': ['흑당', '타이거슈가', '쩐주단', '흑화당'], '크로플': ['크로플'], '마카롱': ['마카롱'],
-      '요거트 아이스크림': ['요아정', '요거트아이스크림', '요거트퍼플'], '베이글': ['베이글'], '모찌': ['모찌']}
+      '요거트 아이스크림': ['요아정', '요거트아이스크림', '요거트퍼플'], '베이글': ['베이글'], '모찌': ['모찌'],
+      '소금빵': ['소금빵']}
 
 def log(*a): print('[update]', *a, flush=True)
 
@@ -48,6 +49,27 @@ def fetch_updates(url, key, since):
         if isinstance(items, dict): items = [items]
         rows += items
         log(f'{url.split("/")[-2]} page {page}: {len(rows)}/{total}')
+        if not items or len(rows) >= total: break
+        page += 1; time.sleep(0.2)
+    return rows
+
+def fetch_by_name(url, key, word):
+    """상호에 word가 들어간 가게를 기간 상관없이 모두 받아온다 (새 디저트를 처음 넣을 때 한 번만)."""
+    rows, page, total = [], 1, None
+    while True:
+        params = {'serviceKey': key, 'pageNo': page, 'numOfRows': 100, 'returnType': 'json', 'cond[BPLC_NM::LIKE]': word}
+        for attempt in range(4):
+            try:
+                r = requests.get(url, params=params, timeout=30); r.raise_for_status(); data = r.json(); break
+            except Exception as e:
+                if attempt == 3: raise RuntimeError(f'API 호출 실패 ({url}, {word}, page {page}): {e}')
+                time.sleep(2 * (attempt + 1))
+        body = data.get('response', {}).get('body', {})
+        total = int(body.get('totalCount', 0))
+        items = (body.get('items') or {}).get('item') or []
+        if isinstance(items, dict): items = [items]
+        rows += items
+        log(f'{url.split("/")[-2]} "{word}" page {page}: {len(rows)}/{total}')
         if not items or len(rows) >= total: break
         page += 1; time.sleep(0.2)
     return rows
@@ -167,6 +189,16 @@ def main():
             frames.append(to_frame(items, src))
             state.setdefault('since', {})[src] = (now - dt.timedelta(days=3)).strftime('%Y%m%d%H%M%S')  # 2일 지연 + 여유
         new = pd.concat(frames, ignore_index=True) if frames else new
+        # KW에 새로 넣은 디저트는 과거 가게까지 한 번 받아 둔다 (state.json의 backfilled에 기록)
+        done = set(state.get('backfilled', [k for k in KW if k != '소금빵']))
+        for k in [k for k in KW if k not in done]:
+            for w in KW[k]:
+                for src, url in eps.items():
+                    items = fetch_by_name(url, key, w)
+                    log(f'{k} 과거 가게 받기 · {src} "{w}": {len(items)}건')
+                    new = pd.concat([new, to_frame(items, src)], ignore_index=True)
+            done.add(k)
+        state['backfilled'] = sorted(done)
     base, shops, new = apply_updates(new)
     # 데이터는 2일 전 기준이라 오늘-2일을 기준일로 본다
     today = pd.Timestamp(now.date()) - pd.Timedelta(days=2)
