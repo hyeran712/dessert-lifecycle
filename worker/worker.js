@@ -177,6 +177,13 @@ async function askGemini(prompt, env) {
   return JSON.parse(out.replace(/^```json\s*|```$/g, ''));
 }
 
+// 메뉴 목적별로 AI에게 주는 구체적인 지시
+const GOAL_GUIDE = {
+  '기간 한정': '4~8주만 파는 한정 메뉴. 준비가 빠르고 남는 재료가 적게, 지금 사야 할 이유가 느껴지는 "한정" 느낌의 이름으로.',
+  '정규 메뉴': '1년 내내 파는 정규 메뉴. 재료를 늘 구하기 쉽고, 직원 누구나 같은 맛을 낼 만큼 만들기 쉽고, 원가가 흔들리지 않게.',
+  'SNS 인증용': '사진 찍고 싶은 비주얼 메뉴. 단면·색감·높이·토핑 중 사진 포인트를 하나 이상 확실히 넣고, 그 포인트가 잘 보이는 담음새로.',
+  '시즌 메뉴': '계절 메뉴. 지금 계절이나 대목에 맞는 제철 재료를 쓰고, 계절이 느껴지는 이름으로, 매년 다시 낼 수 있게.',
+};
 async function menu(body, env) {
   const kw = cleanQuery(body.keyword);
   if (!kw) throw new Error('디저트 이름이 필요해요.');
@@ -188,7 +195,7 @@ async function menu(body, env) {
   const base = `당신은 한국 카페·디저트 프랜차이즈의 메뉴개발자입니다. 트렌드 키워드로 실제 매장에서 팔 신메뉴 1개를 만드세요.
 - 트렌드 키워드: ${kw} (유행 단계: ${body.type || '알 수 없음'})
 - 메뉴 분야: ${kind}
-- 메뉴 목적: ${['기간 한정', '정규 메뉴', 'SNS 인증용', '시즌 메뉴'].includes(body.goal) ? body.goal : '알아서 판단'}
+- 메뉴 목적: ${GOAL_GUIDE[body.goal] ? `${body.goal} → ${GOAL_GUIDE[body.goal]}` : '알아서 판단'}
 - 사장님 요청사항: ${String(body.note || '없음').replace(/[<>`]/g, '').slice(0, 120)} (원가율 목표보다 낮은 숫자를 말하면 그 숫자를 지킬 것)
 - 목표 판매가: ${price}원, 목표 원가율: ${target}% 이하
 - 가게 주력 분야: ${p.cat || '정보 없음'} / 보유 장비: ${(p.eq || []).join(', ') || '정보 없음'} (없는 장비가 필요한 공정은 쓰지 말 것)
@@ -196,7 +203,7 @@ async function menu(body, env) {
 - 단가를 아는 재료: ${known}. 이 재료는 이름을 똑같이 쓰고 단위도 맞출 것.
 - 그 밖의 재료는 2026년 한국 업소용 식자재 기준 단위당 단가(원)를 est_unit_price로 추정. 단위는 g, ml, 개 중 하나.
 - 음료면 아이스컵세트 1개와 빨대 1개를 넣고, 디저트면 포장용기 1개를 재료로 넣을 것. 생딸기처럼 과일은 개수 말고 g으로 쓸 것.
-JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
+JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","goal_fit":"메뉴 목적에 맞춘 점 한 문장","photo":"SNS 인증용일 때만: 사진이 잘 나오게 담고 찍는 법 한 문장, 아니면 빈 문자열","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
   const log = [];
   let prompt = base, result, cost;
   for (let i = 1; i <= 3; i++) {
@@ -211,7 +218,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const rate = cost.total / price * 100;
   const banned = (p.ban || []).filter(b => cost.rows.some(r => r.ing.includes(b)));
   return { banned, keyword: kw, kind, price, target, name: result.name, concept: result.concept, targetCustomer: result.target,
-    point: result.point, pairing: result.pairing, steps: result.steps || [], recipe: cost.rows, cost: cost.total,
+    point: result.point, pairing: result.pairing, goal: GOAL_GUIDE[body.goal] ? body.goal : '', goalFit: result.goal_fit || '', photo: result.photo || '', steps: result.steps || [], recipe: cost.rows, cost: cost.total,
     rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-04' };
 }
 

@@ -237,6 +237,9 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .mk-card .pass{color:#1a7f3c}.mk-card .fail{color:var(--teal-d)}
 .mk-card table{min-width:0;font-size:13.5px;margin-top:6px}
 .mk-card td,.mk-card th{padding:7px 8px}
+.goal-tag{background:#ffd400!important;color:#1c1c1c!important;border:1.5px solid #1c1c1c}
+.gfit{margin:6px 0;padding:8px 12px;background:#fff8dc;border-radius:8px;border:1.5px dashed rgba(28,28,28,.3)}
+.pl.gtip{background:#ffd400!important;border-color:#1c1c1c!important}
 .mk-act{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 #saved-list{display:grid;gap:10px}
 .sv{border:2px solid var(--ink);border-radius:12px;background:#fff}
@@ -1345,6 +1348,15 @@ document.getElementById('profile').addEventListener('change', () => { saveProfil
 ['pf-ban', 'pf-name'].forEach(id => document.getElementById(id).addEventListener('input', () => { saveProfile(readForm()); profileSummary(); if (current) renderPlan(current, entry(current).v, entry(current).shop); }));
 
 /* ---------- 기획 제안: 고른 디저트에 맞춰 ---------- */
+// 단계·메뉴 목적 상태 (renderPlan이 처음 그려질 때도 쓰므로 위쪽에 둔다)
+let STEP = 1, REACHED = 1, MADE = false, GOAL = null, GOAL_K = null;
+const GOAL_OF = { '진행중': '기간 한정', '정착형': '정규 메뉴', '시즌형': '시즌 메뉴', '유행형': 'SNS 인증용', '관망형': 'SNS 인증용' };
+const GOAL_TIP = {
+  '기간 한정': ['4~8주만 팔고 끝내기', '"○○ 한정"이라는 이름과 끝나는 날을 미리 알리면 지금 사야 할 이유가 생겨요. 재료는 한정 기간만큼만 들이세요.'],
+  '정규 메뉴': ['1년 내내 팔 기본기 만들기', '재료를 늘 구하기 쉽고 직원 누구나 같은 맛을 낼 수 있게 레시피를 단순하게 정하세요. 원가가 계절 따라 흔들리지 않는지도 보세요.'],
+  'SNS 인증용': ['사진 찍고 싶은 한 장면 정하기', '단면·색감·높이 중 하나를 확실히 살리고, 자연광 자리와 포장까지 같이 준비하세요. 해시태그 이벤트와 함께하면 좋아요.'],
+  '시즌 메뉴': ['매년 같은 때 다시 내기', '제철 재료와 계절 이름을 쓰고, 대목 1~2달 전에 미리 알리세요. 올해 반응을 기록해 두면 내년에 그대로 다시 쓸 수 있어요.'],
+};
 function renderPlan(k, v, st) {
   const sv = v.season, smax = Math.max(...sv), smin = Math.min(...sv), pm = sv.indexOf(smax) + 1;
   const seasonal = smin > 0 && smax / smin >= 1.6, b1 = ((pm + 9) % 12) + 1, b2 = ((pm + 10) % 12) + 1;
@@ -1381,7 +1393,15 @@ function renderPlan(k, v, st) {
   const lb = document.getElementById('mk-label'); if (lb && lb.dataset.k !== k) { lb.dataset.k = k; lb.textContent = `${k}로 신메뉴 만들기`; const o = document.getElementById('mk-out'); if (o) o.innerHTML = ''; }
   document.getElementById('p-sub').textContent = `${k}${J} '${v.type}'이라 이렇게 해보면 좋아요.`;
   const fit = fitCard(k);
-  document.getElementById('p-plan').innerHTML = cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
+  // 고른 메뉴 목적에 따라 실행 팁 상자 하나 (유행 단계와 안 맞으면 한마디 덧붙임)
+  const g = (GOAL_K === k && GOAL) || GOAL_OF[v.type] || '기간 한정', gt = GOAL_TIP[g];
+  let gw = '';
+  if (g === '정규 메뉴' && (v.type === '유행형' || v.type === '진행중')) gw = ` 다만 ${k}${J} 지금 '${v.type}'이라 오래 갈지 아직 몰라요. 한정으로 먼저 시험해 보세요.`;
+  if (g === '시즌 메뉴' && !seasonal) gw = ` 다만 ${k}${J} 계절을 크게 타지 않아서 시즌 효과는 작을 수 있어요.`;
+  if (g === '시즌 메뉴' && seasonal) gw = ` ${k}${J} ${b1}~${b2}월에 내면 ${pm}월 대목을 잡을 수 있어요.`;
+  if (g === '기간 한정' && v.type === '유행형') gw = ` ${k}${J} 유행이 지나서, 한정이라도 2~4주로 짧게 잡으세요.`;
+  document.getElementById('p-plan').innerHTML = `<div class="pl gtip"><span class="k">${g}</span><b>${gt[0]}</b><p>${gt[1]}${gw}</p></div>` +
+    cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
     `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>`;
   document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
 }
@@ -1452,9 +1472,11 @@ function menuPrice(k, p) {
 function menuCard(m) {
   const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
   return `<div class="mk-card">
-      <span class="tag" style="background:var(--teal)">${m.kind}</span>
+      <span class="tag" style="background:var(--teal)">${m.kind}</span>${m.goal ? ` <span class="tag goal-tag">${esc(m.goal)}</span>` : ''}
       <h4>${esc(m.name)}</h4>
       <p>${esc(m.concept || '')}</p>
+      ${m.goalFit ? `<p class="gfit"><b>🎯 ${esc(m.goal || '목적')}에 맞춘 점</b> ${esc(m.goalFit)}</p>` : ''}
+      ${m.photo ? `<p class="gfit"><b>📸 사진 포인트</b> ${esc(m.photo)}</p>` : ''}
       <div class="meta">
         <div><span>판매가 (목표)</span><b>${won(m.price)}</b></div>
         <div><span>재료 원가</span><b>${won(m.cost)}</b></div>
@@ -1782,8 +1804,6 @@ const GOALS = [
   ['SNS 인증용', '📸', '#e7eefc', '사진 찍고 싶은 비주얼 메뉴'],
   ['시즌 메뉴', '🍂', '#f3e6d4', '대목 달에 맞춰 매년 내기'],
 ];
-const GOAL_OF = { '진행중': '기간 한정', '정착형': '정규 메뉴', '시즌형': '시즌 메뉴', '유행형': 'SNS 인증용', '관망형': 'SNS 인증용' };
-let STEP = 1, REACHED = 1, MADE = false, GOAL = null, GOAL_K = null;
 const ro = w => { const c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return '로'; const t = (c - 0xAC00) % 28; return t && t !== 8 ? '으로' : '로'; };
 const storeName = () => ((loadProfile() || {}).name || '').trim();
 // 디저트 사진 (AI로 만든 이미지, 크림 배경 480px webp · img/menu/)
@@ -1802,7 +1822,7 @@ function renderGoals() {
   const rec = GOAL_OF[entry(current).v.type] || '기간 한정';
   if (GOAL_K !== current) { GOAL = rec; GOAL_K = current; }
   document.getElementById('goals').innerHTML = GOALS.map(([g, e, bg, s]) => card('pick goal', g, e, bg, g, s, g === GOAL, g === rec ? '추천' : '')).join('');
-  document.querySelectorAll('#goals .goal').forEach(b => b.onclick = () => { GOAL = b.dataset.k; renderGoals(); });
+  document.querySelectorAll('#goals .goal').forEach(b => b.onclick = () => { GOAL = b.dataset.k; renderGoals(); renderPlan(current, entry(current).v, entry(current).shop); });
 }
 function renderSide() {
   const el = document.getElementById('sel-sum');
