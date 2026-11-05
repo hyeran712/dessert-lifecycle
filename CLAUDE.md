@@ -59,6 +59,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - 메뉴 목적(GOAL): Worker `GOAL_GUIDE`가 목적별 구체 지시를 AI에 주고 `goal`·`goalFit`·`photo`(SNS용)를 돌려줌 → 결과 카드에 목적 꼬리표·'목적에 맞춘 점'·'사진 포인트'. 3단계 기획 상자 맨 앞 노란 `.gtip`은 `GOAL_TIP` + 유행 단계와 안 맞을 때 한마디. `GOAL`·`GOAL_OF`는 renderPlan보다 위에 선언(처음 그릴 때 TDZ 오류 방지)
 - 대목 달력(app.js): `ANNUAL`(매년 같은 날)은 올해·내년 날짜를 자동 생성, 수능은 `suneung(y)`=11월 셋째 목요일, 설·추석은 `live/holidays.json`(주간 레이더가 공공데이터 '한국천문연구원 특일 정보'에서 올해~2년 뒤를 받아 저장, 실패 시 기존 값 유지, 파일이 없으면 코드의 `LUNAR` 기본값). `upcoming(k)`로 70일 안 대목을 결론 카드 '언제' 줄(유행형은 '대목' 줄)과 추천 점수(+1)에 씀. 손으로 날짜 고칠 필요 없음
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
+- 1단계 맨 위 `#dclock` 디저트 시계: `clockPlan()`이 D.kw의 `season`(달별 연평균 대비 배수)으로 12달에 디저트를 하나씩 배정(큰 값부터, 한 디저트 한 달, 유행형 0.85배 가중), 바늘이 이번 달. 누르면 select+2단계. 그 아래
 - 1단계 맨 위 `#rec`: 가게 종류·장비·가격대 → `recommend(p)`가 REQ·유형·대목 월로 점수 매겨 3개 추천(카드 누르면 2단계). 고른 값은 프로필에도 저장
 - 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
 - Chart.js 4.4.1 (cdnjs). 차트 선명도용 `Chart.defaults.devicePixelRatio = 2`

@@ -1082,3 +1082,29 @@ fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promi
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
 renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
 document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));
+
+/* ---------- 1단계 디저트 시계: 12달 자리마다 그 달에 가장 많이 늘어나는 디저트 ---------- */
+function clockPlan() {
+  // (디저트, 달, 연평균 대비 배수)를 큰 순서로 하나씩 배정 (한 디저트는 한 달만). 유행형은 조금 덜 고름
+  const pairs = [];
+  Object.entries(D.kw).filter(([k]) => IMG[k] && k !== '마라탕').forEach(([k, v]) => v.season.forEach((x, i) => pairs.push([k, i, x * (v.type === '유행형' ? 0.85 : 1)])));
+  pairs.sort((a, b) => b[2] - a[2]);
+  const mon = Array(12).fill(null), used = new Set();
+  pairs.forEach(([k, i]) => { if (!mon[i] && !used.has(k)) { mon[i] = k; used.add(k); } });
+  return mon;
+}
+function renderClock() {
+  const face = document.getElementById('dk-face'); if (!face) return;
+  const mon = clockPlan(), now = new Date().getMonth(), nx = (now + 1) % 12;
+  face.innerHTML = mon.map((k, i) => { const a = (i + 1) * 30 * Math.PI / 180, x = 50 + 39 * Math.sin(a), y = 50 - 39 * Math.cos(a);
+    return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 · ${k}">${photo(k)}<b>${i + 1}월</b></button>`; }).join('') +
+    `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
+  requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
+  const row = (i, tag) => { const k = mon[i], v = D.kw[k], sx = v.season[i];
+    return `<button type="button" data-k="${k}">${photo(k)}<span><small>${tag}</small><b>${esc(k)}</b><em>${i + 1}월 검색이 연평균의 ${sx.toFixed(1)}배 · ${v.type}</em></span></button>`; };
+  document.getElementById('dk-title').textContent = `${now + 1}월은 ${mon[now]}의 시간`;
+  document.getElementById('dk-sub').textContent = `시계바늘이 가리키는 디저트가 지금 가장 많이 늘어나는 디저트예요. 다음 달 준비할 디저트도 같이 보세요.`;
+  document.getElementById('dk-now').innerHTML = row(now, `이번 달 (${now + 1}월)`) + row(nx, `다음 달 준비 (${nx + 1}월)`);
+  document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = () => { select(b.dataset.k); goStep(2); });
+}
+renderClock();

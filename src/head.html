@@ -616,6 +616,30 @@ details.more #chips{padding:0 16px 14px}
   #p-table td{display:block;padding:0;border:0;white-space:normal;background:none}#p-table tr.me{background:var(--pop-y);border-radius:8px}
   #p-table td:first-child{grid-column:1/3;font-weight:800}
 }
+/* ===== 1단계 디저트 시계 ===== */
+.dk-wrap{display:grid;grid-template-columns:minmax(0,400px) 1fr;gap:28px;align-items:center}
+.dk{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 45%,#fffdf3 0 52%,#f6e7c4 53% 61%,#e9d3a6 62% 100%);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
+.dk-it{position:absolute;width:17%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--ink);background:#fdf5dc;padding:0;cursor:pointer;overflow:visible;transition:transform .2s}
+.dk-it img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.dk-it b{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font:900 10.5px "Noto Sans KR";background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;white-space:nowrap}
+.dk-it:hover{transform:translate(-50%,-50%) scale(1.12);z-index:3}
+.dk-it.now{width:22%;border-width:3px;box-shadow:0 0 0 5px var(--pop-y),3px 3px 0 6px var(--ink);z-index:2}
+.dk-it.now b{background:var(--pop-y)}
+.dk-it.next{box-shadow:0 0 0 3px #fff3b0}
+.dk-hand{position:absolute;left:50%;top:50%;width:5%;height:30%;transform-origin:50% 100%;translate:-50% -100%;transition:rotate 1.2s cubic-bezier(.3,1.4,.5,1)}
+.dk-hand::before{content:"";position:absolute;left:50%;bottom:0;width:34%;height:100%;translate:-50% 0;background:var(--ink);border-radius:6px}
+.dk-hand::after{content:"";position:absolute;left:50%;top:-6%;width:100%;aspect-ratio:1;translate:-50% 0;background:#ff5a1f;border:2px solid var(--ink);border-radius:50% 50% 50% 0;rotate:-45deg}
+.dk-c{position:absolute;left:50%;top:50%;width:9%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--pop-y);border:3px solid var(--ink)}
+.dk-mo{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-family:var(--display);font-size:clamp(18px,4vw,26px);color:var(--ink);white-space:nowrap}
+.dk-side h2{margin-top:10px}
+.dk-now{display:grid;gap:10px;margin:6px 0 12px}
+.dk-now button{display:flex;gap:12px;align-items:center;text-align:left;font:inherit;color:inherit;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.dk-now button:hover{box-shadow:3px 3px 0 #ff5a1f}
+.dk-now img{width:52px;height:52px;border-radius:10px;object-fit:cover;border:1.5px solid var(--ink);flex:none}
+.dk-now small{display:block;font-size:12px;font-weight:800;color:#ff5a1f}
+.dk-now span b{font-size:17px}
+.dk-now em{display:block;font-style:normal;font-size:13px;color:var(--ink-2)}
+@media (max-width:760px){.dk-wrap{grid-template-columns:1fr;gap:18px}.dk{max-width:360px;margin:0 auto;width:100%}.dk-it b{font-size:9.5px;bottom:-8px}}
 @media print{
   @page{size:A4;margin:10mm}
   body{background:#fff}
