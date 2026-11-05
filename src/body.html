@@ -6,6 +6,7 @@
     <nav>
       <button type="button" class="nb" data-view="flow" aria-pressed="true">메뉴 개발</button>
       <button type="button" class="nb" data-view="radar" aria-pressed="false">이번 주 레이더</button>
+      <button type="button" class="nb" data-view="local" aria-pressed="false">동네 리포트</button>
       <button type="button" class="nb ghost" data-open-about>About data</button>
     </nav>
   </div>
@@ -303,6 +304,20 @@
           <p class="note">가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어 예시 가게 이름을 같이 보여줘요.</p>
         </div>
       </div>
+  </section>
+
+  <!-- ===== 우리 동네 리포트 (사장님용) ===== -->
+  <section id="local" hidden>
+    <span class="tagpill">개인카페 사장님용</span>
+    <h1>우리 동네 카페·디저트 리포트</h1>
+    <p class="ph-sub">가게가 있는 시군구를 고르면, 동네 카페 시장과 비어 있는 디저트를 한 장으로 정리해 드려요.</p>
+    <div class="card lc-pick">
+      <label class="fld">시도<select id="lc-sido"></select></label>
+      <label class="fld">시군구<select id="lc-gu"></select></label>
+      <button type="button" class="btn primary" id="lc-print">PDF로 저장 · 인쇄</button>
+    </div>
+    <p class="note" id="lc-msg">불러오는 중…</p>
+    <article class="sheet" id="lc-sheet" hidden></article>
   </section>
 </main>
 
