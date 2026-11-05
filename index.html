@@ -380,6 +380,18 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-foot b{margin-right:8px}
 /* 지도+팝업을 한 덩어리로 가운데 정렬 (지도 그림 378px + 간격 40px + 팝업 280px, 팝업은 40px 더 오른쪽) */
 @media (min-width:761px){.mapstage.has-panel .map-wrap{margin-left:calc(50% - 486px)}.mapstage.has-panel .map-panel{right:calc(50% - 390px)}}
+.opp-row{display:grid;grid-template-columns:26px 150px 1fr 160px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px dashed rgba(28,28,28,.12)}
+.opp-row:last-child{border-bottom:0}
+.opp-row .rk{font-family:"Black Han Sans";font-size:18px;color:var(--ink-3,#888);text-align:center}
+.opp-row.top .rk{color:#ff5a1f}
+.opp-row .nm{font-weight:700}
+.opp-row .bar{height:22px;border-radius:6px;background:rgba(28,28,28,.06);overflow:hidden}
+.opp-row .bar i{display:block;height:100%;border-radius:6px;background:#ffd400;min-width:4px}
+.opp-row.top .bar i{background:#ff5a1f}
+.opp-row .v{text-align:right;font-size:12.5px;color:rgba(28,28,28,.6);line-height:1.35}
+.opp-row .nm small{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:#b33e0c;background:#ffe6d6;border-radius:999px;padding:1px 7px;vertical-align:2px}
+.opp-row .v b{display:block;font-size:15px;color:#1c1c1c}
+@media (max-width:760px){.opp-row{grid-template-columns:22px 1fr 140px}.opp-row .bar{grid-column:2/4;grid-row:2}}
 @media (max-width:760px){
   .mapstage{padding:16px 14px 0;min-height:0}
   .ms-head{flex-direction:column}.ms-chips{justify-content:flex-start}
@@ -733,6 +745,12 @@ details.more #chips{padding:0 16px 14px}
           <div class="ms-list" id="ms-list" hidden></div>
           <div class="ms-foot" id="ms-foot"></div>
         </div>
+      </div>
+      <div class="card" id="opp" style="margin-bottom:20px">
+        <div class="chart-head"><h4>검색은 많은데 가게는 적은 디저트</h4></div>
+        <p class="note" style="margin:0 0 14px">최근 한 달 네이버 검색 수(PC+모바일)를 지금 영업 중인 전문점 수로 나눴어요. <b>가게 하나당 검색 수</b>가 많을수록 찾는 사람에 비해 가게가 부족하다는 뜻이에요.</p>
+        <div id="opp-list"><p class="note">검색 수를 불러오는 중…</p></div>
+        <p class="note" id="opp-foot" style="margin-top:12px">검색 수: 네이버 검색광고 키워드 도구(최근 30일) · 매장 수: 이번 주 레이더(상호에 디저트 이름이 들어간 상설 매장). 붕어빵처럼 계절을 타는 디저트는 달마다 크게 달라져요.</p>
       </div>
       <div class="grid2">
         <div class="card">
@@ -1575,7 +1593,27 @@ function renderRadar(L) {
     if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
   if (current) select(current);
 }
-fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(renderRadar)
+/* ---------- 검색은 많은데 가게는 적은 디저트 (네이버 검색광고 월간 검색 수 ÷ 영업 중 매장) ---------- */
+const VOL_TERMS = { '탕후루': ['탕후루'], '흑당': ['흑당'], '크로플': ['크로플'], '마카롱': ['마카롱'], '요거트 아이스크림': ['요거트아이스크림'],
+  '베이글': ['베이글'], '모찌': ['모찌'], '소금빵': ['소금빵'], '붕어빵': ['붕어빵', '잉어빵'], '땅콩빵': ['땅콩빵'] };
+async function renderOpportunity(L) {
+  const box = document.getElementById('opp-list');
+  try {
+    const rows = await Promise.all(Object.entries(VOL_TERMS).filter(([k]) => L.shops[k]).map(async ([k, ts]) => {
+      const vs = await Promise.all(ts.map(t => getJSON(`/volume?q=${encodeURIComponent(t)}`)));
+      const vol = vs.reduce((a, v) => a + (v.month ? v.month.total : 0), 0), shops = L.shops[k].open_now;
+      return { k, vol, shops, per: shops ? vol / shops : 0 };
+    }));
+    const xs = rows.filter(r => r.vol && r.shops).sort((a, b) => b.per - a.per), mx = xs.length ? xs[0].per : 1;
+    if (!xs.length) throw new Error('empty');
+    box.innerHTML = xs.map((r, i) => `<div class="opp-row${i < 3 ? ' top' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(r.k)}${r.shops < 30 ? '<small title="가게 수가 적어 숫자가 크게 흔들릴 수 있어요">가게 30곳 미만</small>' : ''}</span>
+      <span class="bar"><i style="width:${(r.per / mx * 100).toFixed(1)}%"></i></span>
+      <span class="v"><b>가게당 ${Math.round(r.per).toLocaleString()}회</b>월 ${r.vol.toLocaleString()}회 · ${r.shops.toLocaleString()}곳</span></div>`).join('');
+  } catch (e) {
+    box.innerHTML = '<p class="note">지금은 검색 수를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</p>';
+  }
+}
+fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 </script>
 </body>

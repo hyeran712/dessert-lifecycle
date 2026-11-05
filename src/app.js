@@ -768,5 +768,25 @@ function renderRadar(L) {
     if (D.shops[k]) { D.shops[k].alive = v.alive; Object.assign(D.shops[k].stats, { open_now: v.open_now, alive_max: v.alive_max, alive_peak: v.alive_peak }); } });
   if (current) select(current);
 }
-fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(renderRadar)
+/* ---------- 검색은 많은데 가게는 적은 디저트 (네이버 검색광고 월간 검색 수 ÷ 영업 중 매장) ---------- */
+const VOL_TERMS = { '탕후루': ['탕후루'], '흑당': ['흑당'], '크로플': ['크로플'], '마카롱': ['마카롱'], '요거트 아이스크림': ['요거트아이스크림'],
+  '베이글': ['베이글'], '모찌': ['모찌'], '소금빵': ['소금빵'], '붕어빵': ['붕어빵', '잉어빵'], '땅콩빵': ['땅콩빵'] };
+async function renderOpportunity(L) {
+  const box = document.getElementById('opp-list');
+  try {
+    const rows = await Promise.all(Object.entries(VOL_TERMS).filter(([k]) => L.shops[k]).map(async ([k, ts]) => {
+      const vs = await Promise.all(ts.map(t => getJSON(`/volume?q=${encodeURIComponent(t)}`)));
+      const vol = vs.reduce((a, v) => a + (v.month ? v.month.total : 0), 0), shops = L.shops[k].open_now;
+      return { k, vol, shops, per: shops ? vol / shops : 0 };
+    }));
+    const xs = rows.filter(r => r.vol && r.shops).sort((a, b) => b.per - a.per), mx = xs.length ? xs[0].per : 1;
+    if (!xs.length) throw new Error('empty');
+    box.innerHTML = xs.map((r, i) => `<div class="opp-row${i < 3 ? ' top' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(r.k)}${r.shops < 30 ? '<small title="가게 수가 적어 숫자가 크게 흔들릴 수 있어요">가게 30곳 미만</small>' : ''}</span>
+      <span class="bar"><i style="width:${(r.per / mx * 100).toFixed(1)}%"></i></span>
+      <span class="v"><b>가게당 ${Math.round(r.per).toLocaleString()}회</b>월 ${r.vol.toLocaleString()}회 · ${r.shops.toLocaleString()}곳</span></div>`).join('');
+  } catch (e) {
+    box.innerHTML = '<p class="note">지금은 검색 수를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</p>';
+  }
+}
+fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
