@@ -57,6 +57,31 @@ GROUPS.forEach(([name, ks]) => {
   chipsEl.appendChild(g);
 });
 
+// ---------- 디저트 대목 달력 (날짜가 정해진 기념일 + 설·추석) ----------
+// k: 그날 특히 잘 팔리는 디저트. 음력 명절·수능은 해마다 날짜를 확인해서 넣는다
+const EVENTS = [
+  ['2026-11-11', '빼빼로데이', ['두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
+  ['2026-11-19', '수능', ['찹쌀떡', '찹쌀모찌', '모찌떡', '약과']],
+  ['2026-12-22', '동지', ['찹쌀떡', '붕어빵', '찹쌀모찌']],
+  ['2026-12-25', '크리스마스', ['과일모찌', '딸기모찌', '마카롱', '두바이 초콜릿', '크로플']],
+  ['2027-02-06', '설날', ['약과', '찹쌀떡', '모찌떡', '흑임자', '쑥']],
+  ['2027-02-14', '발렌타인데이', ['두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
+  ['2027-03-14', '화이트데이', ['마카롱', '뚱카롱', '탕후루', '딸기모찌']],
+  ['2027-05-05', '어린이날', ['탕후루', '요거트 아이스크림', '크로플', '마카롱']],
+  ['2027-05-08', '어버이날', ['약과', '찹쌀떡', '모찌떡', '흑임자']],
+  ['2027-05-15', '스승의날', ['마카롱', '약과', '과일모찌']],
+  ['2027-09-15', '추석', ['약과', '찹쌀떡', '모찌떡', '쑥', '흑임자']],
+  ['2027-11-11', '빼빼로데이', ['두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
+  ['2027-12-25', '크리스마스', ['과일모찌', '딸기모찌', '마카롱', '두바이 초콜릿', '크로플']],
+];
+// days일 안에 오는 대목 (그 디저트와 관련된 것만, 가까운 순)
+function upcoming(k, days = 70) {
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  return EVENTS.map(([d, n, ks]) => ({ d: new Date(d + 'T00:00:00'), n, ks })).map(e => ({ ...e, left: Math.round((e.d - t0) / 864e5) }))
+    .filter(e => e.left >= 0 && e.left <= days && e.ks.includes(k)).sort((a, b) => a.left - b.left);
+}
+const leftTxt = n => n === 0 ? '오늘' : n < 14 ? `${n}일` : `${Math.round(n / 7)}주`;
+const evTxt = e => { const md = `${e.d.getMonth() + 1}/${e.d.getDate()}`; return e.left === 0 ? `오늘이 ${e.n}(${md})` : `${e.n}(${md})까지 ${leftTxt(e.left)}`; };
 // 2단계 맨 위 결론 카드: 신호등 + 언제·어떻게·주의 (사장님이 바로 결정할 수 있게)
 function renderDecision(k, v, E) {
   const m = v.smonth, now = new Date().getMonth() + 1, before = ((m + 9) % 12) + 1, before2 = ((m + 10) % 12) + 1;
@@ -70,11 +95,17 @@ function renderDecision(k, v, E) {
     if (d >= 1 && d <= 3) { sig = 'go'; title = `지금 준비하세요. ${m}월 대목용 시즌 메뉴로`; }
     else if (d === 0) { sig = 'mid'; title = `대목(${m}월)이 이미 왔어요. 낸다면 짧게만`; }
     else { sig = 'mid'; title = `아직 일러요. ${before}월에 준비를 시작하세요`; }
-    rows = [['언제', `${before}~${before2}월에 출시 (대목 ${m}월의 1~2달 전)`], ['어떻게', '대목 앞뒤 2~3달만 파는 시즌 메뉴로, 매년 같은 때 다시'], ['주의', '대목이 지나면 찾는 사람이 확 줄어요. 재고를 넉넉히 잡지 마세요']]; }
+    rows = [['언제', d === 0 ? `지금 바로, 짧게. 대목(${m}월)이 이미 시작됐어요` : `${before}~${before2}월에 출시 (대목 ${m}월의 1~2달 전)`], ['어떻게', '대목 앞뒤 2~3달만 파는 시즌 메뉴로, 매년 같은 때 다시'], ['주의', '대목이 지나면 찾는 사람이 확 줄어요. 재고를 넉넉히 잡지 마세요']]; }
   else if (v.type === '유행형') { sig = 'stop'; title = '단독 신메뉴로는 내지 마세요';
     rows = [['언제', '새로 내기엔 늦었어요. 유행이 이미 지나갔어요'], ['어떻게', alt ? `꼭 쓰고 싶다면 '${alt}'처럼 다른 메뉴의 맛·토핑으로만` : '다른 메뉴의 맛이나 토핑 소재로만 가볍게'], ['주의', '탕후루는 유행 정점 뒤에 연 가게의 29%가 1년 안에 닫았어요']]; }
   else { sig = 'mid'; title = '크게 말고, 작게 시험해 보세요';
     rows = [['언제', '급할 것 없어요. 반응을 보며 천천히'], ['어떻게', '새 메뉴보다는 기존 메뉴 리뉴얼이나 한정 수량으로'], ['주의', v.yoy !== null && v.yoy < 0 ? `작년 이맘때보다 ${Math.abs(Math.round(v.yoy))}% 덜 찾고 있어요` : '찾는 사람이 다시 늘지 지켜보세요']]; }
+  const ev = upcoming(k).slice(0, 2);
+  if (ev.length) {
+    const lead = ev.map(evTxt).join(', ') + (ev[ev.length - 1].left === 0 ? '예요' : ' 남았어요');
+    if (sig === 'stop') rows.push(['대목', `${lead}. 그때 선물·세트 상품에 살짝 넣는 정도로만 쓰세요`]);
+    else rows[0][1] += `. ${lead}${ev[0].left <= 10 ? ', 준비가 빠듯해요' : ''}`;
+  }
   const miss = (r.eq || []).filter(e => !(p.eq || []).includes(e));
   if ((p.eq || []).length && miss.length) rows.push(['우리 가게', alt ? `${miss.join('·')}${iga(miss[miss.length - 1])} 없으면 '${alt}'${ro(alt)} 대신할 수 있어요` : `${miss.join('·')}${iga(miss[miss.length - 1])} 필요해요`]);
   const S = document.getElementById('dc-sig'); S.className = 'dc-sig ' + sig; S.textContent = { go: '✓', mid: '!', stop: '✕' }[sig];
@@ -450,6 +481,8 @@ function recommend(p) {
     else s -= 4;
     if (p.cat && r.cat === p.cat) s += 1.5; else if (p.cat === '디저트' && r.cat === '베이커리') s += 0.5;
     if (p.price && r.price >= lo && r.price <= hi) { s += 1; why.push(`고른 가격대에 맞아요 (보통 ${won(r.price)})`); }
+    const ev = upcoming(k, 56)[0];
+    if (ev && v.type !== '유행형') { s += 1; why.push(`${evTxt(ev)}${ev.left ? ' 남아' : '라'} 선물 수요가 있어요`); }
     return { k, s, why };
   }).sort((a, b) => b.s - a.s).slice(0, 3);
 }

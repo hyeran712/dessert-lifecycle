@@ -57,6 +57,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
 - 신메뉴 결과 아래 [♡ 보관함에 저장] [↻ 다른 메뉴]: 보관함은 localStorage `dessert-timing-saved`(최대 30개, `#saved` 카드·사이드바 `#side-saved`), 다른 메뉴는 앞서 나온 이름 3개를 note에 붙여 다시 요청(`makeMenu(true)`). 카드 HTML은 `menuCard(m)` 하나로 결과·보관함 공용. 로그인·여러 기기 동기화가 필요해지면 Supabase 검토
 - 메뉴 목적(GOAL): Worker `GOAL_GUIDE`가 목적별 구체 지시를 AI에 주고 `goal`·`goalFit`·`photo`(SNS용)를 돌려줌 → 결과 카드에 목적 꼬리표·'목적에 맞춘 점'·'사진 포인트'. 3단계 기획 상자 맨 앞 노란 `.gtip`은 `GOAL_TIP` + 유행 단계와 안 맞을 때 한마디. `GOAL`·`GOAL_OF`는 renderPlan보다 위에 선언(처음 그릴 때 TDZ 오류 방지)
+- 대목 달력 `EVENTS`(app.js): [날짜, 이름, 잘 팔리는 디저트]. `upcoming(k)`로 70일 안 대목을 결론 카드 '언제' 줄에 붙이고(유행형은 '대목' 줄), 추천 점수에 +1. **설·추석·수능은 해마다 날짜가 바뀌니 매년 말에 다음 해 날짜를 추가할 것** (지금 2027-12까지)
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
 - 1단계 맨 위 `#rec`: 가게 종류·장비·가격대 → `recommend(p)`가 REQ·유형·대목 월로 점수 매겨 3개 추천(카드 누르면 2단계). 고른 값은 프로필에도 저장
 - 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
