@@ -72,7 +72,7 @@ const ANNUAL = [
 ];
 const LUNAR_KS = { '설날': ['약과', '찹쌀떡', '모찌떡', '흑임자', '쑥'], '추석': ['약과', '찹쌀떡', '모찌떡', '쑥', '흑임자'] };
 const SUNEUNG_KS = ['찹쌀떡', '찹쌀모찌', '모찌떡', '약과'];
-let LUNAR = [['2027-02-06', '설날'], ['2027-09-15', '추석']];   // holidays.json을 못 받았을 때 쓰는 값
+let LUNAR = [['2027-02-07', '설날'], ['2027-09-15', '추석'], ['2028-01-27', '설날'], ['2028-10-03', '추석']];   // holidays.json을 못 받았을 때 쓰는 값
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 function suneung(y) { const d = new Date(y, 10, 1); d.setDate(1 + (4 - d.getDay() + 7) % 7 + 14); return ymd(d); }   // 11월 셋째 목요일
 let EVENTS = [];
