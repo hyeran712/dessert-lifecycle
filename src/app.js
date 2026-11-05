@@ -583,7 +583,7 @@ function mapSelect(k, r) {
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
     <g class="ground"><use href="#land" transform="translate(0,${OY + 52}) scale(1,${SY})" fill="#7a4a24" opacity=".22" filter="url(#soft)"></use></g>
     <g class="float"><g transform="${T}">${layers}
-      <g class="edge"><use href="#land" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.4" filter="url(#glow)"></use></g>
+      <g class="edge"><use href="#land" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="2.4" filter="url(#glow)"></use></g>
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
       ${selD ? `<g class="selside">${Array.from({ length: 8 }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SIDE[step((regs[r] || {}).alive || 0, mx)]}" fill-opacity=".9"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,-9)" fill="${RAMP[step((regs[r] || {}).alive || 0, mx)]}"></path></g>` : ''}
