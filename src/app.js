@@ -551,6 +551,8 @@ const KOREA = {"paths":{"서울":"M200.0,95.0L206.0,96.1L205.7,100.1L207.2,100.8
 const RNAME = { '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시', '인천': '인천광역시', '대전': '대전광역시', '울산': '울산광역시', '세종': '세종시', '경기': '경기도',
   '강원': '강원도', '충북': '충청북도', '충남': '충청남도', '전북': '전라북도', '전남광주': '전남·광주', '경북': '경상북도', '경남': '경상남도', '제주': '제주도' };
 const SHORT = { '전남광주': '전남·광주' };
+// 이름표를 숨긴 좁은 지역도 TOP 3 핀이나 선택 이름표는 보여야 해서 따로 자리를 둔다 (dx: 이름표를 옆으로 비킴)
+const PIN_AT = { '인천': [181, 114, -50], '세종': [214, 222, 0] };
 const LBL = { '인천': null, '서울': [195, 108], '경기': [228, 78], '세종': null, '대전': [229, 238], '부산': [366, 345], '울산': [381, 312], '대구': [326, 286] };
 const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁은 지역은 이름만 (숫자는 눌렀을 때)
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
@@ -590,14 +592,16 @@ function mapSelect(k, r) {
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +
     Object.entries(KOREA.cent).map(([n, xy]) => {
-      const p0 = n in LBL ? LBL[n] : xy; if (!p0) return '';
+      const need = pinSet.has(n) || n === r, alt = need && LBL[n] === null && PIN_AT[n];
+      const p0 = alt ? alt : n in LBL ? LBL[n] : xy; if (!p0) return '';
+      const dx = alt ? alt[2] : 0;
       const [x, y] = P2(p0[0], p0[1] - (n === r ? LIFT : 0));
       const v = (regs[n] || {}).alive || 0, i = rank.findIndex(e => e[0] === n) + 1, nm = SHORT[n] || n;
       if (n === r) { const t = `${nm} · ${v}곳`, w = t.length * 9.5 + 22, ty = Math.max(24, y - 58);
-        return `<g class="sel-pin"><line x1="${x}" y1="${y}" x2="${x}" y2="${ty + 10}"></line><circle cx="${x}" cy="${y}" r="3.4"></circle>
-        <rect x="${x - w / 2}" y="${ty - 12}" width="${w}" height="24" rx="3"></rect><text x="${x}" y="${ty + 4}">${t}</text></g>`; }
-      if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
-        <rect x="${x - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x}" y="${y - 31}">${nm} ${v}곳</text></g>`;
+        return `<g class="sel-pin"><line x1="${x}" y1="${y}" x2="${x + dx}" y2="${ty + 10}"></line><circle cx="${x}" cy="${y}" r="3.4"></circle>
+        <rect x="${x + dx - w / 2}" y="${ty - 12}" width="${w}" height="24" rx="3"></rect><text x="${x + dx}" y="${ty + 4}">${t}</text></g>`; }
+      if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x + dx}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
+        <rect x="${x + dx - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x + dx}" y="${y - 31}">${nm} ${v}곳</text></g>`;
       return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${x}" y="${y + 12}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g></g>';
   svg.querySelectorAll('path.top').forEach(p => {
     p.addEventListener('click', e => { e.stopPropagation(); if (!dragged) mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r); });
