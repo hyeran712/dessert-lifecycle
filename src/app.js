@@ -611,6 +611,7 @@ function mapSelect(k, r) {
   document.getElementById('ms-list').innerHTML = `<ol>${rank.map(([n, x], i) => `<li data-r="${n}">${i + 1}. ${RNAME[n]}<span>${x.alive}곳 · +${x.o30}/−${x.c30}</span></li>`).join('')}</ol>`;
   document.querySelectorAll('#ms-list li').forEach(li => li.addEventListener('click', () => mapSelect(mapK, li.dataset.r)));
   const P = document.getElementById('map-panel');
+  document.getElementById('mapstage').classList.toggle('has-panel', !!r);
   if (!r) { P.hidden = true; return; }
   const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] }, i = rank.findIndex(e => e[0] === r) + 1;
   const share = RADAR.shops[k].open_now ? Math.round(x.alive / RADAR.shops[k].open_now * 100) : 0;
