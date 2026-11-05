@@ -7,6 +7,10 @@
 - 레퍼런스 사이트(시그니처 팩토리 signaturefactory.kr)는 **구조·흐름만 참고**한다. 로고, 문구, 사진, 브랜드는 쓰지 않는다.
 - 색은 지금 사이트의 POP 팔레트를 유지한다: 노랑 `#ffd400`, 주황 `#ff5a1f`, 잉크 `#1c1c1c`, 크림 배경 `#fff8dc`, 제목 글꼴 Black Han Sans.
 
+## 목표 (2026-11-05 사용자)
+- 지금은 취업 포트폴리오지만, **개인 카페 사장님·F&B 실무자가 실제로 쓰는 도구**로 키워 나중에 판매하는 것이 목표
+- 그래서 화면·문구는 "분석 결과 보여 주기"보다 "사장님이 바로 결정하고 행동하기" 쪽으로, 사용자 편의를 우선해서 만든다
+
 ## 사이트 주소
 - 새 버전(단계형): https://hyeran712.github.io/dessert-lifecycle/
 - 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). v1과 맨 아래 링크는 당분간 그대로 둔다
@@ -47,7 +51,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 ## 동작 핵심 (src/app.js)
 - `select(k)`: 디저트 선택 → 판정·그래프·발견·기획 갱신. 아래쪽에서 한 번 감싸서 카드/사이드바도 갱신함
 - `goStep(n)`, `setView('flow'|'radar')`: 단계·화면 전환 (숨긴 차트는 전환 후 `Chart.instances` resize)
-- `analyzeLive(q)`: 목록에 없는 디저트를 Worker로 실시간 분석 (`LIVE_API`)
+- `analyzeLive(q)`: 목록에 없는 디저트를 Worker로 실시간 분석 (`LIVE_API`) — 성공 시 true. 1단계 칩 중 `D.kw`에 없는 것(붕어빵·땅콩빵)은 점선 '실시간' 칩으로, 누르면 analyzeLive. 마라탕은 '비교용' 줄
 - `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
 - 신메뉴 결과 아래 [♡ 보관함에 저장] [↻ 다른 메뉴]: 보관함은 localStorage `dessert-timing-saved`(최대 30개, `#saved` 카드·사이드바 `#side-saved`), 다른 메뉴는 앞서 나온 이름 3개를 note에 붙여 다시 요청(`makeMenu(true)`). 카드 HTML은 `menuCard(m)` 하나로 결과·보관함 공용. 로그인·여러 기기 동기화가 필요해지면 Supabase 검토
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)

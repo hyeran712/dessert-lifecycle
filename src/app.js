@@ -30,9 +30,11 @@ const fmtYM = s => s.replace('-', '.');
 const GROUPS = [
   ['한때 유행한 디저트', ['흑당','크로플','탕후루','두바이 초콜릿','달고나','마카롱','뚱카롱','요거트 아이스크림']],
   ['떡 · 모찌', ['과일모찌','찹쌀모찌','모찌떡','딸기모찌','찹쌀떡','약과']],
-  ['빵 · 기타', ['소금빵','베이글','마라탕']],
+  ['빵 · 길거리 간식', ['소금빵','베이글','붕어빵','땅콩빵']],
   ['맛 · 소재', ['피스타치오','말차','흑임자','쑥']],
+  ['비교용 (디저트 외 음식 유행)', ['마라탕']],
 ];
+// 붕어빵·땅콩빵은 고정 데이터(21종)에 없어서 누르면 실시간으로 분석한다 (검색창과 같은 방식)
 const chipsEl = document.getElementById('chips');
 GROUPS.forEach(([name, ks]) => {
   const g = document.createElement('div'); g.className = 'chip-group';
@@ -40,8 +42,16 @@ GROUPS.forEach(([name, ks]) => {
   ks.forEach(k => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.k = k;
     b.setAttribute('aria-pressed', 'false');
-    b.innerHTML = k + (D.kw[k].type === '진행중' ? '<span class="hot">HOT</span>' : '');
-    b.onclick = () => select(k);
+    if (!D.kw[k]) {
+      b.classList.add('live'); b.innerHTML = k + '<span class="lv">실시간</span>'; b.title = '누르면 네이버 검색량·전국 매장을 실시간으로 불러와요 (10초쯤)';
+      b.onclick = async () => { if (LIVE[k]) { select(k); goStep(2); return; }
+        b.disabled = true; b.classList.add('loading');
+        const ok = await analyzeLive(k); b.disabled = false; b.classList.remove('loading');
+        if (!ok) qMsg.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    } else {
+      b.innerHTML = k + (D.kw[k].type === '진행중' ? '<span class="hot">HOT</span>' : '');
+      b.onclick = () => select(k);
+    }
     g.querySelector('.chips').appendChild(b);
   });
   chipsEl.appendChild(g);
@@ -546,13 +556,13 @@ async function fetchShops(q, src, maxPages = 20) {
 }
 const qMsg = document.getElementById('q-msg');
 async function analyzeLive(q) {
-  if (!LIVE_API) { qMsg.textContent = '실시간 검색은 준비 중이에요. 위 목록에서 골라 주세요.'; return; }
+  if (!LIVE_API) { qMsg.textContent = '실시간 검색은 준비 중이에요. 위 목록에서 골라 주세요.'; return false; }
   qMsg.textContent = `'${q}' 검색량과 전국 매장을 불러오는 중… (10초쯤 걸려요)`;
   try {
     const nq = q.replace(/\s+/g, '');
     const [t, a, b] = await Promise.all([getJSON(`/trend?q=${encodeURIComponent(q)}`), fetchShops(nq, 'cafe'), fetchShops(nq, 'bakery')]);
     const v = lifecycle(t.dates, t.ratio);
-    if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 너무 적어서 분석하기 어려워요. 다른 이름으로 검색해 보세요.`; return; }
+    if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 너무 적어서 분석하기 어려워요. 다른 이름으로 검색해 보세요.`; return false; }
     const XX = t.dates.map(d => { const x = new Date(d); return x.getFullYear() + (x - new Date(x.getFullYear(), 0, 1)) / 31536000000; });
     const sh = shopAnalysis([...a.rows, ...b.rows], v.peakDate, a.capped || b.capped);
     LIVE[q] = { v, X: XX, dates: t.dates, shop: sh.stats.total ? sh.stats : { total: 0, popup: 0, open_now: 0, alive_max: 0, close1y_before: null, close1y_after: null },
@@ -560,7 +570,8 @@ async function analyzeLive(q) {
     qMsg.textContent = `'${q}' 실시간 분석 결과예요. (네이버 데이터랩 · 행정안전부 인허가 데이터)`;
     select(q);
     goStep(2);
-  } catch (e) { qMsg.textContent = `불러오지 못했어요: ${e.message}`; }
+    return true;
+  } catch (e) { qMsg.textContent = `불러오지 못했어요: ${e.message}`; return false; }
 }
 document.getElementById('q-form').addEventListener('submit', e => {
   e.preventDefault();
