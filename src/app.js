@@ -775,20 +775,26 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#d6b06a' : '#fff6e6'}" fill-opacity="${i < 2 ? .85 : .3}"${i === 0 ? ' stroke="#c79d55" stroke-width="1.2"' : ''}></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#e7c27c' : '#fff8ec'}" fill-opacity="${i < 2 ? .7 : (0.34 - i * 0.012).toFixed(3)}"${i === 0 ? ' stroke="#d7ac5e" stroke-width="1.3"' : i === 1 ? ' stroke="#fff6df" stroke-width=".6"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
   svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+      <filter id="bevel" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"></feGaussianBlur>
+        <feSpecularLighting in="b" surfaceScale="3.2" specularConstant="1.05" specularExponent="26" lighting-color="#fffaf0" result="s"><fePointLight x="-120" y="-260" z="320"></fePointLight></feSpecularLighting>
+        <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"></feComposite><feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".85" k4="0"></feComposite></filter>
+      <filter id="ao" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3.5"></feGaussianBlur></filter>
       <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"></stop><stop offset=".35" stop-color="#fff" stop-opacity=".04"></stop><stop offset=".55" stop-color="#fff" stop-opacity=".16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
-    <g class="ground"><use href="#land" transform="translate(8,${OY + 46}) scale(1,${SY})" fill="#a5603a" opacity=".22" filter="url(#soft)"></use></g>
+    <g class="ground"><use href="#land" transform="translate(10,${OY + 50}) scale(1,${SY})" fill="#ffd08a" opacity=".55" filter="url(#soft)"></use>
+      <use href="#land" transform="translate(6,${OY + 40}) scale(1,${SY})" fill="#9a5a34" opacity=".16" filter="url(#soft)"></use>
+      <use href="#land" transform="translate(2,${OY + 22}) scale(1,${SY})" fill="#7a4426" opacity=".22" filter="url(#ao)"></use></g>
     <g class="float"><g transform="${T}">${layers}
-      <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
+      <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
       <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
       <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d9b26e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
-        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
+        <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
     Object.entries(KOREA.cent).map(([n, xy]) => {
       const need = pinSet.has(n) || n === r, alt = need && LBL[n] === null && PIN_AT[n];
