@@ -833,7 +833,8 @@ function mapSelect(k, r) {
   const share = RADAR.shops[k].open_now ? Math.round(x.alive / RADAR.shops[k].open_now * 100) : 0;
   const net = x.o90 - x.c90;
   const pp = n => n ? `<small class="popn">팝업 ${n}곳 포함</small>` : '';
-  const list = xs => xs.length ? `<ul>${xs.map(([n, d, pd, od]) => `<li><b class="ln">${esc(n)}${pd ? ` <em class="popt" title="${pd}일 만에 닫은 팝업·행사 매장">팝업 ${pd}일${od ? ` · ${od} 개업` : ''}</em>` : ''}</b><span>${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
+  const list = (xs, isClose) => xs.length ? `<ul>${xs.map(x => { const [n, d, pd] = x, od = isClose ? x[3] : '', ar = isClose ? x[4] : x[3];
+    return `<li><b class="ln">${esc(n)}${pd ? ` <em class="popt" title="${pd}일 만에 닫은 팝업·행사 매장">팝업 ${pd}일${od ? ` · ${od} 개업` : ''}</em>` : ''}${ar ? `<small class="ar">${esc(ar)}</small>` : ''}</b><span>${d}</span></li>`; }).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
   P.innerHTML = `<button class="x" type="button" aria-label="닫기">×</button>
     <p class="mp-rank">영업 중 매장 ${x.alive ? i + '위' : '없음'}</p><h6>${RNAME[r]}</h6><p class="lbl">${esc(k)} 영업 중 매장</p>
     <div class="big">${x.alive}<small>곳</small></div>
@@ -842,7 +843,7 @@ function mapSelect(k, r) {
     <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업${pp(x.po30)}</div><div><b class="dn">−${x.c30}</b>30일 폐업${pp(x.pc30)}</div>
       <div><b class="up">+${x.o90}</b>90일 개업${pp(x.po90)}</div><div><b class="dn">−${x.c90}</b>90일 폐업${pp(x.pc90)}</div></div>
     <details open><summary>최근 개업 가게</summary>${list(x.open)}</details>
-    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>${(x.changed || []).length ? `<details><summary>신고 변경 <small class="chgn">문 닫지 않고 신고만 다시 한 곳</small></summary><ul>${x.changed.map(([n, d]) => `<li><b class="ln">${esc(n)} <em class="chgt" title="같은 이름·주소로 폐업 후 7일 안에 다시 신고 (업종 변경 등)">신고 변경</em></b><span>${d}</span></li>`).join('')}</ul></details>` : ''}`;
+    <details><summary>최근 폐업 가게</summary>${list(x.close, true)}</details>${(x.changed || []).length ? `<details><summary>신고 변경 <small class="chgn">문 닫지 않고 신고만 다시 한 곳</small></summary><ul>${x.changed.map(([n, d, ar]) => `<li><b class="ln">${esc(n)} <em class="chgt" title="같은 이름·주소로 폐업 후 7일 안에 다시 신고 (업종 변경 등)">신고 변경</em>${ar ? `<small class="ar">${esc(ar)}</small>` : ''}</b><span>${d}</span></li>`).join('')}</ul></details>` : ''}`;
   P.hidden = false;
   P.querySelector('.x').addEventListener('click', () => mapSelect(mapK, null));
   if (innerWidth <= 760) P.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

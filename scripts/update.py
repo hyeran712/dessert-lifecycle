@@ -6,7 +6,7 @@
 실행: python scripts/update.py            (API 호출 + 갱신)
       python scripts/update.py --offline  (API 없이 저장된 데이터로 다시 계산만)
 """
-import json, os, sys, time, datetime as dt
+import json, re, os, sys, time, datetime as dt
 from pathlib import Path
 import pandas as pd, numpy as np, requests
 sys.path.insert(0, str(Path(__file__).parent))
@@ -154,6 +154,18 @@ def pop_days(o, c):
 def ispop(x):
     return x.c.notna() & ((x.c - x.o).dt.days <= 90)
 
+def area_of(addr):
+    """'경기도 광명시 금하로 522, ... (소하동)' → '광명시 소하동'"""
+    a = str(addr or '')
+    if not a: return ''
+    tk = a.split(); gu = tk[1] if len(tk) > 1 else ''
+    if len(tk) > 2 and tk[2].endswith('구') and gu.endswith('시'): gu += ' ' + tk[2]
+    dong = re.search(r'\(([^,()]*?[동읍면가리])(?:,[^()]*)?\)\s*$', a)
+    if not dong:   # 괄호가 없으면 주소 안의 읍·면 이름
+        em = next((t for t in tk[2:5] if re.fullmatch(r'\S+[읍면]', t)), '')
+        return (gu + (' ' + em if em else '')).strip()
+    return (gu + ' ' + dong.group(1)).strip()
+
 def region_stats(d, perm, today):
     """시도별: 영업 중 매장, 최근 30·90일 개업/폐업 수, 최근 90일 개업·폐업 가게 이름"""
     out = {}
@@ -170,10 +182,11 @@ def region_stats(d, perm, today):
                   'po30': int(((o90.o > t30) & ispop(o90)).sum()), 'pc30': int(((c90.c > t30) & ispop(c90)).sum()),
                   'po90': int(ispop(o90).sum()), 'pc90': int(ispop(c90).sum()),
                   # 세 번째 값: 90일 안에 닫은 팝업이면 영업 일수, 아니면 0
-                  'open': [[n, o.strftime('%m.%d'), pop_days(o, c)] for n, o, c in o90[['사업장명', 'o', 'c']].head(6).values],
+                  # 네 번째 값(open)·다섯 번째 값(close): 동네 이름 ('광명시 소하동'), 주소를 모르면 ''
+                  'open': [[n, o.strftime('%m.%d'), pop_days(o, c), area_of(ad)] for n, o, c, ad in o90[['사업장명', 'o', 'c', 'addr']].head(6).values],
                   # 폐업 목록 네 번째 값: 문 연 날 (90일보다 전에 열어서 개업 목록에 없는 가게도 언제 열었는지 보이게)
-                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else ''] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values],
-                  'changed': [[n, o.strftime('%m.%d')] for n, o in ch[['사업장명', 'o']].head(6).values], 'chg90': len(ch)}
+                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else '', area_of(ad)] for n, o, c, ad in c90[['사업장명', 'o', 'c', 'addr']].head(6).values],
+                  'changed': [[n, o.strftime('%m.%d'), area_of(ad)] for n, o, ad in ch[['사업장명', 'o', 'addr']].head(6).values], 'chg90': len(ch)}
     return out
 
 def mark_change(s, addr):
@@ -194,6 +207,7 @@ def shop_stats(shops, today, new, addr=None):
     s['o'] = pd.to_datetime(s['인허가일자'], errors='coerce'); s['c'] = pd.to_datetime(s['폐업일자'], errors='coerce')
     s = s[s.o.notna()]; s['days'] = (s.c - s.o).dt.days
     s = mark_change(s, addr if addr is not None else {})
+    s['addr'] = s['관리번호'].map(addr or {}).fillna('')
     s['popup'] = s.days.notna() & (s.days <= 90)
     months = pd.date_range('2016-01-01', today.replace(day=1), freq='MS')
     out = {}
