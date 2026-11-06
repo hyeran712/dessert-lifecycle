@@ -167,7 +167,7 @@ const main = new Chart(document.getElementById('c-main'), {
     },
     plugins: { tooltip: { callbacks: {
       title: it => it[0].raw.m || fmtDate(it[0].raw.d || D.dates[it[0].raw.i]),
-      label: it => it.datasetIndex === 1 ? ` 영업 중 매장 ${it.raw.n.toLocaleString()}곳` : ` 검색량: 피크 대비 ${it.raw.y.toFixed(1)}%` } } }
+      label: it => it.datasetIndex === 1 ? ` 영업 중 매장 ${it.raw.n.toLocaleString()}곳` : ` 검색량: 최고 때의 ${it.raw.y.toFixed(1)}%` } } }
   },
   plugins: [{ id: 'peakLine', afterDatasetsDraw(ch) {
     const pts = ch.data.datasets[0].data; if (!pts.length) return;
@@ -615,7 +615,7 @@ new Chart(document.getElementById('c-mochi'), {
     borderColor: C.s[1], borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, fill: true, backgroundColor: 'rgba(235,104,52,.08)', tension: .25 }] },
   options: { parsing: false, interaction: { mode: 'nearest', axis: 'x', intersect: false },
     scales: { x: { type: 'linear', min: 2022, max: X[X.length - 1], grid: { color: C.grid }, ticks: { stepSize: NARROW ? 2 : 1, maxRotation: 0, callback: v => Number.isInteger(v) ? v : '' } } },
-    plugins: { tooltip: { callbacks: { title: it => fmtDate(D.dates[it[0].raw.i]), label: it => ` 피크 대비 ${it.raw.y.toFixed(1)}%` } } } }
+    plugins: { tooltip: { callbacks: { title: it => fmtDate(D.dates[it[0].raw.i]), label: it => ` 최고 때의 ${it.raw.y.toFixed(1)}%` } } } }
 });
 const gp = D.groupPre;
 new Chart(document.getElementById('c-pre'), {
@@ -908,7 +908,7 @@ function renderSide() {
   if (!current) { el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>'; return; }
   const E = entry(current), v = E.v;
   el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
-    <div class="ss-g"><div><b>${v.now}%</b>피크 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>전년 대비</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
+    <div class="ss-g"><div><b>${v.now}%</b>최고 때 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>작년 이맘때보다</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
   const p = loadProfile();
   document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
   const n = storeName();
