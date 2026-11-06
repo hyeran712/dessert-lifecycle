@@ -62,7 +62,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - 1단계 맨 위 `#dclock` 디저트 시계: `clockPlan()`이 D.kw의 `season`(달별 연평균 대비 배수)으로 12달에 디저트를 하나씩 배정(큰 값부터, 한 디저트 한 달, 유행형 0.85배 가중), 바늘이 이번 달. 누르면 select+2단계. 그 아래
 - 1단계 맨 위 `#rec`: 가게 종류·장비·가격대 → `recommend(p)`가 REQ·유형·대목 월로 점수 매겨 3개 추천(카드 누르면 2단계). 고른 값은 프로필에도 저장
 - 지도 모양(2026-11-06 최종): 사용자가 보낸 점토(클레이) 느낌 지도 시안대로. 흰 배경, 연한 살구→부드러운 주황 `RAMP`, 얇은 두께(DEPTH 9)·살구색 옆면, 지역 사이 굵은 흰 경계선, 은은한 광택(`#bevel` k3 .35), 진한 브라운 지역명. 이미지를 통째로 붙이면 누르기·디저트별 색이 안 돼서 SVG로 재현
-- 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
+- 지도: `KOREA`(시도 SVG 경로, 광주+전남은 '전남광주'로 합침. 불러온 뒤 지역마다 가장 큰 땅 + 넓이 450 이상 섬만 남겨 작은 섬 20개를 뺌), `mapSelect(k, r)`, 색 `RAMP`/`SIDE`
 - Chart.js 4.4.1 (cdnjs). 차트 선명도용 `Chart.defaults.devicePixelRatio = 2`
 
 ## Cloudflare Worker (worker/)
