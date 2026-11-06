@@ -755,8 +755,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#f6ead3', '#f5ddb8', '#f7c99a', '#fbb47d', '#fda56a', '#ff9b54'];   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
-const SEL_TOP = '#ff9b54', SEL_SIDE = '#e0a060';
+const RAMP = ['#eed2a4', '#f2bf82', '#f5a964', '#f8924a', '#f67a34', '#ee6420'];   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
+const SEL_TOP = '#ff5a1f', SEL_SIDE = '#c8661f';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -775,7 +775,7 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#e7c27c' : '#fff8ec'}" fill-opacity="${i < 2 ? .7 : (0.34 - i * 0.012).toFixed(3)}"${i === 0 ? ' stroke="#d7ac5e" stroke-width="1.3"' : i === 1 ? ' stroke="#fff6df" stroke-width=".6"' : ''}></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#c8923f' : '#f1d3a0'}" fill-opacity="${i < 2 ? .9 : (0.6 - i * 0.015).toFixed(3)}"${i === 0 ? ' stroke="#a8742c" stroke-width="1.3"' : i === 1 ? ' stroke="#fff2d6" stroke-width=".6"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
@@ -792,7 +792,7 @@ function mapSelect(k, r) {
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
       <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
-      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d9b26e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
+      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#b8843a"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
