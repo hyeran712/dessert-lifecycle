@@ -1022,8 +1022,7 @@ function renderLocal(key) {
         <ul>${x.recent.map(([n, dt]) => `<li>${esc(n)}<span>${dt}</span></li>`).join('') || '<li>최근 3개월 새 가게가 없어요.</li>'}</ul></div>
     </div>
     <div class="sh-act"><h3>사장님 체크</h3><ol>${acts.map(a => `<li>${a}</li>`).join('')}</ol></div>
-    <div class="sh-foot"><p style="margin:0">데이터: 행정안전부 지방행정 인허가(휴게음식점 중 커피숍·과자점·아이스크림·전통찻집·떡카페·기타 + 제과점, PC방·편의점 등 제외), 기준일 ${d.date}<br>90일 안에 닫은 곳은 팝업·행사 매장으로 따로 셌어요. 유행 단계는 네이버 데이터랩 검색량(2016~2026) 분석 결과예요. 실제 매출과는 다를 수 있어요.</p>
-      <p style="margin:0;text-align:right"><b>디저트 타이밍</b><br>hyeran712.github.io/dessert-lifecycle<br>기획·분석 윤혜란</p></div>`;
+    <div class="sh-foot"><p style="margin:0">데이터: 행정안전부 지방행정 인허가(휴게음식점 중 커피숍·과자점·아이스크림·전통찻집·떡카페·기타 + 제과점, PC방·편의점 등 제외), 기준일 ${d.date}<br>90일 안에 닫은 곳은 팝업·행사 매장으로 따로 셌어요. 유행 단계는 네이버 데이터랩 검색량(2016~2026) 분석 결과예요. 실제 매출과는 다를 수 있어요.</p></div>`;
   el.hidden = false;
 }
 document.getElementById('lc-print').onclick = () => { if (DIST) print(); };
