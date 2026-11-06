@@ -7,6 +7,7 @@
  *   NAVER_SECRET  NAVER API HUB Client Secret
  *   DATA_GO_KEY   공공데이터포털 인증키 (Decoding)
  *   GEMINI_KEY    Google AI Studio Gemini API 키 (신메뉴 제안용)
+ *   KAMIS_KEY, KAMIS_ID   KAMIS(농산물유통정보) Open API 인증키·아이디 (재료 시세용)
  *   NAVER_AD_KEY, NAVER_AD_SECRET, NAVER_AD_CUSTOMER   네이버 검색광고 API 액세스라이선스·비밀키·CUSTOMER_ID (월간 검색 수용)
  *
  * GET /trend?q=과일모찌                  → 2016년부터 주간 검색량 (최고점 = 100)
@@ -66,6 +67,31 @@ async function trend(q, env) {
   const data = await res.json();
   const r = (data.results || [])[0] || { data: [] };
   return { q, dates: r.data.map(d => d.period), ratio: r.data.map(d => d.ratio) };
+}
+
+// ---------- 재료 시세 (KAMIS 농산물유통정보, 최근일자 도·소매 가격) ----------
+// 디저트에 쓰는 재료만 골라서 보여 준다. ?all=1 이면 전체 품목 (처음 확인용)
+const KAMIS_WANT = ['딸기', '찹쌀', '쌀', '팥', '계란', '달걀', '사과', '배', '감귤', '귤', '포도', '샤인머스캣', '바나나', '키위', '토마토', '방울토마토', '복숭아', '참깨', '들깨', '땅콩', '호두', '밤', '쑥', '우유', '고구마', '단호박', '호박', '레몬', '블루베리', '파인애플', '망고', '체리', '감'];
+const num0 = v => { const n = Number(String(v || '').replace(/,/g, '')); return Number.isFinite(n) && n > 0 ? n : null; };
+async function kamis(env, all) {
+  if (!env.KAMIS_KEY || !env.KAMIS_ID) return { ok: false, error: 'KAMIS 키(KAMIS_KEY · KAMIS_ID)가 아직 Worker에 없어요.' };
+  const u = new URL('https://www.kamis.or.kr/service/price/xml.do');
+  u.searchParams.set('action', 'dailySalesList');
+  u.searchParams.set('p_cert_key', env.KAMIS_KEY);
+  u.searchParams.set('p_cert_id', env.KAMIS_ID);
+  u.searchParams.set('p_returntype', 'json');
+  const res = await fetch(u.toString(), { headers: { 'User-Agent': 'dessert-timing' } });
+  const text = await res.text();
+  let d; try { d = JSON.parse(text); } catch { throw new Error(`KAMIS 응답 오류 ${res.status}: ${text.slice(0, 200)}`); }
+  let items = d.price || (d.data && d.data.item) || [];
+  if (!Array.isArray(items)) items = [items];
+  const rows = items.map(x => ({
+    name: x.item_name || x.itemname || '', kind: x.kind_name || x.kindname || '', rank: x.rank || '', unit: x.unit || '',
+    type: x.product_cls_name || x.product_cls_code || '', category: x.category_name || '', date: x.lastest_day || x.lastest_date || x.regday || '',
+    now: num0(x.dpr1), dayAgo: num0(x.dpr2), monthAgo: num0(x.dpr3), yearAgo: num0(x.dpr4),
+  })).filter(r => r.now && (all || KAMIS_WANT.some(w => w.length === 1 ? r.name === w : r.name.includes(w))));
+  rows.forEach(r => { r.vsMonth = r.monthAgo ? Math.round((r.now / r.monthAgo - 1) * 100) : null; r.vsYear = r.yearAgo ? Math.round((r.now / r.yearAgo - 1) * 100) : null; });
+  return { ok: true, n: rows.length, source: 'KAMIS 농산물유통정보 (최근일자 도·소매 가격)', rows, ...(rows.length ? {} : { sample: Object.keys(d).slice(0, 10), raw: text.slice(0, 300) }) };
 }
 
 // ---------- 월간 검색 수 (네이버 검색광고 API) ----------
@@ -237,6 +263,18 @@ export default {
       try { return json(await menu(await request.json(), env), 200, origin); }
       catch (e) { return json({ error: String(e.message || e) }, 502, origin); }
     }
+    if (url.pathname === '/kamis') {   // 재료 시세: 하루 동안 캐시
+      const all = url.searchParams.get('all') === '1';
+      const ck = new Request(`https://cache.local/kamis?all=${all ? 1 : 0}&d=${new Date().toISOString().slice(0, 10)}`);
+      const hit0 = await caches.default.match(ck);
+      if (hit0) { const r = new Response(hit0.body, hit0); Object.entries(cors(origin)).forEach(([k, v]) => r.headers.set(k, v)); return r; }
+      try {
+        const data = await kamis(env, all);
+        const resp = json(data, 200, origin, data.ok ? 43200 : 0);
+        if (data.ok && data.n) ctx.waitUntil(caches.default.put(ck, resp.clone()));
+        return resp;
+      } catch (e) { return json({ error: String(e.message || e) }, 502, origin); }
+    }
     const q = cleanQuery(url.searchParams.get('q'));
     if (url.pathname !== '/' && !q) return json({ error: '검색어를 1~20자로 입력해 주세요.' }, 400, origin);
 
@@ -251,7 +289,7 @@ export default {
       if (url.pathname === '/trend') data = await trend(q, env);
       else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
-      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q='] }, 200, origin);
+      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/kamis'] }, 200, origin);
       const resp = json(data, 200, origin, 86400);
       ctx.waitUntil(cache.put(key, resp.clone()));
       return resp;

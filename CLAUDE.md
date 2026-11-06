@@ -75,6 +75,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `PRICE`: 사용자의 카페 원가표 [재료단가] 시트 단가 + 디저트 재료(2026-11-04 식봄 판매가). 생딸기·포장용기·얼음·빨대는 예시값. `ALIAS`로 재료 이름을 맞춤
 - 엔드포인트: `GET /trend?q=`, `GET /shops?q=&src=cafe|bakery&page=`, `GET /volume?q=`, `POST /menu`, `GET /where`
 - `/volume`: 네이버 검색광고 API `keywordstool`(최근 한 달 PC·모바일 검색 수 + 연관 키워드 20개). 비밀 변수 `NAVER_AD_KEY`(액세스라이선스), `NAVER_AD_SECRET`(비밀키), `NAVER_AD_CUSTOMER`(CUSTOMER_ID)가 필요 — 2026-11-05 등록 완료(소금빵 월 26,640회 확인). 레이더 화면 `#opp`(renderOpportunity)가 디저트별 /volume 합계 ÷ 영업 중 매장으로 "가게당 검색 수" 순위를 보여 준다 (VOL_TERMS: 붕어빵=붕어빵+잉어빵)
+- `/kamis`: KAMIS 농산물유통정보 Open API `dailySalesList`(최근일자 도·소매 가격, dpr1 당일·dpr3 1개월 전·dpr4 1년 전)에서 디저트 재료(`KAMIS_WANT`)만 골라 반환, 12시간 캐시. `?all=1`은 전체 품목. 비밀 변수 `KAMIS_KEY`(인증키)·`KAMIS_ID`(신청 아이디). 2026-11-06 추가 — 원가 계산(`PRICE`)에 연결은 응답 모양 확인 뒤
 - 이 작업 환경(클라우드)에서는 workers.dev와 data.go.kr에 직접 접속이 안 될 수 있다 → 사용자가 브라우저로 확인하거나, 테스트용 복사본에서 Playwright로 응답을 흉내 낸다
 
 ## 우리 동네 리포트 데이터
