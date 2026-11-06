@@ -33,6 +33,12 @@ def load(paths):
         d['src'] = '제과점' if '제과' in p else '휴게음식점'; fr.append(d)
     return pd.concat(fr, ignore_index=True)
 
+def dong_of(addr):
+    """주소 끝 괄호의 동 이름 (없으면 읍·면)"""
+    a = str(addr or ''); m = re.search(r'\(([^,()]*?[동읍면가리])(?:,[^()]*)?\)\s*$', a)
+    if m: return m.group(1)
+    return next((t for t in a.split()[2:5] if re.fullmatch(r'\S+[읍면]', t)), '')
+
 def district(addr):
     t = str(addr or '').split()
     if not t: return None
@@ -52,7 +58,7 @@ def main():
     NOT_CAFE = r'PC|피씨|피시방|노래|코인|게임|만화|보드|당구|볼링|골프|스크린|오락|세븐일레븐|GS25|지에스25|CU|씨유|이마트24|미니스톱|편의점|마트|피트니스|헬스|짐박스|요가|필라테스|스터디|독서실|키즈|PLAY|플레이|방탈출|사우나|찜질|영화|CGV|메가박스|롯데시네마'
     a = a[~a['사업장명'].fillna('').str.contains(NOT_CAFE, case=False)]
     ad = a['도로명주소'].fillna('').where(a['도로명주소'].fillna('') != '', a['지번주소'].fillna(''))
-    a['d'] = ad.map(district); a = a[a.d.notna()]
+    a['ad'] = ad; a['d'] = ad.map(district); a = a[a.d.notna()]
     a['o'] = pd.to_datetime(a['인허가일자'], errors='coerce'); a['c'] = pd.to_datetime(a['폐업일자'], errors='coerce')
     a = a[a.o.notna()].reset_index(drop=True)
     today = min(pd.Timestamp(a['인허가일자'].max()), pd.Timestamp.now().normalize())
@@ -96,7 +102,7 @@ def main():
                    'pop12': int((g.popup & (g.o > y1)).sum()),
                    'o3': int(len(rec)), 'surv1': surv1(g), 'surv3': surv3(g), 'life': life(g),
                    'kw': {k: int(ga['k_' + k].sum()) for k in DK},
-                   'words': words(g), 'recent': [[r['사업장명'], r.o.strftime('%m.%d')] for _, r in rec.head(8).iterrows()]}
+                   'words': words(g), 'recent': [[r['사업장명'], r.o.strftime('%m.%d'), dong_of(r['ad'])] for _, r in rec.head(8).iterrows()]}
     rk = sorted(rows, key=lambda d: -rows[d]['alive'])
     for i, d in enumerate(rk): rows[d]['rank'] = i + 1
     out = {'date': today.strftime('%Y-%m-%d'), 'n': len(rows), 'nat': nat, 'kw': list(DK), 'd': rows}

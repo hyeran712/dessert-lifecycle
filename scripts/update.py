@@ -154,6 +154,9 @@ def pop_days(o, c):
 def ispop(x):
     return x.c.notna() & ((x.c - x.o).dt.days <= 90)
 
+def area_any(ad, gu):
+    return area_of(ad) if ad else (gu or '')
+
 def area_of(addr):
     """'경기도 광명시 금하로 522, ... (소하동)' → '광명시 소하동'"""
     a = str(addr or '')
@@ -183,10 +186,10 @@ def region_stats(d, perm, today):
                   'po90': int(ispop(o90).sum()), 'pc90': int(ispop(c90).sum()),
                   # 세 번째 값: 90일 안에 닫은 팝업이면 영업 일수, 아니면 0
                   # 네 번째 값(open)·다섯 번째 값(close): 동네 이름 ('광명시 소하동'), 주소를 모르면 ''
-                  'open': [[n, o.strftime('%m.%d'), pop_days(o, c), area_of(ad)] for n, o, c, ad in o90[['사업장명', 'o', 'c', 'addr']].head(6).values],
+                  'open': [[n, o.strftime('%m.%d'), pop_days(o, c), area_any(ad, g)] for n, o, c, ad, g in o90[['사업장명', 'o', 'c', 'addr', 'addr_gu']].head(6).values],
                   # 폐업 목록 네 번째 값: 문 연 날 (90일보다 전에 열어서 개업 목록에 없는 가게도 언제 열었는지 보이게)
-                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else '', area_of(ad)] for n, o, c, ad in c90[['사업장명', 'o', 'c', 'addr']].head(6).values],
-                  'changed': [[n, o.strftime('%m.%d'), area_of(ad)] for n, o, ad in ch[['사업장명', 'o', 'addr']].head(6).values], 'chg90': len(ch)}
+                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else '', area_any(ad, g)] for n, o, c, ad, g in c90[['사업장명', 'o', 'c', 'addr', 'addr_gu']].head(6).values],
+                  'changed': [[n, o.strftime('%m.%d'), area_any(ad, g)] for n, o, ad, g in ch[['사업장명', 'o', 'addr', 'addr_gu']].head(6).values], 'chg90': len(ch)}
     return out
 
 def mark_change(s, addr):
@@ -208,6 +211,13 @@ def shop_stats(shops, today, new, addr=None):
     s = s[s.o.notna()]; s['days'] = (s.c - s.o).dt.days
     s = mark_change(s, addr if addr is not None else {})
     s['addr'] = s['관리번호'].map(addr or {}).fillna('')
+    # 주소를 모르는 옛 가게: 관리번호 앞 7자리 = 시군구 코드 → 같은 코드를 쓰는 최근 가게 주소로 시군구 이름만
+    gu = {}
+    for mg, ad in (addr or {}).items():
+        a = area_of(ad).split(); g = ' '.join(a[:-1]) if len(a) > 1 and re.search(r'[동읍면가리]$', a[-1]) else ' '.join(a)
+        if g: gu.setdefault(str(mg)[:7], g)
+    s.loc[s.addr == '', 'addr_gu'] = s.loc[s.addr == '', '관리번호'].str[:7].map(gu)
+    s['addr_gu'] = s.get('addr_gu', pd.Series('', index=s.index)).fillna('')
     s['popup'] = s.days.notna() & (s.days <= 90)
     months = pd.date_range('2016-01-01', today.replace(day=1), freq='MS')
     out = {}
