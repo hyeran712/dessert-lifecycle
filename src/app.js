@@ -755,8 +755,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#f6d3a8', '#f8bf82', '#f7a862', '#f38f45', '#ec742c', '#dc5716'];   // 모든 지역이 같은 주황 계열로 진하게
-const SEL_TOP = '#ff5a1f', SEL_SIDE = '#a8380f';
+const RAMP = ['#f6e6c8', '#f7d6a8', '#f6bf86', '#f4a468', '#f08a4c', '#ec6f33'];   // 유리 판 느낌: 크림 → 주황
+const SEL_TOP = '#f6672a', SEL_SIDE = '#d9873f';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -775,16 +775,18 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 12;   // 두께(층 수)
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#8a4a22' : '#c9844f'}" fill-opacity="${i < 2 ? .9 : .85}"></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#d9a560' : '#f3d9ae'}" fill-opacity="${i < 2 ? .75 : .42}"></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
   svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+      <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"></stop><stop offset=".35" stop-color="#fff" stop-opacity=".08"></stop><stop offset=".55" stop-color="#fff" stop-opacity=".28"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
-    <g class="ground"><use href="#land" transform="translate(8,${OY + 46}) scale(1,${SY})" fill="#6b5a48" opacity=".16" filter="url(#soft)"></use></g>
+    <g class="ground"><use href="#land" transform="translate(8,${OY + 46}) scale(1,${SY})" fill="#a5603a" opacity=".22" filter="url(#soft)"></use></g>
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
-      <g class="groove"><use href="#land" transform="translate(0,.9)" stroke="#fff"></use><use href="#land" stroke="#8a4a22"></use></g>
+      <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
+      <g class="groove"><use href="#land" stroke="#fff6e2" filter="url(#glow)"></use><use href="#land" stroke="#e2ae62"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +
