@@ -161,8 +161,9 @@ def region_stats(d, perm, today):
     t30, t90 = today - pd.Timedelta(days=30), today - pd.Timedelta(days=90)
     for r in sorted(set(d.r.dropna())):
         x, px = d[d.r == r], perm[perm.r == r]
-        o90 = x[(x.o > t90) & (x.o <= today)].sort_values('o', ascending=False)
-        c90 = x[(x.c > t90) & (x.c <= today)].sort_values('c', ascending=False)
+        o90 = x[(x.o > t90) & (x.o <= today) & (x.chg != 'new')].sort_values('o', ascending=False)
+        c90 = x[(x.c > t90) & (x.c <= today) & (x.chg != 'old')].sort_values('c', ascending=False)
+        ch = x[(x.o > t90) & (x.o <= today) & (x.chg == 'new')].sort_values('o', ascending=False)   # 신고 변경 (숫자에는 안 넣음)
         out[r] = {'alive': int(px.c.isna().sum()),
                   'o30': int((o90.o > t30).sum()), 'c30': int((c90.c > t30).sum()), 'o90': len(o90), 'c90': len(c90),
                   # 위 개업·폐업 숫자 중 팝업(90일 안에 닫은 곳)이 몇 곳인지
@@ -171,13 +172,28 @@ def region_stats(d, perm, today):
                   # 세 번째 값: 90일 안에 닫은 팝업이면 영업 일수, 아니면 0
                   'open': [[n, o.strftime('%m.%d'), pop_days(o, c)] for n, o, c in o90[['사업장명', 'o', 'c']].head(6).values],
                   # 폐업 목록 네 번째 값: 문 연 날 (90일보다 전에 열어서 개업 목록에 없는 가게도 언제 열었는지 보이게)
-                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else ''] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values]}
+                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else ''] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values],
+                  'changed': [[n, o.strftime('%m.%d')] for n, o in ch[['사업장명', 'o']].head(6).values], 'chg90': len(ch)}
     return out
 
-def shop_stats(shops, today, new):
+def mark_change(s, addr):
+    """신고 변경 찾기: 같은 시도·같은 이름(·같은 주소)으로 폐업일 앞뒤 7일 안에 다시 연 가게.
+    폐업한 쪽은 chg='old', 다시 연 쪽은 chg='new' → 개업·폐업 숫자에서 빼고 목록엔 '신고 변경'으로 한 줄만"""
+    s = s.copy(); s['chg'] = ''
+    s['nm'] = s['사업장명'].fillna('').str.replace(r'\s', '', regex=True); s['ad'] = s['관리번호'].map(addr).fillna('').str.split(',').str[0].str.replace(r'\s', '', regex=True)   # 건물 주소(쉼표 앞)까지만: 층·호수 오타 무시
+    for (k, sd, nm), g in s.groupby(['키워드', '시도', 'nm']):
+        if len(g) < 2: continue
+        for i, a in g[g.c.notna()].iterrows():
+            cand = g[(g.index != i) & (g.o >= a.c - pd.Timedelta(days=7)) & (g.o <= a.c + pd.Timedelta(days=7)) & (s.loc[g.index, 'chg'] == '')]
+            if a.ad: cand = cand[(cand.ad == '') | (cand.ad == a.ad)]
+            if len(cand): s.loc[i, 'chg'] = 'old'; s.loc[cand.index[0], 'chg'] = 'new'
+    return s
+
+def shop_stats(shops, today, new, addr=None):
     s = shops.copy()
     s['o'] = pd.to_datetime(s['인허가일자'], errors='coerce'); s['c'] = pd.to_datetime(s['폐업일자'], errors='coerce')
     s = s[s.o.notna()]; s['days'] = (s.c - s.o).dt.days
+    s = mark_change(s, addr if addr is not None else {})
     s['popup'] = s.days.notna() & (s.days <= 90)
     months = pd.date_range('2016-01-01', today.replace(day=1), freq='MS')
     out = {}
@@ -186,7 +202,7 @@ def shop_stats(shops, today, new):
         d = s[s['키워드'] == k]; perm = d[~d.popup]
         ends = months + pd.offsets.MonthEnd(0)
         alive = [int(((perm.o <= t) & (perm.c.isna() | (perm.c > t))).sum()) for t in ends]
-        opened = d[d.o > week0]; closed = d[d.c > week0]
+        opened = d[(d.o > week0) & (d.chg != 'new')]; closed = d[(d.c > week0) & (d.chg != 'old')]
         out[k] = {'alive': alive, 'open_now': int(perm.c.isna().sum()), 'alive_max': max(alive),
                   'alive_peak': months[int(np.argmax(alive))].strftime('%Y-%m'), 'popup': int(d.popup.sum()), 'total': len(d),
                   'week_open': opened[['사업장명', '시도']].head(8).values.tolist(), 'week_open_n': len(opened),
@@ -241,7 +257,8 @@ def main():
     base, shops, new = apply_updates(new)
     # 데이터는 2일 전 기준이라 오늘-2일을 기준일로 본다
     today = pd.Timestamp(now.date()) - pd.Timedelta(days=2)
-    st, m0 = shop_stats(shops, today, new)
+    addr = dict(zip(base['관리번호'], base['주소'].fillna('')))
+    st, m0 = shop_stats(shops, today, new, addr)
     items = radar(base, today)
     prev = json.loads(OUT.read_text()) if OUT.exists() else {}
     hist = [h for h in prev.get('history', []) if h['date'] != today.strftime('%Y-%m-%d')]

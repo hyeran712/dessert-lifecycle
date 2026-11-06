@@ -842,7 +842,7 @@ function mapSelect(k, r) {
     <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업${pp(x.po30)}</div><div><b class="dn">−${x.c30}</b>30일 폐업${pp(x.pc30)}</div>
       <div><b class="up">+${x.o90}</b>90일 개업${pp(x.po90)}</div><div><b class="dn">−${x.c90}</b>90일 폐업${pp(x.pc90)}</div></div>
     <details open><summary>최근 개업 가게</summary>${list(x.open)}</details>
-    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>`;
+    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>${(x.changed || []).length ? `<details><summary>신고 변경 <small class="chgn">문 닫지 않고 신고만 다시 한 곳</small></summary><ul>${x.changed.map(([n, d]) => `<li><b class="ln">${esc(n)} <em class="chgt" title="같은 이름·주소로 폐업 후 7일 안에 다시 신고 (업종 변경 등)">신고 변경</em></b><span>${d}</span></li>`).join('')}</ul></details>` : ''}`;
   P.hidden = false;
   P.querySelector('.x').addEventListener('click', () => mapSelect(mapK, null));
   if (innerWidth <= 760) P.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

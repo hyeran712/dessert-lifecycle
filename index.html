@@ -394,6 +394,8 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .map-panel details li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid rgba(28,28,28,.06)}
 .map-panel details li .ln{font-weight:400}
 .map-panel .popn{display:block;margin-top:2px;font-size:10.5px;font-weight:700;color:#b33e0c}
+.map-panel .chgt{font-style:normal;font-size:10.5px;font-weight:800;color:#2b5d8a;background:#e3eef8;border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap}
+.map-panel .chgn{font-weight:500;font-size:11px;color:rgba(28,28,28,.5);margin-left:4px}
 .map-panel .popt{font-style:normal;font-size:10.5px;font-weight:800;color:#b33e0c;background:#ffe6d6;border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap}
 .map-panel details li span{color:rgba(28,28,28,.45);flex:none}
 .ms-ctrl{position:absolute!important;left:22px;bottom:62px;z-index:4;display:flex;gap:2px;background:rgba(38,48,44,.85);border-radius:14px;padding:5px;backdrop-filter:blur(8px)}
@@ -1906,7 +1908,7 @@ function mapSelect(k, r) {
     <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업${pp(x.po30)}</div><div><b class="dn">−${x.c30}</b>30일 폐업${pp(x.pc30)}</div>
       <div><b class="up">+${x.o90}</b>90일 개업${pp(x.po90)}</div><div><b class="dn">−${x.c90}</b>90일 폐업${pp(x.pc90)}</div></div>
     <details open><summary>최근 개업 가게</summary>${list(x.open)}</details>
-    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>`;
+    <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>${(x.changed || []).length ? `<details><summary>신고 변경 <small class="chgn">문 닫지 않고 신고만 다시 한 곳</small></summary><ul>${x.changed.map(([n, d]) => `<li><b class="ln">${esc(n)} <em class="chgt" title="같은 이름·주소로 폐업 후 7일 안에 다시 신고 (업종 변경 등)">신고 변경</em></b><span>${d}</span></li>`).join('')}</ul></details>` : ''}`;
   P.hidden = false;
   P.querySelector('.x').addEventListener('click', () => mapSelect(mapK, null));
   if (innerWidth <= 760) P.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
