@@ -756,8 +756,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#eed2a4', '#f2bf82', '#f5a964', '#f8924a', '#f67a34', '#ee6420'];   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
-const SEL_TOP = '#ff5a1f', SEL_SIDE = '#c8661f';
+const RAMP = ['#fdebcd', '#fcdcaf', '#fbc88f', '#fab271', '#f99c58', '#f78744'];   // 연한 살구 → 부드러운 주황 (점토 지도)   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
+const SEL_TOP = '#f78744', SEL_SIDE = '#d9733a';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -774,26 +774,24 @@ function mapSelect(k, r) {
   const svg = document.getElementById('kmap'), tip = document.getElementById('map-tip');
   document.getElementById('ms-title').textContent = `전국 · ${k}`;
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
-  const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
+  const DEPTH = 9;   // 두께(층 수): 얇은 점토 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#c8923f' : '#f1d3a0'}" fill-opacity="${i < 2 ? .9 : (0.6 - i * 0.015).toFixed(3)}"${i === 0 ? ' stroke="#a8742c" stroke-width="1.3"' : i === 1 ? ' stroke="#fff2d6" stroke-width=".6"' : ''}></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#e7ac62' : '#f6cf98'}"${i === 0 ? ' stroke="#d99a50" stroke-width="1.2"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
   svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
       <filter id="bevel" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"></feGaussianBlur>
         <feSpecularLighting in="b" surfaceScale="3.2" specularConstant="1.05" specularExponent="26" lighting-color="#fffaf0" result="s"><fePointLight x="-120" y="-260" z="320"></fePointLight></feSpecularLighting>
-        <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"></feComposite><feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".85" k4="0"></feComposite></filter>
+        <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"></feComposite><feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".35" k4="0"></feComposite></filter>
       <filter id="ao" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3.5"></feGaussianBlur></filter>
       <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"></stop><stop offset=".35" stop-color="#fff" stop-opacity=".04"></stop><stop offset=".55" stop-color="#fff" stop-opacity=".16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
-    <g class="ground"><use href="#land" transform="translate(10,${OY + 50}) scale(1,${SY})" fill="#ffd08a" opacity=".55" filter="url(#soft)"></use>
-      <use href="#land" transform="translate(6,${OY + 40}) scale(1,${SY})" fill="#9a5a34" opacity=".16" filter="url(#soft)"></use>
-      <use href="#land" transform="translate(2,${OY + 22}) scale(1,${SY})" fill="#7a4426" opacity=".22" filter="url(#ao)"></use></g>
+    <g class="ground"><use href="#land" transform="translate(6,${OY + 30}) scale(1,${SY})" fill="#b07a4a" opacity=".18" filter="url(#soft)"></use>
+      <use href="#land" transform="translate(2,${OY + 14}) scale(1,${SY})" fill="#8a5a34" opacity=".14" filter="url(#ao)"></use></g>
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
-      <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
-      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#b8843a"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
+      <g class="groove"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#e6a85e"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
