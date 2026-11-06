@@ -755,8 +755,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#f7e4c2', '#f8d09a', '#f7b672', '#f39a52', '#ee7e38', '#e65f1f'];   // 유리 판 느낌: 크림 → 주황
-const SEL_TOP = '#f6672a', SEL_SIDE = '#d9873f';
+const RAMP = ['#f6ead3', '#f5ddb8', '#f7c99a', '#fbb47d', '#fda56a', '#ff9b54'];   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
+const SEL_TOP = '#ff9b54', SEL_SIDE = '#e0a060';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -775,7 +775,7 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#c98a3e' : '#fff3dc'}" fill-opacity="${i < 2 ? .9 : .28}"${i === 0 ? ' stroke="#b8772d" stroke-width="1.2"' : ''}></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#d6b06a' : '#fff6e6'}" fill-opacity="${i < 2 ? .85 : .3}"${i === 0 ? ' stroke="#c79d55" stroke-width="1.2"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
@@ -786,7 +786,7 @@ function mapSelect(k, r) {
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
       <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
-      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d4923e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
+      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d9b26e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +

@@ -329,7 +329,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .tile:hover{transform:translateY(-2px)}
 .tile.on{background:var(--pop-y);box-shadow:4px 4px 0 var(--ink)}
 .mapstage{position:relative;margin-top:18px;border-radius:20px;overflow:hidden;padding:22px 22px 0;min-height:640px;
-  background:#f3c19e;
+  background:#f8c8ad;
   border:1px solid rgba(190,110,60,.25)}   /* 지도 뒤 배경: 투명한 파란색 한 가지 톤 (2026-11-06) */
 .mapstage > *{position:relative}
 .ms-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -340,7 +340,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-chips span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.55);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.7);color:#3b4440;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .ms-chips i{width:8px;height:8px;border-radius:50%;display:inline-block}
-.ms-chips .c1{background:#ec6f33}.ms-chips .c2{background:#f6e6c8;box-shadow:inset 0 0 0 1px #e2ae62}
+.ms-chips .c1{background:#ff9b54}.ms-chips .c2{background:#f6ead3;box-shadow:inset 0 0 0 1px #d9b26e}
 .map-wrap{position:relative;max-width:580px;padding-right:60px;box-sizing:border-box;margin:4px auto 0 calc(50% - 325px);transition:margin-left .35s ease;overflow:hidden;touch-action:none}
 #kmap{width:100%;height:auto;display:block;overflow:visible}
 #kmap path.top{fill-opacity:.92;stroke:none;cursor:pointer;transition:filter .2s}
@@ -357,7 +357,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 #kmap .sel-pin text{font-size:11px;font-weight:800;fill:#ff5a1f;letter-spacing:1.5px;stroke:none}
 @keyframes rise{from{transform:translateY(12px);opacity:.4}to{transform:none;opacity:1}}
 #kmap text{pointer-events:none;text-anchor:middle;font-family:"Noto Sans KR";paint-order:stroke;stroke:rgba(255,248,232,.7);stroke-width:2.2px}
-#kmap .nm{font-size:11.5px;font-weight:900;fill:#4a1d10}
+#kmap .nm{font-size:11.5px;font-weight:800;fill:#2b1a12}
 #kmap .ct{font-size:8.5px;font-weight:500;fill:#7a5a40}
 #kmap .lbls{pointer-events:none}
 #kmap .pin line{stroke:#d94a12;stroke-width:1.3}
@@ -1809,8 +1809,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#f7e4c2', '#f8d09a', '#f7b672', '#f39a52', '#ee7e38', '#e65f1f'];   // 유리 판 느낌: 크림 → 주황
-const SEL_TOP = '#f6672a', SEL_SIDE = '#d9873f';
+const RAMP = ['#f6ead3', '#f5ddb8', '#f7c99a', '#fbb47d', '#fda56a', '#ff9b54'];   // 크림 베이지 → 코랄 오렌지(#FF9B54)   // 유리 판 느낌: 크림 → 주황
+const SEL_TOP = '#ff9b54', SEL_SIDE = '#e0a060';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -1829,7 +1829,7 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#c98a3e' : '#fff3dc'}" fill-opacity="${i < 2 ? .9 : .28}"${i === 0 ? ' stroke="#b8772d" stroke-width="1.2"' : ''}></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#d6b06a' : '#fff6e6'}" fill-opacity="${i < 2 ? .85 : .3}"${i === 0 ? ' stroke="#c79d55" stroke-width="1.2"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
@@ -1840,7 +1840,7 @@ function mapSelect(k, r) {
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
       <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
-      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d4923e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
+      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d9b26e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +
