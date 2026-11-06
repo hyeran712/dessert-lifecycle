@@ -213,7 +213,7 @@ function select(k) {
   document.getElementById('st-peak').textContent = v.peak;
   document.getElementById('st-rise').innerHTML = v.rise ? `${v.rise}<small>주</small>` : '<small>꾸준히 검색</small>';
   document.getElementById('st-now').innerHTML = `${v.now}<small>%</small>`;
-  document.getElementById('st-yoy').textContent = v.yoy === null ? '–' : sign(v.yoy);
+  { const y = document.getElementById('st-yoy'); y.textContent = v.yoy === null ? '–' : sign(v.yoy); y.className = v.yoy === null ? '' : v.yoy < 0 ? 'neg' : 'pos'; }
   document.getElementById('c-title').textContent = `${k} 검색량 추이`;
   const st = E.shop, box = document.getElementById('shopbox');
   box.hidden = !st;
