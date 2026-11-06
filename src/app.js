@@ -755,8 +755,8 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#fdfcf8', '#fdf3e2', '#fde6c8', '#fbd4a6', '#f8bd85', '#f4a166'];
-const SEL_TOP = '#ff7a3d', SEL_SIDE = '#c94a1c';
+const RAMP = ['#fffdf7', '#ffeccc', '#ffd39a', '#ffb468', '#ff9145', '#f26a25'];
+const SEL_TOP = '#ff5a1f', SEL_SIDE = '#a8380f';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
 function zoom(f, cx, cy) {
@@ -775,7 +775,7 @@ function mapSelect(k, r) {
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
   const DEPTH = 12;   // 두께(층 수)
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#bfb4a2' : '#ece6db'}" fill-opacity="${i < 2 ? .6 : .5}"></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#a89a84' : '#e6ddcd'}" fill-opacity="${i < 2 ? .85 : .8}"></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
