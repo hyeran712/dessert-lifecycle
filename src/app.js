@@ -786,7 +786,7 @@ function mapSelect(k, r) {
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
-  svg.innerHTML = `<defs><g id="land">${land}</g><clipPath id="landclip"><use href="#land"></use></clipPath><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+  svg.innerHTML = `<defs><g id="land">${land}</g><clipPath id="landclip">${land}</clipPath><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
       <filter id="bevel" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"></feGaussianBlur>
         <feSpecularLighting in="b" surfaceScale="3.2" specularConstant="1.05" specularExponent="26" lighting-color="#fffaf0" result="s"><fePointLight x="-120" y="-260" z="320"></fePointLight></feSpecularLighting>
         <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"></feComposite><feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".35" k4="0"></feComposite></filter>
