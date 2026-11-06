@@ -548,10 +548,11 @@ function menuCard(m) {
       <p><b>타깃</b> ${esc(m.targetCustomer || '')}</p>
       <p><b>판매 포인트</b> ${esc(m.point || '')}</p>
       <div style="overflow-x:auto"><table><thead><tr><th>재료</th><th class="num-r">사용량</th><th class="num-r">단가</th><th class="num-r">원가</th><th>단가 출처</th></tr></thead><tbody>
-        ${m.recipe.map(x => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${x.unit_price}원</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : ''}">${x.source}</span></td></tr>`).join('')}
+        ${m.recipe.map(x => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${x.unit_price}원</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : /KAMIS/.test(x.source) ? ' mk' : ''}">${x.source}</span>${x.vsMonth >= 10 ? ` <b class="up-mk">한 달 새 +${x.vsMonth}%</b>` : x.vsMonth <= -10 ? ` <b class="dn-mk">한 달 새 ${x.vsMonth}%</b>` : ''}</td></tr>`).join('')}
       </tbody></table></div>
       ${m.steps && m.steps.length ? `<p style="margin-top:10px"><b>만드는 순서</b></p><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
       <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
+      ${m.recipe.some(x => x.vsMonth >= 15) ? `<p class="gfit"><b>⚠️ 오른 재료</b> ${m.recipe.filter(x => x.vsMonth >= 15).map(x => `${esc(x.ing)} 한 달 새 +${x.vsMonth}%`).join(', ')}. 원가율을 다시 확인하거나 양을 조절해 보세요.</p>` : ''}
       <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
     </div>`;
 }

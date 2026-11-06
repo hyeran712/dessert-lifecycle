@@ -159,17 +159,40 @@ const findPrice = name => {
 };
 const GEMINI_MODEL = 'gemini-3.8-flash';  // 바뀌면 Worker 변수 GEMINI_MODEL로 덮어쓰기
 
-function costOf(recipe) {
+// KAMIS 시세를 재료 단가(g·ml·개당)로 바꿈. 소매 가격 기준, 같은 이름이면 앞의 것(30구 계란은 30구 우선)
+async function marketPrices(env) {
+  try {
+    const ck = new Request(`https://cache.local/kamis?all=0&d=${new Date().toISOString().slice(0, 10)}`);
+    const hit = await caches.default.match(ck);
+    const d = hit ? await hit.json() : await kamis(env, false);
+    if (!hit && d.ok && d.n) await caches.default.put(ck, json(d, 200, '', 43200));
+    if (!d.ok) return {};
+    const out = {};
+    d.rows.filter(r => /소매/.test(r.type)).forEach(r => {
+      const m = String(r.unit).replace(/\s/g, '').match(/^([\d.]+)(kg|g|L|ml|개|구)$/i); if (!m) return;
+      const n = Number(m[1]), u = m[2].toLowerCase();
+      const [unit, per] = u === 'kg' ? ['g', n * 1000] : u === 'g' ? ['g', n] : u === 'l' ? ['ml', n * 1000] : u === 'ml' ? ['ml', n] : ['개', n];
+      const [base, variety] = r.name.split('/'), names = [base, variety && variety.replace(/\(.*\)/, '')].filter(x => x && x.length >= 2 && !/국산|수입|노지|시설|일반란|흰우유|일반계|백색|XL|\d+구/.test(x));
+      const p = { unit, price: +(r.now / per).toFixed(2), vsMonth: r.vsMonth, date: r.date, src: r.name };
+      names.forEach(k => { if (!out[k] || (k === '계란' && per >= 30)) out[k] = p; });
+    });
+    return out;
+  } catch { return {}; }
+}
+const findMarket = (name, MKT) => { const n = String(name || '').replace(/\s/g, ''); return MKT[n] ? n : Object.keys(MKT).find(k => n.includes(k)) || null; };
+// 단가 우선순위: 내 원가표 → KAMIS 오늘 시세 → 원가표 예시값 → AI 추정
+function costOf(recipe, MKT = {}) {
   let total = 0;
   const rows = recipe.map(r => {
-    const key = findPrice(r.ing);
-    const known = key ? PRICE[key] : null;
-    const unit = known ? known.unit : r.unit;
-    const up = known ? known.price : Number(r.est_unit_price) || 0;
+    const key = findPrice(r.ing), own = key ? PRICE[key] : null;
+    const mk = findMarket(r.ing, MKT), mkt = mk ? MKT[mk] : null;
+    let unit = r.unit, up = Number(r.est_unit_price) || 0, source = 'AI 추정', ing = r.ing, vs = null;
+    if (own && !own.note) { unit = own.unit; up = own.price; source = '원가표'; ing = key; }
+    else if (mkt && mkt.unit === r.unit) { up = mkt.price; source = `KAMIS 시세 (${String(mkt.date).slice(5).replace('-', '/')})`; vs = mkt.vsMonth; }
+    else if (own) { unit = own.unit; up = own.price; source = '원가표 (예시값)'; ing = key; }
     const cost = (Number(r.qty) || 0) * up;
     total += cost;
-    return { ing: key || r.ing, qty: Number(r.qty) || 0, unit, unit_price: +up.toFixed(2), cost: Math.round(cost),
-             source: known ? (known.note ? '원가표 (예시값)' : '원가표') : 'AI 추정' };
+    return { ing, qty: Number(r.qty) || 0, unit, unit_price: +up.toFixed(2), cost: Math.round(cost), source, ...(vs !== null ? { vsMonth: vs } : {}) };
   });
   return { rows, total: Math.round(total) };
 }
@@ -217,7 +240,8 @@ async function menu(body, env) {
   const price = Math.max(2000, Math.min(30000, Number(body.price) || 5500));
   const target = Math.max(15, Math.min(50, Number(body.targetRate) || 30));
   const p = body.profile || {};
-  const known = Object.entries(PRICE).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원)`).join(', ');
+  const MKT = await marketPrices(env);
+  const known = Object.entries(PRICE).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원)`).concat(Object.entries(MKT).filter(([k]) => !PRICE[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 오늘 시세)`)).join(', ');
   const base = `당신은 한국 카페·디저트 프랜차이즈의 메뉴개발자입니다. 트렌드 키워드로 실제 매장에서 팔 신메뉴 1개를 만드세요.
 - 트렌드 키워드: ${kw} (유행 단계: ${body.type || '알 수 없음'})
 - 메뉴 분야: ${kind}
@@ -235,7 +259,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   for (let i = 1; i <= 3; i++) {
     result = await askGemini(prompt, env);
     if (!Array.isArray(result.recipe) || !result.recipe.length) throw new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
-    cost = costOf(result.recipe);
+    cost = costOf(result.recipe, MKT);
     const rate = cost.total / price * 100;
     log.push({ try: i, rate: +rate.toFixed(1), cost: cost.total });
     if (rate <= target) break;
