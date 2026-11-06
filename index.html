@@ -392,6 +392,8 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .map-panel summary{cursor:pointer;font-weight:700;color:#3b4440;padding:4px 0}
 .map-panel details ul{list-style:none;padding:0;margin:4px 0 6px}
 .map-panel details li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid rgba(28,28,28,.06)}
+.map-panel details li .ln{font-weight:400}
+.map-panel .popt{font-style:normal;font-size:10.5px;font-weight:800;color:#b33e0c;background:#ffe6d6;border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap}
 .map-panel details li span{color:rgba(28,28,28,.45);flex:none}
 .ms-ctrl{position:absolute!important;left:22px;bottom:62px;z-index:4;display:flex;gap:2px;background:rgba(38,48,44,.85);border-radius:14px;padding:5px;backdrop-filter:blur(8px)}
 .ms-ctrl button{width:38px;height:34px;border:0;background:none;color:#fff;font-size:17px;border-radius:10px;cursor:pointer}
@@ -1893,7 +1895,7 @@ function mapSelect(k, r) {
   const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] }, i = rank.findIndex(e => e[0] === r) + 1;
   const share = RADAR.shops[k].open_now ? Math.round(x.alive / RADAR.shops[k].open_now * 100) : 0;
   const net = x.o90 - x.c90;
-  const list = xs => xs.length ? `<ul>${xs.map(([n, d]) => `<li>${esc(n)}<span>${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
+  const list = xs => xs.length ? `<ul>${xs.map(([n, d, pd]) => `<li><b class="ln">${esc(n)}${pd ? ` <em class="popt" title="${pd}일 만에 닫은 팝업·행사 매장">팝업 ${pd}일</em>` : ''}</b><span>${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
   P.innerHTML = `<button class="x" type="button" aria-label="닫기">×</button>
     <p class="mp-rank">영업 중 매장 ${x.alive ? i + '위' : '없음'}</p><h6>${RNAME[r]}</h6><p class="lbl">${esc(k)} 영업 중 매장</p>
     <div class="big">${x.alive}<small>곳</small></div>
