@@ -329,7 +329,8 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .tile:hover{transform:translateY(-2px)}
 .tile.on{background:var(--pop-y);box-shadow:4px 4px 0 var(--ink)}
 .mapstage{position:relative;margin-top:18px;border-radius:20px;overflow:hidden;padding:22px 22px 0;min-height:640px;
-  background:transparent;border:1px solid rgba(28,28,28,.12)}   /* 지도 뒤 배경은 투명 (2026-11-06) */
+  background:radial-gradient(70% 60% at 30% 30%,rgba(120,180,240,.22) 0,transparent 70%),radial-gradient(60% 55% at 80% 80%,rgba(90,150,230,.16) 0,transparent 70%),rgba(150,195,245,.10);
+  border:1px solid rgba(60,120,200,.18)}   /* 지도 뒤 배경: 투명한 파란색 (2026-11-06) */
 .mapstage > *{position:relative}
 .ms-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .ms-eye{font-size:11px;letter-spacing:2px;color:rgba(28,28,28,.5);margin:0 0 4px;font-weight:700}
