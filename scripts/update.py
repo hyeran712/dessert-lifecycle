@@ -170,7 +170,8 @@ def region_stats(d, perm, today):
                   'po90': int(ispop(o90).sum()), 'pc90': int(ispop(c90).sum()),
                   # 세 번째 값: 90일 안에 닫은 팝업이면 영업 일수, 아니면 0
                   'open': [[n, o.strftime('%m.%d'), pop_days(o, c)] for n, o, c in o90[['사업장명', 'o', 'c']].head(6).values],
-                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c)] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values]}
+                  # 폐업 목록 네 번째 값: 문 연 날 (90일보다 전에 열어서 개업 목록에 없는 가게도 언제 열었는지 보이게)
+                  'close': [[n, c.strftime('%m.%d'), pop_days(o, c), o.strftime('%m.%d') if pd.notna(o) else ''] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values]}
     return out
 
 def shop_stats(shops, today, new):
