@@ -310,10 +310,11 @@
           <div id="rd-list"><p class="note">불러오는 중…</p></div>
         </div>
         <div class="card">
-          <div class="chart-head"><h4>이 규칙을 과거에 썼다면?</h4></div>
-          <p class="note" style="margin:0 0 12px">2017~2026년 데이터로 매달 같은 규칙을 돌려, 처음 경보가 울린 달을 기록했어요.</p>
+          <div class="chart-head"><h4>이 레이더, 예전에도 맞았을까?</h4></div>
+          <p class="note" style="margin:0 0 6px">2017~2026년 가게 데이터에 지금과 같은 방법을 매달 적용해 봤어요. 레이더가 <b>"이 이름의 가게가 갑자기 늘어요"</b>라고 처음 알려 줬을 달과, 네이버 검색이 가장 많았던 달을 비교했어요.</p>
+          <p class="note" style="margin:0 0 12px">레이더가 알려 주는 기준: 최근 3개월 새로 문 연 가게 이름에 그 단어가 1년 전보다 4배 넘게 늘고, 6개 넘는 시군구에서 동시에 보일 때</p>
           <div style="overflow-x:auto"><table class="small" style="min-width:420px">
-            <thead><tr><th>잡아낸 단어</th><th>첫 경보</th><th>검색 피크</th><th>결과</th></tr></thead>
+            <thead><tr><th>잡아낸 단어</th><th>레이더가 처음 알려 준 달</th><th>검색이 가장 많았던 달</th><th>결과</th></tr></thead>
             <tbody>
               <tr><td>왕가탕후루 <span class="kb kbr">브랜드</span></td><td>2022.11</td><td>2023.08</td><td><b style="color:var(--teal-d)">9개월 먼저</b></td></tr>
               <tr><td>탕후루 <span class="kb km">메뉴</span></td><td>2023.04</td><td>2023.08</td><td><b style="color:var(--teal-d)">4개월 먼저</b></td></tr>
@@ -325,7 +326,7 @@
               <tr><td>땅콩빵 <span class="kb km">메뉴</span></td><td>2025.07</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
             </tbody>
           </table></div>
-          <p class="note">가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어 예시 가게 이름을 같이 보여줘요.</p>
+          <p class="note"><b>결과</b>는 검색이 가장 많았던 달보다 레이더가 몇 달 먼저 알려 줬는지예요. 가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어 예시 가게 이름을 같이 보여줘요.</p>
         </div>
       </div>
   </section>
@@ -338,10 +339,11 @@
     <div class="card lc-pick">
       <label class="fld">시도<select id="lc-sido"></select></label>
       <label class="fld">시군구<select id="lc-gu"></select></label>
-      <button type="button" class="btn primary" id="lc-print">PDF로 저장 · 인쇄</button>
+      <button type="button" class="btn primary" id="lc-go">🔍 리포트 보기</button>
     </div>
     <p class="note" id="lc-msg">불러오는 중…</p>
     <article class="sheet" id="lc-sheet" hidden></article>
+    <div class="lc-out" id="lc-out" hidden><button type="button" class="btn primary" id="lc-print">PDF로 저장 · 인쇄</button><span class="note">A4 한 장으로 저장돼요. 인쇄 창에서 '대상'을 'PDF로 저장'으로 고르세요.</span></div>
   </section>
 </main>
 

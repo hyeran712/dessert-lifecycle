@@ -558,6 +558,7 @@ details.more #chips{padding:0 16px 14px}
 /* ===== 우리 동네 리포트 ===== */
 .lc-pick{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
 .lc-pick .fld{margin:0;flex:1 1 180px}
+.lc-out{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0 6px}
 .lc-pick select{display:block;width:100%;margin-top:6px;font:inherit;font-size:15px;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:#fff}
 .sheet{background:#fff8dc;border:3px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:14px;box-shadow:6px 6px 0 var(--ink)}
 .sh-top{background:var(--pop-y);border-bottom:3px solid var(--ink);padding:26px 30px 22px}
@@ -649,7 +650,7 @@ details.more #chips{padding:0 16px 14px}
 @media print{
   @page{size:A4;margin:10mm}
   body{background:#fff}
-  header,.notice,#view-flow,#radar,footer,dialog,#local > .tagpill,#local > h1,#local > .ph-sub,.lc-pick,#lc-msg{display:none!important}
+  header,.notice,#view-flow,#radar,footer,dialog,#local > .tagpill,#local > h1,#local > .ph-sub,.lc-pick,#lc-msg,.lc-out{display:none!important}
   main.wrap{padding:0;max-width:none}
   #local{display:block!important}
   .sheet{zoom:.74;box-shadow:none;margin:0;border-width:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}

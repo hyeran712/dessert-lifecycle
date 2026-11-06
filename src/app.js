@@ -956,8 +956,8 @@ function loadLocal() {
     let saved = null; try { saved = localStorage.getItem(LC_KEY); } catch {}
     if (!saved || !d.d[saved]) saved = '서울 마포구' in d.d ? '서울 마포구' : keys[0];
     sel.value = saved.split(' ')[0]; fillGu(); gu.value = saved;
-    sel.onchange = () => { fillGu(); renderLocal(gu.value); };
-    gu.onchange = () => renderLocal(gu.value);
+    sel.onchange = fillGu;
+    document.getElementById('lc-go').onclick = () => { renderLocal(gu.value); document.getElementById('lc-sheet').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     document.getElementById('lc-msg').textContent = `전국 ${d.n}개 시군구 · 인허가 데이터 기준일 ${d.date}`;
     renderLocal(saved);
   }).catch(() => { document.getElementById('lc-msg').textContent = '동네 데이터를 불러오지 못했어요.'; });
@@ -965,6 +965,7 @@ function loadLocal() {
 const SIDO_NAME = { '서울': '서울특별시', '경기': '경기도', '인천': '인천광역시', '강원': '강원특별자치도', '충북': '충청북도', '충남': '충청남도', '대전': '대전광역시',
   '세종': '세종특별자치시', '전북': '전북특별자치도', '전남광주': '전남광주통합특별시', '경북': '경상북도', '대구': '대구광역시', '경남': '경상남도', '부산': '부산광역시', '울산': '울산광역시', '제주': '제주특별자치도' };
 function renderLocal(key) {
+  document.getElementById('lc-out').hidden = false;
   const d = DIST, x = d.d[key], N = d.nat; if (!x) return;
   try { localStorage.setItem(LC_KEY, key); } catch {}
   const place = key === '세종 세종시' ? '세종시' : key.split(' ').slice(1).join(' ');
@@ -1037,7 +1038,7 @@ function renderRadar(L) {
   }).join('');
   RADAR = L;
   { const al = L.radar.filter(i => i.level === 'alert'), wt = L.radar.filter(i => i.level === 'watch');
-    document.getElementById('nt-title').textContent = `이번 주 레이더 · 경보 ${al.length}개 · 관찰 ${wt.length}개`;
+    document.getElementById('nt-title').textContent = `이번 주 레이더 · 새로 늘어나는 가게 이름 ${al.length + wt.length}개`;
     document.getElementById('nt-body').textContent = `기준일 ${L.data_date} · 새로 늘어나는 가게 이름: ${(al.length ? al : wt).slice(0, 4).map(i => i.word).join(', ') || '없음'} · 지도에서 지역별 개업·폐업을 확인해 보세요.`; }
   document.querySelectorAll('#rd-tiles .tile').forEach(t => t.addEventListener('click', () => mapSelect(t.dataset.k, null)));
   mapSelect(mapK, mapR);
@@ -1048,7 +1049,7 @@ function renderRadar(L) {
       <span class="m">최근 3개월 ${i.recent}곳 개업 · 이전 대비 ${i.growth}배 · ${i.spread}개 시군구</span>
       <div class="ex">예: ${i.examples.map(esc).join(', ')}</div></div>`).join('');
   };
-  const html = group('alert', '🔔 경보 (기준을 모두 넘은 단어)') + group('watch', '👀 관찰 목록 (기준에 가까운 단어)');
+  const html = group('alert', '🔔 크게 늘어난 단어 (기준을 모두 넘음)') + group('watch', '👀 늘어나기 시작한 단어 (기준에 가까움)');
   document.getElementById('rd-list').innerHTML = html || '<p class="note">이번 주에는 새로 늘어나는 단어가 없어요.</p>';
   // 진단 카드의 매장 숫자를 최신값으로
   Object.entries(L.shops).forEach(([k, v]) => {
