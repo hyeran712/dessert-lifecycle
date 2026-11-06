@@ -569,6 +569,7 @@ details.more #chips{padding:0 16px 14px}
 }
 
 /* ===== 우리 동네 리포트 ===== */
+.lc-reset{font:inherit;font-size:12.5px;font-weight:800;color:#ff5a1f;background:none;border:0;border-bottom:1.5px solid #ff5a1f;padding:0;margin-left:6px;cursor:pointer}
 .lc-dong{font-size:11.5px;color:rgba(28,28,28,.5);margin-left:6px}
 .lc-pick{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
 .lc-pick .fld{margin:0;flex:1 1 180px}
@@ -2039,11 +2040,18 @@ function loadLocal() {
     sel.innerHTML = SIDO_ORDER.filter(s => by(s).length).map(s => `<option value="${s}">${SIDO_NAME[s] || s}</option>`).join('');
     const fillGu = () => { gu.innerHTML = by(sel.value).map(k => `<option value="${k}">${k.split(' ').slice(1).join(' ')}</option>`).join(''); };
     let saved = null; try { saved = localStorage.getItem(LC_KEY); } catch {}
-    if (!saved || !d.d[saved]) saved = '서울 마포구' in d.d ? '서울 마포구' : keys[0];
+    const remembered = !!(saved && d.d[saved]), DEF = '서울 강남구' in d.d ? '서울 강남구' : keys[0];   // 처음 오는 사람은 서울 강남구
+    if (!remembered) saved = DEF;
     sel.value = saved.split(' ')[0]; fillGu(); gu.value = saved;
     sel.onchange = fillGu;
     document.getElementById('lc-go').onclick = () => { renderLocal(gu.value); document.getElementById('lc-sheet').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-    document.getElementById('lc-msg').textContent = `전국 ${d.n}개 시군구 · 인허가 데이터 기준일 ${d.date}`;
+    const msg = document.getElementById('lc-msg'), base = `전국 ${d.n}개 시군구 · 인허가 데이터 기준일 ${d.date}`;
+    const nm = k => k === '세종 세종시' ? '세종시' : `${SIDO_NAME[k.split(' ')[0]] || ''} ${k.split(' ').slice(1).join(' ')}`;
+    if (remembered && saved !== DEF) {
+      msg.innerHTML = `📍 지난번에 본 <b>${esc(nm(saved))}</b>를 불러왔어요. <button type="button" class="lc-reset" id="lc-reset">처음 화면으로</button><br>${base}`;
+      document.getElementById('lc-reset').onclick = () => { try { localStorage.removeItem(LC_KEY); } catch {}
+        sel.value = DEF.split(' ')[0]; fillGu(); gu.value = DEF; renderLocal(DEF); try { localStorage.removeItem(LC_KEY); } catch {} msg.textContent = base; };
+    } else msg.textContent = base;
     renderLocal(saved);
   }).catch(() => { document.getElementById('lc-msg').textContent = '동네 데이터를 불러오지 못했어요.'; });
 }
