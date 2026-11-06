@@ -353,7 +353,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 #kmap .groove{pointer-events:none;fill:none;stroke-linejoin:round}
 #kmap .gloss{pointer-events:none}
 #kmap .coast{fill:none;stroke:#d48a42;stroke-width:2.6;stroke-linejoin:round;pointer-events:none}   /* 지도 바깥 테두리: 칸 아래에 그려서 바깥쪽 반만 보임 */
-#kmap .groove use:nth-child(1){stroke-opacity:1;stroke-width:3}#kmap .groove use:nth-child(2){stroke-opacity:.8;stroke-width:.8}#kmap .groove use:nth-child(3){stroke-opacity:.9;stroke-width:.6}
+#kmap .groove use:nth-child(1){stroke-opacity:1;stroke-width:3.6}#kmap .groove use:nth-child(2){stroke-opacity:1;stroke-width:1.2}#kmap .groove use:nth-child(3){stroke-opacity:0}
 #kmap .tops path.sel{fill-opacity:.25}
 #kmap .selside{animation:rise .45s cubic-bezier(.2,.9,.3,1.15)}
 #kmap .selside path.top{fill-opacity:.82;stroke:#fff3dc;stroke-width:1.5}
@@ -1860,7 +1860,7 @@ function mapSelect(k, r) {
     <g class="float"><g transform="${T}" filter="url(#goo)">${layers}
       <use class="coast" href="#land"></use>
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
-      <g class="groove" clip-path="url(#landclip)"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#e6a85e"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
+      <g class="groove" clip-path="url(#landclip)"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#c47f3c"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
