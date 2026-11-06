@@ -799,7 +799,7 @@ function mapSelect(k, r) {
     <g class="float"><g transform="${T}" filter="url(#goo)">${layers}
       <use class="coast" href="#land"></use>
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
-      <g class="groove" clip-path="url(#landclip)"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#c47f3c"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
+      <g class="groove" clip-path="url(#landclip)"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#d9a066"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
