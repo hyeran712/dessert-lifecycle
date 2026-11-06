@@ -780,7 +780,7 @@ function mapSelect(k, r) {
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
-  svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+  svg.innerHTML = `<defs><g id="land">${land}</g><clipPath id="landclip"><use href="#land"></use></clipPath><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
       <filter id="bevel" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"></feGaussianBlur>
         <feSpecularLighting in="b" surfaceScale="3.2" specularConstant="1.05" specularExponent="26" lighting-color="#fffaf0" result="s"><fePointLight x="-120" y="-260" z="320"></fePointLight></feSpecularLighting>
         <feComposite in="s" in2="SourceAlpha" operator="in" result="sp"></feComposite><feComposite in="SourceGraphic" in2="sp" operator="arithmetic" k1="0" k2="1" k3=".35" k4="0"></feComposite></filter>
@@ -790,8 +790,9 @@ function mapSelect(k, r) {
     <g class="ground"><use href="#land" transform="translate(6,${OY + 30}) scale(1,${SY})" fill="#b07a4a" opacity=".18" filter="url(#soft)"></use>
       <use href="#land" transform="translate(2,${OY + 14}) scale(1,${SY})" fill="#8a5a34" opacity=".14" filter="url(#ao)"></use></g>
     <g class="float"><g transform="${T}">${layers}
+      <use class="coast" href="#land"></use>
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}" filter="url(#bevel)"></path>`).join('')}</g>
-      <g class="groove"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#e6a85e"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
+      <g class="groove" clip-path="url(#landclip)"><use href="#land" stroke="#fffaf2"></use><use href="#land" stroke="#e6a85e"></use><use href="#land" transform="translate(-.4,-.5)" stroke="#fff"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}" filter="url(#bevel)"></path></g>` : ''}
     </g><g class="lbls">` +
