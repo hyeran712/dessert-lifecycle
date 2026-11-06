@@ -151,6 +151,9 @@ def pop_days(o, c):
     n = (c - o).days
     return max(1, int(n)) if n <= 90 else 0
 
+def ispop(x):
+    return x.c.notna() & ((x.c - x.o).dt.days <= 90)
+
 def region_stats(d, perm, today):
     """시도별: 영업 중 매장, 최근 30·90일 개업/폐업 수, 최근 90일 개업·폐업 가게 이름"""
     out = {}
@@ -162,6 +165,9 @@ def region_stats(d, perm, today):
         c90 = x[(x.c > t90) & (x.c <= today)].sort_values('c', ascending=False)
         out[r] = {'alive': int(px.c.isna().sum()),
                   'o30': int((o90.o > t30).sum()), 'c30': int((c90.c > t30).sum()), 'o90': len(o90), 'c90': len(c90),
+                  # 위 개업·폐업 숫자 중 팝업(90일 안에 닫은 곳)이 몇 곳인지
+                  'po30': int(((o90.o > t30) & ispop(o90)).sum()), 'pc30': int(((c90.c > t30) & ispop(c90)).sum()),
+                  'po90': int(ispop(o90).sum()), 'pc90': int(ispop(c90).sum()),
                   # 세 번째 값: 90일 안에 닫은 팝업이면 영업 일수, 아니면 0
                   'open': [[n, o.strftime('%m.%d'), pop_days(o, c)] for n, o, c in o90[['사업장명', 'o', 'c']].head(6).values],
                   'close': [[n, c.strftime('%m.%d'), pop_days(o, c)] for n, o, c in c90[['사업장명', 'o', 'c']].head(6).values]}

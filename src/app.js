@@ -832,14 +832,15 @@ function mapSelect(k, r) {
   const x = regs[r] || { alive: 0, o30: 0, c30: 0, o90: 0, c90: 0, open: [], close: [] }, i = rank.findIndex(e => e[0] === r) + 1;
   const share = RADAR.shops[k].open_now ? Math.round(x.alive / RADAR.shops[k].open_now * 100) : 0;
   const net = x.o90 - x.c90;
+  const pp = n => n ? `<small class="popn">팝업 ${n}곳 포함</small>` : '';
   const list = xs => xs.length ? `<ul>${xs.map(([n, d, pd]) => `<li><b class="ln">${esc(n)}${pd ? ` <em class="popt" title="${pd}일 만에 닫은 팝업·행사 매장">팝업 ${pd}일</em>` : ''}</b><span>${d}</span></li>`).join('')}</ul>` : '<p class="note" style="margin:4px 0">없어요.</p>';
   P.innerHTML = `<button class="x" type="button" aria-label="닫기">×</button>
     <p class="mp-rank">영업 중 매장 ${x.alive ? i + '위' : '없음'}</p><h6>${RNAME[r]}</h6><p class="lbl">${esc(k)} 영업 중 매장</p>
     <div class="big">${x.alive}<small>곳</small></div>
     <ul class="pts"><li>전국 ${esc(k)} 매장의 ${share}%가 이 지역에 있어요.</li>
       <li>최근 90일 ${net > 0 ? `연 곳이 ${net}곳 더 많아 늘고 있어요.` : net < 0 ? `닫은 곳이 ${-net}곳 더 많아 줄고 있어요.` : '연 곳과 닫은 곳이 같아요.'}</li></ul>
-    <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업</div><div><b class="dn">−${x.c30}</b>30일 폐업</div>
-      <div><b class="up">+${x.o90}</b>90일 개업</div><div><b class="dn">−${x.c90}</b>90일 폐업</div></div>
+    <div class="grid"><div><b class="up">+${x.o30}</b>30일 개업${pp(x.po30)}</div><div><b class="dn">−${x.c30}</b>30일 폐업${pp(x.pc30)}</div>
+      <div><b class="up">+${x.o90}</b>90일 개업${pp(x.po90)}</div><div><b class="dn">−${x.c90}</b>90일 폐업${pp(x.pc90)}</div></div>
     <details open><summary>최근 개업 가게</summary>${list(x.open)}</details>
     <details><summary>최근 폐업 가게</summary>${list(x.close)}</details>`;
   P.hidden = false;
