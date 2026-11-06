@@ -755,7 +755,7 @@ const NAME_ONLY = ['서울', '대전', '대구', '울산', '부산'];   // 좁�
 let RADAR = null, mapK = '모찌', mapR = null, VB = [0, 0, 412, 470];
 const SY = 0.72, OY = 28, P2 = (x, y) => [x, OY + y * SY];   // 비스듬히 본 좌표
 // 하얀 반투명 판 위에 매장 수만큼 살구색을 옅게 (누른 지역만 주황으로 솟아오름)
-const RAMP = ['#f6e6c8', '#f7d6a8', '#f6bf86', '#f4a468', '#f08a4c', '#ec6f33'];   // 유리 판 느낌: 크림 → 주황
+const RAMP = ['#f7e4c2', '#f8d09a', '#f7b672', '#f39a52', '#ee7e38', '#e65f1f'];   // 유리 판 느낌: 크림 → 주황
 const SEL_TOP = '#f6672a', SEL_SIDE = '#d9873f';
 const step = (v, mx) => v <= 0 ? 0 : Math.min(5, 1 + Math.floor(v / mx * 4.999));
 function setVB(v) { VB = v; document.getElementById('kmap').setAttribute('viewBox', v.map(x => x.toFixed(1)).join(' ')); }
@@ -773,20 +773,20 @@ function mapSelect(k, r) {
   const svg = document.getElementById('kmap'), tip = document.getElementById('map-tip');
   document.getElementById('ms-title').textContent = `전국 · ${k}`;
   const ent = Object.entries(KOREA.paths), T = `translate(0,${OY}) scale(1,${SY})`;
-  const DEPTH = 12;   // 두께(층 수)
+  const DEPTH = 18;   // 두께(층 수): 두꺼운 유리 판
   const land = ent.map(([n, d]) => `<path d="${d}"></path>`).join('');
-  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#d9a560' : '#f3d9ae'}" fill-opacity="${i < 2 ? .75 : .42}"></use>`).join('');
+  const layers = Array.from({ length: DEPTH }, (_, i) => `<use href="#land" transform="translate(0,${DEPTH - i})" fill="${i < 2 ? '#c98a3e' : '#fff3dc'}" fill-opacity="${i < 2 ? .9 : .28}"${i === 0 ? ' stroke="#b8772d" stroke-width="1.2"' : ''}></use>`).join('');
   const LIFT = 15;   // 누른 지역이 떠오르는 높이
   const selD = r && KOREA.paths[r];
   const pinSet = new Set(rank.filter(e => e[1].alive > 0).slice(0, 3).map(e => e[0]));
   svg.innerHTML = `<defs><g id="land">${land}</g><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
-      <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"></stop><stop offset=".35" stop-color="#fff" stop-opacity=".08"></stop><stop offset=".55" stop-color="#fff" stop-opacity=".28"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
+      <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"></stop><stop offset=".35" stop-color="#fff" stop-opacity=".04"></stop><stop offset=".55" stop-color="#fff" stop-opacity=".16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
       <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>
     <g class="ground"><use href="#land" transform="translate(8,${OY + 46}) scale(1,${SY})" fill="#a5603a" opacity=".22" filter="url(#soft)"></use></g>
     <g class="float"><g transform="${T}">${layers}
       <g class="tops">${ent.map(([n, d]) => `<path d="${d}" data-r="${n}" fill="${RAMP[step((regs[n] || {}).alive || 0, mx)]}" class="top ${n === r ? 'sel' : ''}"></path>`).join('')}</g>
       <g class="gloss"><use href="#land" fill="url(#gloss)"></use></g>
-      <g class="groove"><use href="#land" stroke="#fff6e2" filter="url(#glow)"></use><use href="#land" stroke="#e2ae62"></use></g>
+      <g class="groove"><use href="#land" stroke="#fff8e8"></use><use href="#land" stroke="#d4923e"></use><use href="#land" transform="translate(-.5,-.6)" stroke="#fffdf6"></use></g>
       ${selD ? `<g class="selside">${Array.from({ length: LIFT }, (_, i) => `<path d="${selD}" transform="translate(0,${-i})" fill="${SEL_SIDE}" fill-opacity="${i < 2 ? .9 : .75}"></path>`).join('')}
         <path d="${selD}" data-r="${r}" class="top sel" transform="translate(0,${-LIFT})" fill="${SEL_TOP}"></path></g>` : ''}
     </g><g class="lbls">` +
@@ -801,7 +801,7 @@ function mapSelect(k, r) {
         <rect x="${x + dx - w / 2}" y="${ty - 12}" width="${w}" height="24" rx="3"></rect><text x="${x + dx}" y="${ty + 4}">${t}</text></g>`; }
       if (pinSet.has(n)) return `<g class="pin ${n === r ? 'sel-t' : ''}"><line x1="${x}" y1="${y}" x2="${x + dx}" y2="${y - 26}"></line><circle cx="${x}" cy="${y}" r="2.6"></circle>
         <rect x="${x + dx - 30}" y="${y - 44}" width="60" height="19" rx="9.5"></rect><text class="pt" x="${x + dx}" y="${y - 31}">${nm} ${v}곳</text></g>`;
-      return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text>${v && !NAME_ONLY.includes(n) ? `<text class="ct" x="${x}" y="${y + 12}">${i}위 · ${v}곳</text>` : ''}</g>`; }).join('') + '</g></g>';
+      return `<g class="${n === r ? 'sel-t' : ''}"><text class="nm" x="${x}" y="${y + 3}">${nm}</text></g>`; }).join('') + '</g></g>';
   svg.querySelectorAll('path.top').forEach(p => {
     p.addEventListener('click', e => { e.stopPropagation(); if (!dragged) mapSelect(mapK, p.dataset.r === mapR ? null : p.dataset.r); });
     p.addEventListener('mousemove', e => { const b = svg.parentNode.getBoundingClientRect(), x = regs[p.dataset.r] || { alive: 0, o30: 0, c30: 0 };

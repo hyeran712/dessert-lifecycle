@@ -329,7 +329,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .tile:hover{transform:translateY(-2px)}
 .tile.on{background:var(--pop-y);box-shadow:4px 4px 0 var(--ink)}
 .mapstage{position:relative;margin-top:18px;border-radius:20px;overflow:hidden;padding:22px 22px 0;min-height:640px;
-  background:#f7cdb0;
+  background:#f3c19e;
   border:1px solid rgba(190,110,60,.25)}   /* 지도 뒤 배경: 투명한 파란색 한 가지 톤 (2026-11-06) */
 .mapstage > *{position:relative}
 .ms-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -343,11 +343,11 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .ms-chips .c1{background:#ec6f33}.ms-chips .c2{background:#f6e6c8;box-shadow:inset 0 0 0 1px #e2ae62}
 .map-wrap{position:relative;max-width:580px;padding-right:60px;box-sizing:border-box;margin:4px auto 0 calc(50% - 325px);transition:margin-left .35s ease;overflow:hidden;touch-action:none}
 #kmap{width:100%;height:auto;display:block;overflow:visible}
-#kmap path.top{fill-opacity:.82;stroke:none;cursor:pointer;transition:filter .2s}
+#kmap path.top{fill-opacity:.92;stroke:none;cursor:pointer;transition:filter .2s}
 #kmap path.top:hover{filter:brightness(1.06)}
-#kmap .groove{pointer-events:none;fill:none;stroke-width:1.1;stroke-linejoin:round}
+#kmap .groove{pointer-events:none;fill:none;stroke-linejoin:round}
 #kmap .gloss{pointer-events:none}
-#kmap .groove use:first-child{stroke-opacity:.95;stroke-width:1.6}#kmap .groove use:last-child{stroke-opacity:.9;stroke-width:.7}
+#kmap .groove use:nth-child(1){stroke-opacity:.95;stroke-width:2.4}#kmap .groove use:nth-child(2){stroke-opacity:1;stroke-width:1.1}#kmap .groove use:nth-child(3){stroke-opacity:.9;stroke-width:.5}
 #kmap .tops path.sel{fill-opacity:.25}
 #kmap .selside{animation:rise .45s cubic-bezier(.2,.9,.3,1.15)}
 #kmap .selside path.top{fill-opacity:.85;stroke:#fff3dc;stroke-width:1.5;filter:drop-shadow(0 8px 7px rgba(120,50,10,.22))}
@@ -357,7 +357,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 #kmap .sel-pin text{font-size:11px;font-weight:800;fill:#ff5a1f;letter-spacing:1.5px;stroke:none}
 @keyframes rise{from{transform:translateY(12px);opacity:.4}to{transform:none;opacity:1}}
 #kmap text{pointer-events:none;text-anchor:middle;font-family:"Noto Sans KR";paint-order:stroke;stroke:rgba(255,248,232,.7);stroke-width:2.2px}
-#kmap .nm{font-size:10.5px;font-weight:900;fill:#4a1d10}
+#kmap .nm{font-size:11.5px;font-weight:900;fill:#4a1d10}
 #kmap .ct{font-size:8.5px;font-weight:500;fill:#7a5a40}
 #kmap .lbls{pointer-events:none}
 #kmap .pin line{stroke:#d94a12;stroke-width:1.3}
