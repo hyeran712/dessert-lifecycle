@@ -532,6 +532,36 @@ function menuPrice(k, p) {
   return r ? r.price : 5500;
 }
 // AI가 만든 메뉴 카드 (결과 화면과 보관함에서 같이 씀)
+// ---------- 가격 비교: 원가 기준 최소가 · 다른 카페 보통 가격(네이버 블로그 후기) · 내 목표가 ----------
+const MKT_CACHE = {};
+const areaWord = () => { let s = ''; try { s = localStorage.getItem(LC_KEY) || ''; } catch {}
+  const w = s.split(' ').slice(1).join(' ').split(' ').pop() || ''; return w.length > 2 ? w.replace(/[시군구]$/, '') : w; };
+function mktHTML(m) {
+  const mk = m.market, minP = Math.ceil(m.cost / ((m.target || 30) / 100) / 100) * 100;
+  const ok = x => x && x.ok && x.n >= 5, base = mk && (ok(mk.area) ? mk.area : ok(mk.all) ? mk.all : null);
+  const row = (x, label) => ok(x) ? `<div><span>${label} <small>후기 ${x.n}개</small></span><b>${won(x.median)}</b><small>대부분 ${won(x.p25)}~${won(x.p75)}</small></div>` : '';
+  let say = '';
+  if (m.price < minP) say = `원가율 ${m.target}%를 맞추려면 <b>최소 ${won(minP)}</b>은 받아야 해요.`;
+  if (base) { const d = m.price - base.median, where = base === mk.area ? `${esc(mk.area.area)} 카페` : '다른 카페';
+    say += (say ? ' ' : '') + (d >= 500 ? `${where}보다 <b>${won(d)} 비싸요.</b> 크기·토핑·포장으로 차이를 보여 주세요.`
+      : d <= -500 ? `${where}보다 <b>${won(-d)} 싸요.</b> 값을 조금 올려도 될 여지가 있어요.` : `${where}와 <b>비슷한 가격</b>이에요 ✅`); }
+  const st = !mk ? '<p class="note">다른 카페 가격을 찾는 중…</p>'
+    : base ? '' : `<p class="note">${mk.need === 'search' ? '다른 카페 가격은 준비 중이에요. (네이버 검색 연결 전)' : '가격이 적힌 후기가 적어서 다른 카페 보통 가격을 내기 어려워요.'}</p>`;
+  const smp = base && base.samples && base.samples.length ? `<details class="mkt-s"><summary>가격이 나온 후기 보기</summary><ul>${base.samples.map(x =>
+    `<li><b>${won(x[0])}</b> <a href="${esc(x[2])}" target="_blank" rel="noopener">${esc(x[1])}</a> <small>${x[3] ? x[3].slice(0, 4) + '.' + x[3].slice(4, 6) : ''}</small></li>`).join('')}</ul></details>` : '';
+  return `<p class="mkt-h"><b>💰 가격 비교</b> <small>다른 카페 가격은 최근 1년 네이버 블로그 후기에서 '${esc(m.keyword || '')} ○,○○○원'을 모은 값이에요</small></p>
+    <div class="mkt-g"><div><span>원가 기준 최소가 <small>원가율 ${m.target}%</small></span><b>${won(minP)}</b></div>
+      ${mk ? row(mk.all, '다른 카페 보통') + row(mk.area, `${esc((mk.area && mk.area.area) || '')} 카페 보통`) : ''}
+      <div class="me"><span>내 목표가</span><b>${won(m.price)}</b></div></div>
+    ${say ? `<p class="mkt-say">${say}</p>` : ''}${st}${smp}`;
+}
+async function fillMarket(m, box) {
+  const q = m.keyword, area = areaWord(), get = a => { const key = q + '|' + a;
+    return MKT_CACHE[key] = MKT_CACHE[key] || fetch(`${LIVE_API}/price?q=${encodeURIComponent(q)}${a ? '&area=' + encodeURIComponent(a) : ''}`).then(r => r.json()).catch(() => ({ ok: false })); };
+  const [all, ar] = await Promise.all([get(''), area ? get(area) : null]);
+  m.market = { all, area: ar, need: all && all.need };
+  if (box && box.isConnected) box.innerHTML = mktHTML(m);
+}
 function menuCard(m) {
   const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
   return `<div class="mk-card">
@@ -545,6 +575,7 @@ function menuCard(m) {
         <div><span>재료 원가</span><b>${won(m.cost)}</b></div>
         <div><span>원가율 (목표 ${m.target}%)</span><b class="${m.pass ? 'pass' : 'fail'}">${m.rate}% ${m.pass ? '✔' : '✖'}</b></div>
       </div>
+      <div class="mkt">${mktHTML(m)}</div>
       <p><b>타깃</b> ${esc(m.targetCustomer || '')}</p>
       <p><b>판매 포인트</b> ${esc(m.point || '')}</p>
       <div style="overflow-x:auto"><table><thead><tr><th>재료</th><th class="num-r">사용량</th><th class="num-r">단가</th><th class="num-r">원가</th><th>단가 출처</th></tr></thead><tbody>
@@ -593,6 +624,7 @@ async function makeMenu(again) {
       <button type="button" class="btn line" id="mk-again">↻ 마음에 안 들어요, 다른 메뉴</button></div>`;
     document.getElementById('mk-save').onclick = e => { saveMenu(LAST_MENU); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; };
     document.getElementById('mk-again').onclick = () => makeMenu(true);
+    fillMarket(m, mkOut.querySelector('.mkt'));   // 다른 카페 가격은 따로 불러와 채움 (보관함에 저장하면 같이 저장)
     mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.'; MADE = true; renderProg();
   } catch (e) {
     const msg = String(e.message || e);

@@ -9,10 +9,12 @@
  *   GEMINI_KEY    Google AI Studio Gemini API 키 (신메뉴 제안용)
  *   KAMIS_KEY, KAMIS_ID   KAMIS(농산물유통정보) Open API 인증키·아이디 (재료 시세용)
  *   NAVER_AD_KEY, NAVER_AD_SECRET, NAVER_AD_CUSTOMER   네이버 검색광고 API 액세스라이선스·비밀키·CUSTOMER_ID (월간 검색 수용)
+ *   NAVER_SEARCH_ID, NAVER_SEARCH_SECRET   네이버 개발자센터(developers.naver.com) 애플리케이션 Client ID·Secret, 사용 API '검색' (다른 카페 가격용)
  *
  * GET /trend?q=과일모찌                  → 2016년부터 주간 검색량 (최고점 = 100)
  * GET /shops?q=과일모찌&src=cafe&page=1  → 상호에 단어가 들어간 휴게음식점(cafe)·제과점(bakery) 100곳씩
  * GET /volume?q=소금빵                  → 네이버 검색광고: 최근 한 달 검색 수(PC·모바일) + 연관 키워드
+ * GET /price?q=소금빵&area=강남       → 네이버 블로그 후기에서 뽑은 다른 카페 판매가 (최근 1년, 보통 가격·범위)
  * POST /menu  {keyword, type, kind, price, targetRate, profile}  → AI 신메뉴 제안 + 원가 검증(목표 원가율을 넘으면 최대 3번 다시)
  */
 import { DurableObject } from 'cloudflare:workers';
@@ -272,6 +274,52 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
     rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-04' };
 }
 
+// ---------- 다른 카페 판매가: 네이버 블로그 후기에서 '소금빵 3,500원' 같은 글을 모아 보통 가격을 낸다 ----------
+const stripTag = s => String(s || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;|&gt;|&#\d+;|&[a-z]+;/g, ' ');
+// 후기 한 개에서 키워드 바로 뒤에 붙은 1개 가격만 뽑는다 (2개·세트·묶음 가격은 뺀다)
+function pickPrice(text, kw) {
+  const t = stripTag(text), k = kw.replace(/\s+/g, '').split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s?');
+  const re = new RegExp(k + '([^0-9\\n]{0,7}?)(\\d{1,2}(?:,\\d{3}|\\d{3})|\\d\\.\\d)\\s?(천\\s?)?원', 'g');
+  let m;
+  while ((m = re.exec(t))) {
+    if (/\d|개|세트|박스|묶음|입|set|종|\+|와|과|랑|,|및|할인|쿠폰|배송/i.test(m[1])) continue;
+    const v = m[3] ? Math.round(parseFloat(m[2]) * 1000) : Number(m[2].replace(',', ''));
+    if (v >= 1000 && v <= 20000) return v;
+  }
+  return 0;
+}
+function priceStats(items, kw, sinceYmd) {
+  const seen = new Set(), rows = [];
+  for (const it of items) {
+    if (!it || seen.has(it.link) || (it.postdate && it.postdate < sinceYmd)) continue;
+    seen.add(it.link);
+    const v = pickPrice(`${it.title} ${it.description}`, kw);
+    if (v) rows.push([v, stripTag(it.title).slice(0, 40), it.link, it.postdate || '']);
+  }
+  if (!rows.length) return { n: 0 };
+  const q = (xs, f) => { const i = (xs.length - 1) * f, a = Math.floor(i); return xs[a] + (xs[Math.ceil(i)] - xs[a]) * (i - a); };
+  let vs = rows.map(r => r[0]).sort((a, b) => a - b);
+  const lo = q(vs, .25), hi = q(vs, .75), w = Math.max(500, (hi - lo) * 1.5);
+  const keep = rows.filter(r => r[0] >= lo - w && r[0] <= hi + w);   // 너무 싸거나 비싼 건 빼기
+  vs = keep.map(r => r[0]).sort((a, b) => a - b);
+  const r100 = x => Math.round(x / 100) * 100;
+  const mid = keep.slice().sort((a, b) => Math.abs(a[0] - q(vs, .5)) - Math.abs(b[0] - q(vs, .5)));
+  return { n: vs.length, median: r100(q(vs, .5)), p25: r100(q(vs, .25)), p75: r100(q(vs, .75)), low: vs[0], high: vs[vs.length - 1],
+    samples: mid.slice(0, 5).sort((a, b) => b[3].localeCompare(a[3])) };
+}
+async function cafePrice(q, area, env) {
+  if (!env.NAVER_SEARCH_ID || !env.NAVER_SEARCH_SECRET) return { ok: false, need: 'search', error: '네이버 검색 API(NAVER_SEARCH_ID·NAVER_SEARCH_SECRET)가 아직 설정되지 않았어요.' };
+  const word = (area ? area + ' ' : '') + q;
+  const calls = [['가격', 'sim', 1], ['가격', 'sim', 101], ['가격', 'date', 1], ['가격', 'date', 101], ['카페', 'date', 1]].map(([w, sort, start]) =>
+    fetch(`https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(word + ' ' + w)}&display=100&start=${start}&sort=${sort}`,
+      { headers: { 'X-Naver-Client-Id': env.NAVER_SEARCH_ID, 'X-Naver-Client-Secret': env.NAVER_SEARCH_SECRET } })
+      .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`네이버 검색 ${r.status}: ${t.slice(0, 120)}`); })));
+  const res = await Promise.allSettled(calls), items = res.flatMap(r => r.status === 'fulfilled' ? r.value.items || [] : []);
+  if (!items.length) { const e = res.find(r => r.status === 'rejected'); return { ok: false, error: e ? String(e.reason.message || e.reason) : '검색 결과가 없어요.' }; }
+  const d = new Date(Date.now() - 365 * 864e5), since = d.toISOString().slice(0, 10).replace(/-/g, '');
+  return { ok: true, q, area: area || '', posts: items.length, since, ...priceStats(items, q, since) };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
@@ -312,8 +360,9 @@ export default {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
       else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); }
+      else if (url.pathname === '/price') { data = await cafePrice(q, cleanQuery(url.searchParams.get('area')) || '', env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
-      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/kamis'] }, 200, origin);
+      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/kamis'] }, 200, origin);
       const resp = json(data, 200, origin, 86400);
       ctx.waitUntil(cache.put(key, resp.clone()));
       return resp;
