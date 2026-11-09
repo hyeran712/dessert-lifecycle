@@ -216,17 +216,20 @@ const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
 // thinkingLevel 'low': 3.x 모델이 오래 '생각'하느라 느린 것을 줄인다. 모델이 이 설정을 모르면(400) 빼고 다시
 async function askGemini(prompt, env, deadline = Date.now() + 90000) {
   const models = [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
-  let res, text = '', last = '', think = true;
+  let res, text = '', last = '', think = true, used = '';
+  const tried = [];
   for (const model of models) {
+    used = model;
     for (let i = 0; i < 2; i++) {
       const left = deadline - Date.now();
       if (left < 8000) { last = last || `${model} 시간 부족`; break; }
       const gen = { responseMimeType: 'application/json', temperature: 0.8, ...(think ? { thinkingConfig: { thinkingLevel: 'low' } } : {}) };
+      const t0 = Date.now();
       res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: gen }),
       }, env, Math.min(40000, left - 3000));
-      text = await res.text();
+      text = await res.text(); tried.push(`${model} ${res.status} ${((Date.now() - t0) / 1000).toFixed(0)}초`);
       if (res.status === 400 && think && /thinking/i.test(text)) { think = false; i--; continue; }   // 이 모델은 thinkingLevel 모름
       if (res.ok || (res.status !== 503 && res.status !== 429)) break;
       await new Promise(r => setTimeout(r, 1500));
@@ -240,7 +243,9 @@ async function askGemini(prompt, env, deadline = Date.now() + 90000) {
   if (!res || !res.ok) throw new Error(res && (res.status === 504 || res.status === 524) ? 'AI 답이 너무 늦어요. 잠시 뒤 다시 눌러 주세요.' : `Gemini 오류 ${res ? res.status : ''} (마지막 시도: ${last}): ${text.slice(0, 200)}`);
   const data = JSON.parse(text);
   const out = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-  return JSON.parse(out.replace(/^```json\s*|```$/g, ''));
+  const obj = JSON.parse(out.replace(/^```json\s*|```$/g, ''));
+  Object.defineProperty(obj, '_ai', { value: { model: used, tried }, enumerable: false });
+  return obj;
 }
 
 // 메뉴 목적별로 AI에게 주는 구체적인 지시
@@ -280,7 +285,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
     if (!Array.isArray(result.recipe) || !result.recipe.length) throw new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
     cost = costOf(result.recipe, MKT);
     const rate = cost.total / price * 100;
-    log.push({ try: i, rate: +rate.toFixed(1), cost: cost.total });
+    log.push({ try: i, rate: +rate.toFixed(1), cost: cost.total, ai: result._ai ? result._ai.tried : [] });
     if (rate <= target) break;
     if (i < 3) prompt = base + `\n\n직전 제안: ${JSON.stringify(result.recipe)}\n재료 원가 ${cost.total}원, 원가율 ${rate.toFixed(1)}%로 목표 ${target}%를 넘었습니다. 맛의 핵심은 지키면서 양을 줄이거나 더 싼 재료로 바꿔 다시 제안하세요.`;
   }
@@ -288,7 +293,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const banned = (p.ban || []).filter(b => cost.rows.some(r => r.ing.includes(b)));
   return { banned, keyword: kw, kind, price, target, name: result.name, concept: result.concept, targetCustomer: result.target,
     point: result.point, pairing: result.pairing, goal: GOAL_GUIDE[body.goal] ? body.goal : '', goalFit: result.goal_fit || '', photo: result.photo || '', steps: result.steps || [], recipe: cost.rows, cost: cost.total,
-    rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-04' };
+    rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, ai: result._ai || null, priceDate: '2026-11-04' };
 }
 
 // ---------- 브랜드 찾기: '두바이쫀득쿠키'로 많이 찾는 가게 ----------
