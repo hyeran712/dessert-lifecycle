@@ -58,6 +58,8 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - 신메뉴 결과 아래 [♡ 보관함에 저장] [↻ 다른 메뉴]: 보관함은 localStorage `dessert-timing-saved`(최대 30개, `#saved` 카드·사이드바 `#side-saved`), 다른 메뉴는 앞서 나온 이름 3개를 note에 붙여 다시 요청(`makeMenu(true)`). 카드 HTML은 `menuCard(m)` 하나로 결과·보관함 공용. 로그인·여러 기기 동기화가 필요해지면 Supabase 검토
 - 메뉴 목적(GOAL): Worker `GOAL_GUIDE`가 목적별 구체 지시를 AI에 주고 `goal`·`goalFit`·`photo`(SNS용)를 돌려줌 → 결과 카드에 목적 꼬리표·'목적에 맞춘 점'·'사진 포인트'. 3단계 기획 상자 맨 앞 노란 `.gtip`은 `GOAL_TIP` + 유행 단계와 안 맞을 때 한마디. `GOAL`·`GOAL_OF`는 renderPlan보다 위에 선언(처음 그릴 때 TDZ 오류 방지)
 - 대목 달력(app.js): `ANNUAL`(매년 같은 날)은 올해·내년 날짜를 자동 생성, 수능은 `suneung(y)`=11월 셋째 목요일, 설·추석은 `live/holidays.json`(주간 레이더가 공공데이터 '한국천문연구원 특일 정보'에서 올해~2년 뒤를 받아 저장, 실패 시 기존 값 유지, 파일이 없으면 코드의 `LUNAR` 기본값). `upcoming(k)`로 70일 안 대목을 결론 카드 '언제' 줄(유행형은 '대목' 줄)과 추천 점수(+1)에 씀. 손으로 날짜 고칠 필요 없음
+- **내 원가표**(2026-11-09): 3단계 프로필 아래 `#mycost`. localStorage `dessert-timing-costs` = {재료: {unit g|ml|개, price 단위당 원, buy '450g 8,900원'}}. 재료·산 양(g/kg/ml/L/개)·산 가격 → `unitPrice()`가 단가 계산, 엑셀 붙여넣기 `parseCostLine()`('버터⇥450g⇥8900', '우유, 1L, 2800'), 결과 표 단가 `.up-edit` 눌러 고치면 저장+즉시 재계산(`showMenu(m)`로 다시 그림). makeMenu가 `myPrice`로 보내면 Worker `cleanMy()`·`findMy()`(이름·별칭·포함)로 **단위가 같을 때** 가장 먼저 씀 → 출처 '내 원가표'(노란 꼬리표), AI 프롬프트에도 '우리 가게' 단가로 앞에 넣음. 아직 브라우저마다 따로(로그인 붙이면 서버 저장)
+- `esc`는 function 선언(2026-11-09): const였을 때 renderPlan·renderMyCost가 선언 전에 불러 TDZ 오류로 화면 코드가 멈췄음
 - 내 가게 프로필은 localStorage `dessert-timing-profile` (이름 name, 분야 cat, 장비 eq, 가격대 price, 금기 재료 ban)
 - 1단계 맨 위 `#dclock` 디저트 시계: `clockPlan()`이 D.kw의 `season`(달별 연평균 대비 배수)으로 12달에 디저트를 하나씩 배정(큰 값부터, 한 디저트 한 달, 유행형 0.85배 가중), 바늘이 이번 달. 누르면 select+2단계. 그 아래
 - 1단계 맨 위 `#rec`: 가게 종류·장비·가격대 → `recommend(p)`가 REQ·유형·대목 월로 점수 매겨 3개 추천(카드 누르면 2단계). 고른 값은 프로필에도 저장
@@ -117,7 +119,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
   - 서울은 나중에 서울 열린데이터광장 생활인구(행정동·시간대별, 무료 API)로 보강. 전국 정밀 데이터는 판매 단계에서 통신사 유료 데이터 검토
   - **먼저 할 일**: 각 데이터가 API로 받아지는지·신청 방법 확인 (아직 확인 못 함)
 - 결과 저장·공유: 신메뉴 결과·동네 리포트를 이미지로 저장하거나 카톡으로 보내기
-- 사장님마다 자기 원가표 (판매 단계에 필요. 지금은 Worker `PRICE` 하나를 모두가 같이 씀)
+- 사장님마다 자기 원가표: 2026-11-09 브라우저 저장 '내 원가표'로 1차 완료. 남은 것: 로그인 후 서버 저장·여러 기기, 원가표 파일(엑셀) 통째로 올리기
 - (나중에) v1 파일·링크 정리 — 사용자가 말할 때까지 그대로
 - 포트폴리오 카드 사진 교체본은 `hyeran712.github.io`의 `claude/confident-davinci-cb9r7f` 브랜치에 올려 둠 (main 반영은 사용자 확인 후)
 - 동네 리포트를 주간 자동 갱신으로 (radar_base처럼 바뀐 가게만 반영)

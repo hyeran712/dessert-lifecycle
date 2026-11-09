@@ -2337,7 +2337,8 @@ function renderLocal(key) {
 document.getElementById('lc-print').onclick = () => { if (DIST) print(); };
 
 /* ---------- 이번 주 레이더 (live/live.json, 매주 자동 갱신) ---------- */
-const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// function으로 선언해 파일 어디서나(위쪽에서 처음 그릴 때도) 쓸 수 있게 (const면 선언 전 사용 시 TDZ 오류로 화면이 멈춤, 2026-11-09)
+function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function renderRadar(L) {
   document.getElementById('rd-sub').textContent = `기준일 ${L.data_date} · ${L.updated} 자동 업데이트 · 전국 휴게음식점·제과점 인허가 데이터`;
   document.getElementById('rd-tiles').innerHTML = ['탕후루', '흑당', '크로플', '마카롱', '요거트 아이스크림', '베이글', '모찌', '소금빵', '붕어빵', '땅콩빵'].map(k => {
