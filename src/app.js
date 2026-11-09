@@ -1455,6 +1455,9 @@ if (SB) {
   document.querySelectorAll('[data-sso]').forEach(btn => btn.onclick = async () => {
     const provider = btn.dataset.sso, m = document.getElementById('acct-msg');
     btn.disabled = true; m.textContent = `${provider === 'google' ? '구글' : '카카오'} 로그인 화면으로 가는 중…`;
+    // 켜지지 않은 로그인(예: 카카오 설정 전)은 누르면 영어 오류 화면으로 가 버려서, 먼저 Supabase 설정을 물어본다
+    try { const st = await fetch(`${SB_URL}/auth/v1/settings`, { headers: { apikey: SB_KEY } }).then(r => r.json());
+      if (st && st.external && !st.external[provider]) { btn.disabled = false; m.textContent = `⚠️ ${provider === 'kakao' ? '카카오' : '구글'} 로그인은 아직 준비 중이에요. 다른 방법으로 로그인해 주세요.`; return; } } catch { }
     try { sessionStorage.setItem('dt-login', provider); } catch { }
     const { error } = await SB.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } });
     if (error) { btn.disabled = false; m.textContent = '⚠️ ' + (/provider is not enabled|Unsupported provider/i.test(error.message) ? `${provider === 'kakao' ? '카카오' : '구글'} 로그인이 아직 준비 중이에요.` : error.message); }
