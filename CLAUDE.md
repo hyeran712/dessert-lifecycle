@@ -13,7 +13,7 @@
 
 ## 사이트 주소
 - 새 버전(단계형): https://hyeran712.github.io/dessert-lifecycle/
-- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). v1과 맨 아래 링크는 당분간 그대로 둔다
+- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). 맨 아래 v1·GitHub 링크는 2026-11-09 사용자 요청으로 뺌(푸터 = 짧은 데이터 출처 · 개인정보 처리방침 · 데이터 자세히). v1.html 파일은 남아 있음
 - 포트폴리오 메인: https://hyeran712.github.io (다른 저장소 `hyeran712/hyeran712.github.io`, `#dessert` 카드)
 
 ## 파일 구조
@@ -134,7 +134,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
   - **먼저 할 일**: 각 데이터가 API로 받아지는지·신청 방법 확인 (아직 확인 못 함)
 - 결과 저장·공유: 신메뉴 결과·동네 리포트를 이미지로 저장하거나 카톡으로 보내기
 - 사장님마다 자기 원가표: 2026-11-09 브라우저 저장 '내 원가표'로 1차 완료. 남은 것: 로그인 후 서버 저장·여러 기기, 원가표 파일(엑셀) 통째로 올리기
-- (나중에) v1 파일·링크 정리 — 사용자가 말할 때까지 그대로
+- (나중에) v1.html 파일 정리 — 링크는 2026-11-09에 뺌, 파일 삭제는 사용자가 말할 때
 - 포트폴리오 카드 사진 교체본은 `hyeran712.github.io`의 `claude/confident-davinci-cb9r7f` 브랜치에 올려 둠 (main 반영은 사용자 확인 후)
 - 동네 리포트를 주간 자동 갱신으로 (radar_base처럼 바뀐 가게만 반영)
 - 포트폴리오 메인(`hyeran712.github.io`)의 디저트 타이밍 카드 이미지를 새 디자인으로 교체
