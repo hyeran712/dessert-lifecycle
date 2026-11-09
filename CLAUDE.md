@@ -91,7 +91,8 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - **주인**: Worker 비밀 변수 **`STATS_KEY`**(대시보드에서 사용자가 넣음). `stats.html`(저장소 루트, noindex, build.sh와 상관없음)에서 열쇠를 넣으면 `GET /stats`(헤더 X-Stats-Key)로 요약을 보고, localStorage `dessert-timing-owner`에 저장 → 그 브라우저는 X-Owner-Key로 한도 없음·기록 안 함
 - **로그인(2026-11-09)**: Supabase 프로젝트 `dessert-timing`(조직 '젠지표류기', 서울, automatic RLS 켬, 새 표 자동 공개 끔). URL·publishable 키는 app.js 끝 `SB_URL`/`SB_KEY`와 worker `SB_URL`/`SB_PUBLISHABLE`(공개용). **service_role 키·DB 비밀번호는 코드·채팅에 절대 X**
   - 구글: Google Cloud 프로젝트 `dessert-timing` OAuth 웹 클라이언트(원본 hyeran712.github.io·localhost:8765, 리디렉션 `…supabase.co/auth/v1/callback`) → Supabase Google provider에 넣음. Supabase URL Configuration: Site URL·Redirect URLs(`…/dessert-lifecycle/**`, `http://localhost:8765/**`)
-  - 카카오: developers.kakao.com 앱 → Supabase Kakao provider. Supabase 기본 scope에 account_email이 있어 이메일 동의항목(비즈 앱 전환 필요)을 안 켜면 KOE205
+  - 카카오(2026-11-09 작동 확인): developers.kakao.com 앱 '디저트 타이밍' — 카카오 로그인 ON, 앱→플랫폼 키→REST API 키에 리다이렉트 URI·클라이언트 시크릿, 개인 개발자 비즈 앱 전환(목적 '이메일 필수 동의') 후 동의항목 닉네임 필수·프로필 사진 선택·이메일 선택 → Supabase Kakao provider(이메일 없는 사용자 허용). Supabase 기본 scope에 account_email이 있어 이메일 항목을 안 켜면 KOE205. 첫 구글 로그인 때 'Database error saving new user'(users_email_partial_key 중복, /callback이 동시에 여러 번)가 한 번 났고 다시 하니 됨
+  - 구글 OAuth 앱이 '테스트' 상태면 테스트 사용자만 로그인됨 → Google 인증 플랫폼 → 대상 → [앱 게시] 필요
   - 표: `supabase/schema.sql`(user_data 한 줄: profile·costs·sheet / saved_menus: local_id 기준 / RLS 본인만 / `delete_my_account()` 탈퇴) — 사용자가 SQL Editor에서 실행
   - 화면: 위쪽 `#auth-btn`·`#acct` 창. 로그인하면 `cloudSync()`가 서버+브라우저를 합침(원가표는 같은 재료면 서버 값), 이후 saveMenu·삭제·storeMy·saveProfile·시트 연결이 `cloudSoon`/`cloudAddMenu`/`cloudDelMenu`로 서버에도 저장. 로그인 상태면 `/menu`에 Bearer 토큰 → Worker `userOf()`가 Supabase `/auth/v1/user`로 확인해 **사람별 한도**, 기록 uid는 'u'+사용자 id 앞부분. `privacy.html` 개인정보 처리방침(문의 연락처 비어 있음)
 
