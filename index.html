@@ -165,8 +165,10 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .qform{display:flex;gap:8px;margin-bottom:6px}
 .qform input{flex:1;min-width:0;font:inherit;font-size:15px;padding:10px 14px;border:3px solid var(--ink);border-radius:12px;background:#fff}
 .qform input:focus{outline:3px solid var(--pop-y,#ffd400);outline-offset:1px}
-.qform button{font:inherit;font-weight:900;font-size:15px;padding:0 18px;border:3px solid var(--ink);border-radius:12px;background:var(--teal);color:#fff;cursor:pointer;box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
-.qform button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+/* 검색은 보조 버튼(흰 바탕) — 주황·검정 강조는 '다음 · 타이밍 진단'에만 (2026-11-09 사용자가 헷갈림) */
+.qform button{font:inherit;font-weight:800;font-size:15px;padding:0 16px;border:3px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
+.qform button:hover{background:#fff8dc}
+.qform button:active{transform:translate(1px,1px)}
 #q-msg{margin:4px 0 14px;min-height:1em}
 /* 유행 수명 막대 */
 .life{display:grid;gap:14px;margin-top:6px}
@@ -788,7 +790,7 @@ details.more #chips{padding:0 16px 14px}
             <div class="picks" id="picks"></div>
             <form id="q-form" class="qform" autocomplete="off">
               <input id="q" type="search" maxlength="20" placeholder="다른 디저트 검색 (예: 휘낭시에, 까눌레)" aria-label="디저트 이름">
-              <button type="submit">분석하기</button>
+              <button type="submit">🔍 검색</button>
             </form>
             <p id="q-msg" class="note" aria-live="polite"></p>
             <details class="more"><summary><b>다른 디저트 살펴보기</b><span>떡·모찌 · 빵 · 맛·소재 등 21종 + 실시간 2종</span></summary><div id="chips"></div></details>
@@ -2101,8 +2103,9 @@ document.getElementById('q-form').addEventListener('submit', e => {
   const q = document.getElementById('q').value.trim();
   if (!q) return;
   const known = Object.keys(D.kw).find(k => k.replace(/\s/g, '') === q.replace(/\s/g, ''));
-  if (known) { qMsg.textContent = ''; select(known); return; }
-  if (LIVE[q]) { select(q); return; }
+  // 검색은 진단을 보려는 것 → 고른 뒤 바로 2단계로 (예전엔 1단계에 머물러 '분석하기'를 눌러도 아무 일 없어 보였음, 2026-11-09)
+  if (known) { qMsg.textContent = ''; select(known); goStep(2); return; }
+  if (LIVE[q]) { select(q); goStep(2); return; }
   analyzeLive(q);
 });
 

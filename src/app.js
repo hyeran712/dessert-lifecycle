@@ -952,8 +952,9 @@ document.getElementById('q-form').addEventListener('submit', e => {
   const q = document.getElementById('q').value.trim();
   if (!q) return;
   const known = Object.keys(D.kw).find(k => k.replace(/\s/g, '') === q.replace(/\s/g, ''));
-  if (known) { qMsg.textContent = ''; select(known); return; }
-  if (LIVE[q]) { select(q); return; }
+  // 검색은 진단을 보려는 것 → 고른 뒤 바로 2단계로 (예전엔 1단계에 머물러 '분석하기'를 눌러도 아무 일 없어 보였음, 2026-11-09)
+  if (known) { qMsg.textContent = ''; select(known); goStep(2); return; }
+  if (LIVE[q]) { select(q); goStep(2); return; }
   analyzeLive(q);
 });
 
