@@ -700,6 +700,12 @@ document.getElementById('mc-form').addEventListener('submit', e => {
 });
 // 엑셀에서 붙여넣기: '버터	450g	8900' · '우유, 1L, 2800' · '버터 450 g 8,900원'
 function parseCostLine(line) {
+  // 사장님 원가표 [재료단가] 탭 모양: 재료 ⇥ 구매 상품 ⇥ 구매가 ⇥ 구매용량 ⇥ 단위 ⇥ 단위당 단가 … (2026-11-09 사용자 시트)
+  const c = line.split('\t').map(x => x.trim()), num = x => +String(x).replace(/[,원\s]/g, '');
+  if (c.length >= 5 && c[0] && /^[\d,.]+원?$/.test(c[2]) && /^[\d,.]+$/.test(c[3]) && /^(g|kg|ml|l|L|개|ea|EA)$/.test(c[4])) {
+    const v = unitPrice(num(c[3]), /ea/i.test(c[4]) ? '개' : c[4], num(c[2]));
+    if (v) { if (c[1]) v.buy = `${c[1]} ${num(c[2]).toLocaleString()}원`; if (/AI 추정|예시/.test(c.slice(6).join(' '))) v.note = c.slice(6).join(' ').match(/AI 추정|예시값?/)[0]; return [c[0], v]; }
+  }
   const t = line.replace(/원/g, '').trim(); if (!t) return null;
   const m = t.match(/^(.+?)[\t,]+\s*([\d.,]+)\s*(kg|g|ml|l|L|개|ea|EA)?[\t,\s]+([\d.,]+)\s*$/) || t.match(/^(\S+)\s+([\d.,]+)\s*(kg|g|ml|l|L|개|ea|EA)\s+([\d.,]+)$/);
   if (!m) return null;
@@ -708,7 +714,7 @@ function parseCostLine(line) {
 }
 document.getElementById('mc-paste-btn').addEventListener('click', () => {
   const lines = document.getElementById('mc-text').value.split(/\n/), x = loadMy(); let ok = 0, bad = [];
-  lines.forEach(l => { if (!l.trim()) return; const r = parseCostLine(l); if (r && /[가-힣a-zA-Z]/.test(r[0])) { x[r[0].replace(/\s/g, '').slice(0, 20)] = r[1]; ok++; } else bad.push(l.trim().slice(0, 20)); });
+  lines.forEach(l => { if (!l.trim() || /^재료\t/.test(l)) return; const r = parseCostLine(l); if (r && /[가-힣a-zA-Z]/.test(r[0])) { x[r[0].replace(/\s/g, '').slice(0, 20)] = r[1]; ok++; } else bad.push(l.trim().slice(0, 20)); });
   storeMy(x); renderMyCost();
   document.getElementById('mc-paste-msg').textContent = `${ok}개 넣었어요.` + (bad.length ? ` 못 읽은 줄 ${bad.length}개: ${bad.slice(0, 3).join(' / ')}` : '');
   if (ok && !bad.length) document.getElementById('mc-text').value = '';
