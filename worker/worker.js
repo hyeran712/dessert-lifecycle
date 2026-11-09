@@ -214,8 +214,8 @@ const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
 
 // deadline: 이 시각(ms)까지는 끝내야 한다. 한 번 부를 때 최대 40초, 늦거나 붐비면 다음 모델로
 // thinkingLevel 'low': 3.x 모델이 오래 '생각'하느라 느린 것을 줄인다. 모델이 이 설정을 모르면(400) 빼고 다시
-async function askGemini(prompt, env, deadline = Date.now() + 90000) {
-  const models = [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
+async function askGemini(prompt, env, deadline = Date.now() + 90000, only) {
+  const models = only ? [only] : [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
   let res, text = '', last = '', think = true, used = '';
   const tried = [];
   for (const model of models) {
@@ -281,7 +281,8 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const deadline = Date.now() + 90000;   // 전체 90초 안에 (Cloudflare는 100초가 넘으면 524로 끊는다)
   for (let i = 1; i <= 3; i++) {
     if (i > 1 && deadline - Date.now() < 25000) break;   // 원가율 다시 맞출 시간이 없으면 지금 결과로
-    result = await askGemini(prompt, env, deadline);
+    // body.model: 속도 비교용 (정해 둔 모델만)
+    result = await askGemini(prompt, env, deadline, [GEMINI_MODEL, env.GEMINI_MODEL, ...FALLBACK_MODELS].includes(body.model) ? body.model : undefined);
     if (!Array.isArray(result.recipe) || !result.recipe.length) throw new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
     cost = costOf(result.recipe, MKT);
     const rate = cost.total / price * 100;
