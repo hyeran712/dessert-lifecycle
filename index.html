@@ -2085,12 +2085,12 @@ async function renderBrands(k) {
   const box = document.getElementById('brands'); if (!box || !k) return;
   const $ = id => document.getElementById(id);
   box.hidden = false; $('br-k').textContent = k; $('br-list').innerHTML = ''; $('br-tip').innerHTML = '';
-  $('br-sub').textContent = '네이버 검색 수에서 가게 이름을 찾는 중…';
+  $('br-sub').textContent = '네이버 지역 검색에서 가게를 찾는 중…';
   const d = await (BR[k] = BR[k] || fetch(`${LIVE_API}/brands?q=${encodeURIComponent(k)}`).then(r => r.json()).catch(() => ({ ok: false })));
   if (current !== k) return;
   if (!d.ok) { box.hidden = true; return; }
   const bs = d.brands || [];
-  $('br-sub').textContent = `네이버에서 '${k}' 앞뒤에 붙여 많이 검색한 가게 이름이에요 (최근 한 달 검색 수 · 네이버 지역 검색으로 가게 확인${d.verified ? '' : ' 못 함'} · 인허가 매장 수)`;
+  $('br-sub').textContent = `네이버 지역 검색에서 '${k}'(으)로 나오는 카페·디저트 가게 중 이름 검색이 많은 곳이에요 (가게 이름 최근 한 달 검색 수${d.verified ? '' : ' · 지역 검색 확인 못 함'} · 인허가 매장 수)`;
   if (!bs.length) { $('br-tip').innerHTML = `아직 <b>'${esc(k)}' 하면 떠오르는 대표 가게가 없어요.</b> 먼저 자리 잡으면 '우리 가게 이름 + ${esc(k)}'(으)로 검색되는 가게가 될 수 있어요.`; return; }
   $('br-list').innerHTML = bs.map(b => {
     const lead = b.lead == null ? '' : b.lead >= 2 ? `<span class="br-t first">유행보다 ${b.lead}주 먼저 뜸</span>` : b.lead <= -2 ? `<span class="br-t">${-b.lead}주 늦게 따라옴</span>` : '<span class="br-t">유행과 같이 뜸</span>';
