@@ -294,7 +294,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
       try {
         const r = await askGemini(prompt, env, a < 2 ? Math.min(deadline, Date.now() + 25000) : deadline, pick || (a < 2 ? FAST_MODEL : undefined));
         if (Array.isArray(r.recipe) && r.recipe.length) return r;
-        err = new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
+        err = new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.'); err.got = Array.isArray(r) ? 'array:' + JSON.stringify(r).slice(0, 300) : 'keys:' + Object.keys(r || {}).join(',') + ' ' + JSON.stringify(r).slice(0, 300);
       } catch (e) { err = e; }
     }
     throw err || new Error('AI 답이 너무 늦어요. 잠시 뒤 다시 눌러 주세요.');
@@ -507,7 +507,7 @@ export default {
       if (request.method !== 'POST') return json({ error: 'POST로 요청해 주세요.' }, 405, origin);
       if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY가 설정되지 않았어요.' }, 500, origin);
       try { return json(await menu(await request.json(), env), 200, origin); }
-      catch (e) { return json({ error: String(e.message || e) }, 502, origin); }
+      catch (e) { return json({ error: String(e.message || e), ...(e.got ? { got: e.got } : {}) }, 502, origin); }
     }
     if (url.pathname === '/kamis') {   // 재료 시세: 하루 동안 캐시
       const all = url.searchParams.get('all') === '1';
