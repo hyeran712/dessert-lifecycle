@@ -40,7 +40,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 4. 커밋·푸시하면 GitHub Pages가 1~2분 안에 자동 배포된다.
 
 ## 화면 구조 (src/body.html)
-- 위쪽 바: 로고(사용자가 AI로 만든 바늘 없는 디저트 나무 시계 이미지 `img/brand/logo-clock.webp` 위에 SVG 나무 바늘(끝 주황, 11시 고정, 처음 열 때 째깍 들어오는 `.lm-tick` 애니메이션) + '디저트 타이밍', 파비콘 `img/brand/favicon.png`·apple-touch-icon도 같은 그림) · [메뉴 개발] [이번 주 레이더] [동네 리포트] [About data]. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
+- 위쪽 바: 로고(사용자가 AI로 만든 바늘 없는 디저트 나무 시계 이미지 `img/brand/logo-clock.webp` 위에 SVG 나무 바늘(끝 주황, 11시 고정, 처음 열 때 째깍 들어오는 `.lm-tick` 애니메이션) + '디저트 타이밍', 파비콘 `img/brand/favicon.png`·apple-touch-icon도 같은 그림) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
 - 알림 띠 `#notice`: 이번 주 레이더 요약 (renderRadar에서 채움)
 - `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
   - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`
