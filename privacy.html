@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인정보 처리방침 · 디저트 타이밍</title>
+<link rel="icon" href="img/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--y:#ffd400;--ink:#1c1c1c;--ink2:#555;--bg:#fff8dc}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-size:15.5px;line-height:1.75}
+header{background:var(--y);border-bottom:3px solid var(--ink);padding:14px 16px}
+header h1{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:24px;margin:0}
+header a{color:var(--ink);font-size:14px}
+main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+section{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:16px 20px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 6px}
+p,li{margin:4px 0}ul{padding-left:20px;margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid #eee3bf;padding:6px;text-align:left;vertical-align:top}
+.note{font-size:13.5px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<header><h1>개인정보 처리방침</h1><a href="./">← 디저트 타이밍으로 돌아가기</a></header>
+<main>
+<section>
+  <p>디저트 타이밍(https://hyeran712.github.io/dessert-lifecycle/, 이하 '서비스')은 카페·디저트 가게 사장님이 신메뉴의 출시 시기와 원가를 판단하도록 돕는 도구입니다. 서비스는 꼭 필요한 정보만 받고, 받은 정보는 아래 목적에만 씁니다.</p>
+  <p class="note">시행일: 2026년 11월 9일</p>
+</section>
+<section>
+  <h2>1. 받는 정보</h2>
+  <table>
+    <tr><th>언제</th><th>무엇을</th></tr>
+    <tr><td>구글·카카오로 로그인할 때</td><td>계정 고유번호, 이름(닉네임), 이메일 주소, 프로필 사진 주소, 로그인 방식</td></tr>
+    <tr><td>로그인한 뒤 직접 저장할 때</td><td>보관함에 저장한 메뉴, 내 원가표(재료 구매가), 가게 프로필(가게 이름·분야·장비·가격대·쓰지 않는 재료), 연결한 원가표 구글 시트 주소</td></tr>
+    <tr><td>서비스를 쓸 때 (로그인과 상관없이)</td><td>무작위로 만든 익명 번호, 어떤 기능을 썼는지(예: 신메뉴 만들기, 보관함 저장, 👍/👎), 하루 사용 횟수를 세기 위한 접속 주소(IP)의 변환값(원래 주소는 저장하지 않음)</td></tr>
+  </table>
+  <p class="note">로그인하지 않으면 보관함·원가표·가게 프로필은 이용자의 브라우저에만 저장되고 서비스로 보내지 않습니다.</p>
+</section>
+<section>
+  <h2>2. 쓰는 목적</h2>
+  <ul>
+    <li>로그인한 사장님이 여러 기기에서 보관함·원가표·가게 프로필을 이어서 쓰게 하기</li>
+    <li>무료 사용 한도(하루 이용 횟수)를 사람마다 지키게 하기</li>
+    <li>어떤 기능이 쓸모 있는지 익명 통계로 보고 서비스를 고치기</li>
+  </ul>
+  <p>광고, 판매, 다른 목적으로는 쓰지 않습니다.</p>
+</section>
+<section>
+  <h2>3. 보관 기간과 지우기</h2>
+  <ul>
+    <li>로그인 정보와 저장한 내용은 <b>회원 탈퇴할 때까지</b> 보관하고, 탈퇴하면 바로 지웁니다. 탈퇴는 화면 오른쪽 위 계정 버튼 → [회원 탈퇴]에서 할 수 있습니다.</li>
+    <li>하루 사용 횟수 기록은 며칠 안에 지웁니다. 익명 사용 기록은 이름·이메일과 연결되지 않습니다.</li>
+  </ul>
+</section>
+<section>
+  <h2>4. 처리를 맡기는 곳</h2>
+  <table>
+    <tr><th>업체</th><th>맡기는 일</th></tr>
+    <tr><td>Supabase</td><td>로그인, 저장한 내용 보관</td></tr>
+    <tr><td>Cloudflare</td><td>서비스 서버 운영, 사용 횟수·익명 통계 보관</td></tr>
+    <tr><td>Google (Gemini)</td><td>신메뉴 제안 생성. 디저트 이름·판매가·가게 프로필·요청사항이 전달되며, 이름·이메일은 보내지 않습니다.</td></tr>
+    <tr><td>Google, Kakao</td><td>로그인 본인 확인</td></tr>
+  </table>
+  <p class="note">위 업체의 서버는 해외에 있을 수 있습니다. 이 밖에 다른 곳에 개인정보를 주지 않습니다.</p>
+</section>
+<section>
+  <h2>5. 이용자의 권리</h2>
+  <p>언제든 저장된 내용을 확인하고 지우거나 탈퇴할 수 있습니다. 직접 하기 어려우면 아래 연락처로 알려 주세요.</p>
+</section>
+<section>
+  <h2>6. 문의</h2>
+  <p>개인정보 보호 책임자: 디저트 타이밍 운영자</p>
+  <p id="contact">연락처: 준비 중</p>
+</section>
+</main>
+</body>
+</html>

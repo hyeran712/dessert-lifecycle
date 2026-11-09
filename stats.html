@@ -87,7 +87,7 @@ const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
 const KEY = 'dessert-timing-owner';
-const NAME = { visit: '방문', select: '디저트 고르기', step: '단계 이동', menu: '신메뉴 만들기', menu_fail: '만들기 실패', menu_save: '보관함 저장', menu_again: '다른 메뉴', like: '👍', dislike: '👎', sheet: '시트 연결', file: '엑셀 올리기', pdf: '동네 리포트 PDF', price_pick: '시장가로 짜기', rec: '추천 받기', local: '동네 리포트', cost_edit: '단가 고치기', limit: '횟수 제한' };
+const NAME = { login: '로그인', account_delete: '탈퇴', visit: '방문', select: '디저트 고르기', step: '단계 이동', menu: '신메뉴 만들기', menu_fail: '만들기 실패', menu_save: '보관함 저장', menu_again: '다른 메뉴', like: '👍', dislike: '👎', sheet: '시트 연결', file: '엑셀 올리기', pdf: '동네 리포트 PDF', price_pick: '시장가로 짜기', rec: '추천 받기', local: '동네 리포트', cost_edit: '단가 고치기', limit: '횟수 제한' };
 try { $('key').value = localStorage.getItem(KEY) || ''; } catch { }
 $('out').onclick = () => { try { localStorage.removeItem(KEY); } catch { } $('key').value = ''; $('msg').textContent = '열쇠를 지웠어요. 이제 이 브라우저도 일반 사용자처럼 횟수 제한·통계에 잡혀요.'; $('out-wrap').hidden = true; };
 $('kf').onsubmit = e => { e.preventDefault(); load(); };
@@ -116,7 +116,7 @@ function render(d) {
   const tile = (l, v, s) => `<div class="tile"><span>${l}</span><b>${v}</b><small>${s || ''}</small></div>`;
   $('tiles').innerHTML = tile('다녀간 사람', d.totalUsers.toLocaleString(), '익명 번호 기준') + tile('다시 온 사람', d.returning.toLocaleString(), `2일 이상 · ${pct(d.returning, d.totalUsers)}`)
     + tile('만든 신메뉴', menus.toLocaleString(), fails ? `실패 ${fails}번` : '') + tile('보관함 저장 비율', pct(saves, menus), `${saves}번 저장`)
-    + tile('👍 비율', pct(likes, likes + dislikes), `👍 ${likes} · 👎 ${dislikes}`) + tile('원가표 연결', (sum('sheet') + sum('file')).toLocaleString(), `시트 ${sum('sheet')} · 엑셀 ${sum('file')}`);
+    + tile('👍 비율', pct(likes, likes + dislikes), `👍 ${likes} · 👎 ${dislikes}`) + tile('로그인한 사람', d.byDay.filter(r => r.type === 'login').reduce((a, r) => a + r.u, 0).toLocaleString(), `로그인 ${sum('login')}번${sum('account_delete') ? ` · 탈퇴 ${sum('account_delete')}` : ''}`) + tile('원가표 연결', (sum('sheet') + sum('file')).toLocaleString(), `시트 ${sum('sheet')} · 엑셀 ${sum('file')}`);
   // 막대: 날짜별 신메뉴 수 (한 가지 색, 높이 = 개수)
   const vals = days.map(x => (by[x].menu || {}).c || 0), mx = Math.max(1, ...vals);
   $('bars').innerHTML = days.map((x, i) => { const v = vals[i], h = v / mx * 100, s = by[x];
@@ -124,7 +124,7 @@ function render(d) {
     return `<div class="bar" title="${esc(tip)}"><em style="bottom:calc(${h}% + 2px)">${v || ''}</em><i style="height:${h}%"></i></div>`; }).join('');
   const step = Math.ceil(days.length / 10);
   $('xl').innerHTML = days.map((x, i) => `<span>${i % step === 0 || i === days.length - 1 ? x.slice(5).replace('-', '/') : ''}</span>`).join('');
-  const cols = ['visit', 'menu', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'pdf'];
+  const cols = ['visit', 'login', 'menu', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'pdf'];
   $('daytbl').innerHTML = `<tr><th>날짜</th><th class="n">사람</th>${cols.map(c => `<th class="n">${NAME[c]}</th>`).join('')}</tr>`
     + days.slice().reverse().map(x => `<tr><td>${x}</td><td class="n">${usersBy[x] || 0}</td>${cols.map(c => `<td class="n">${(by[x][c] || {}).c || 0}</td>`).join('')}</tr>`).join('');
   // 어디까지 쓰나: 기간 전체에서 그 일을 해 본 사람 수 (날짜별 u를 더하면 중복이 생겨 '최대 하루 값'이 아니라 근사치)

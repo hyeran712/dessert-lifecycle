@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <style>
 :root{
   --bg:#f4f6f6; --surface:#ffffff; --ink:#2b3034; --ink-2:#565d63; --ink-3:#8a9197;
@@ -219,6 +220,19 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .profile summary::after{content:"＋";margin-left:auto;font-weight:900}
 .profile[open] summary::after{content:"－"}
 .profile summary span{font-size:13px;color:var(--ink-2)}
+.auth-btn{margin-left:10px;display:flex;align-items:center;gap:6px;font:inherit;font-weight:900;font-size:14px;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);padding:5px 12px;cursor:pointer;white-space:nowrap;max-width:150px}
+.auth-btn span{overflow:hidden;text-overflow:ellipsis}
+.auth-btn img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+@media (max-width:640px){.auth-btn{margin-left:auto;font-size:13px;padding:4px 10px}}
+dialog.acct{max-width:420px;width:calc(100% - 32px)}
+.sso{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font:inherit;font-weight:800;font-size:16px;border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;border:2px solid var(--ink)}
+.sso svg{width:22px;height:22px}
+.sso.google{background:#fff;color:#1f1f1f}
+.sso.kakao{background:#FEE500;color:#191600;border-color:#191600}
+.sso:disabled{opacity:.6;cursor:wait}
+.me-row{display:flex;gap:12px;align-items:center;margin-bottom:8px}.me-row img{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.me-row b{display:block;font-size:17px}.me-row small{color:var(--ink-2)}
+.acct-act{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .mk-fb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:14px;color:var(--ink-2)}
 .mk-fb button{font:inherit;font-size:14px;font-weight:800;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:5px 12px;cursor:pointer}
 .mk-fb button:hover{background:#fff8dc}

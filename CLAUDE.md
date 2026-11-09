@@ -89,7 +89,11 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - **하루 한도** `LIMITS` = 신메뉴 10 · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 30 · 시트 읽기(/sheet 캐시 밖) 10 (사용자 결정 2026-11-09). 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
 - **익명 기록**: 화면 `track(type,k,goal,v)`가 `navigator.sendBeacon(POST /event)`. UID = localStorage `dessert-timing-uid` 무작위. 종류 `EVENT_TYPES`: visit(하루 1번)·select·step(앞으로 갈 때)·menu_save·menu_again·like·dislike(결과 카드 `#mk-fb`)·file·pdf·price_pick·rec·local·cost_edit. Worker가 직접 남기는 것: menu(이름·원가율·초·모델·내 원가표 수)·menu_fail·sheet(fresh 연결)·limit
 - **주인**: Worker 비밀 변수 **`STATS_KEY`**(대시보드에서 사용자가 넣음). `stats.html`(저장소 루트, noindex, build.sh와 상관없음)에서 열쇠를 넣으면 `GET /stats`(헤더 X-Stats-Key)로 요약을 보고, localStorage `dessert-timing-owner`에 저장 → 그 브라우저는 X-Owner-Key로 한도 없음·기록 안 함
-- 다음 단계(사용자와 합의): Supabase 로그인(구글·카카오) → 한도·기록을 사람별로, 보관함·내 원가표 서버 저장. 로그인 붙이면 개인정보 처리방침 페이지 필요
+- **로그인(2026-11-09)**: Supabase 프로젝트 `dessert-timing`(조직 '젠지표류기', 서울, automatic RLS 켬, 새 표 자동 공개 끔). URL·publishable 키는 app.js 끝 `SB_URL`/`SB_KEY`와 worker `SB_URL`/`SB_PUBLISHABLE`(공개용). **service_role 키·DB 비밀번호는 코드·채팅에 절대 X**
+  - 구글: Google Cloud 프로젝트 `dessert-timing` OAuth 웹 클라이언트(원본 hyeran712.github.io·localhost:8765, 리디렉션 `…supabase.co/auth/v1/callback`) → Supabase Google provider에 넣음. Supabase URL Configuration: Site URL·Redirect URLs(`…/dessert-lifecycle/**`, `http://localhost:8765/**`)
+  - 카카오: developers.kakao.com 앱 → Supabase Kakao provider. Supabase 기본 scope에 account_email이 있어 이메일 동의항목(비즈 앱 전환 필요)을 안 켜면 KOE205
+  - 표: `supabase/schema.sql`(user_data 한 줄: profile·costs·sheet / saved_menus: local_id 기준 / RLS 본인만 / `delete_my_account()` 탈퇴) — 사용자가 SQL Editor에서 실행
+  - 화면: 위쪽 `#auth-btn`·`#acct` 창. 로그인하면 `cloudSync()`가 서버+브라우저를 합침(원가표는 같은 재료면 서버 값), 이후 saveMenu·삭제·storeMy·saveProfile·시트 연결이 `cloudSoon`/`cloudAddMenu`/`cloudDelMenu`로 서버에도 저장. 로그인 상태면 `/menu`에 Bearer 토큰 → Worker `userOf()`가 Supabase `/auth/v1/user`로 확인해 **사람별 한도**, 기록 uid는 'u'+사용자 id 앞부분. `privacy.html` 개인정보 처리방침(문의 연락처 비어 있음)
 
 ## 우리 동네 리포트 데이터
 - `live/district.json`: `scripts/district.py`가 행정안전부 인허가 **전체 데이터**(휴게음식점+제과점 원본 CSV)로 만든 시군구 255곳 통계 (기준일 2026-11-02)

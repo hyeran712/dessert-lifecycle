@@ -69,7 +69,23 @@ const LIMITS = { menu: 10, search: 30, sheet: 10 };   // 한 사람(IP)이 하�
 const LIMIT_NAME = { menu: '신메뉴 만들기', search: '검색·분석', sheet: '원가표 시트 읽기' };
 const kday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜
 const statsDO = env => env.STATS ? env.STATS.get(env.STATS.idFromName('stats-v1')) : null;
+// 로그인한 사람(Authorization: Bearer 토큰)이면 Supabase에 물어 본인 확인 → 사람별로 센다. 아니면 IP별
+const SB_URL = 'https://wnntvvvnglpqtahsbasj.supabase.co', SB_PUBLISHABLE = 'sb_publishable_NZ6FnSd-Y4ASkDwVKP6LiA_YSzXo7dR';   // 둘 다 공개용
+const TOKEN_CACHE = new Map();
+async function userOf(request) {
+  const m = (request.headers.get('Authorization') || '').match(/^Bearer\s+([\w.-]{20,})$/); if (!m) return null;
+  const hit = TOKEN_CACHE.get(m[1]); if (hit && hit.exp > Date.now()) return hit.id;
+  try {
+    const r = await fetch(`${SB_URL}/auth/v1/user`, { headers: { apikey: SB_PUBLISHABLE, Authorization: 'Bearer ' + m[1] } });
+    if (!r.ok) return null;
+    const u = await r.json(); if (!u || !u.id) return null;
+    if (TOKEN_CACHE.size > 500) TOKEN_CACHE.clear();
+    TOKEN_CACHE.set(m[1], { id: u.id, exp: Date.now() + 5 * 60e3 });
+    return u.id;
+  } catch { return null; }
+}
 async function whoOf(request, env) {
+  const uidv = await userOf(request); if (uidv) return 'u' + uidv.replace(/-/g, '').slice(0, 15);
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode((env.STATS_SALT || 'dessert-timing-2026') + ip));
   return [...new Uint8Array(h)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -86,7 +102,7 @@ async function overLimit(kind, request, env, origin) {
   } catch { return null; }   // 기록 저장소에 문제가 있어도 서비스는 그대로
 }
 const logEvent = (env, ctx, e) => { const st = statsDO(env); if (st) ctx.waitUntil(st.log({ day: kday(), ...e }).catch(() => { })); };
-const EVENT_TYPES = new Set(['visit', 'select', 'step', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'file', 'pdf', 'price_pick', 'rec', 'local', 'cost_edit']);
+const EVENT_TYPES = new Set(['login', 'account_delete', 'visit', 'select', 'step', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'file', 'pdf', 'price_pick', 'rec', 'local', 'cost_edit']);
 
 async function geminiFetch(url, init, env, ms = 40000) {
   if (!env.GEMINI_PROXY) {

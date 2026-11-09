@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <style>
 :root{
   --bg:#f4f6f6; --surface:#ffffff; --ink:#2b3034; --ink-2:#565d63; --ink-3:#8a9197;
@@ -219,6 +220,19 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .profile summary::after{content:"＋";margin-left:auto;font-weight:900}
 .profile[open] summary::after{content:"－"}
 .profile summary span{font-size:13px;color:var(--ink-2)}
+.auth-btn{margin-left:10px;display:flex;align-items:center;gap:6px;font:inherit;font-weight:900;font-size:14px;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);padding:5px 12px;cursor:pointer;white-space:nowrap;max-width:150px}
+.auth-btn span{overflow:hidden;text-overflow:ellipsis}
+.auth-btn img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+@media (max-width:640px){.auth-btn{margin-left:auto;font-size:13px;padding:4px 10px}}
+dialog.acct{max-width:420px;width:calc(100% - 32px)}
+.sso{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font:inherit;font-weight:800;font-size:16px;border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;border:2px solid var(--ink)}
+.sso svg{width:22px;height:22px}
+.sso.google{background:#fff;color:#1f1f1f}
+.sso.kakao{background:#FEE500;color:#191600;border-color:#191600}
+.sso:disabled{opacity:.6;cursor:wait}
+.me-row{display:flex;gap:12px;align-items:center;margin-bottom:8px}.me-row img{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.me-row b{display:block;font-size:17px}.me-row small{color:var(--ink-2)}
+.acct-act{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .mk-fb{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:14px;color:var(--ink-2)}
 .mk-fb button{font:inherit;font-size:14px;font-weight:800;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:5px 12px;cursor:pointer}
 .mk-fb button:hover{background:#fff8dc}
@@ -740,6 +754,7 @@ details.more #chips{padding:0 16px 14px}
       <button type="button" class="nb" data-view="local" aria-pressed="false">동네 리포트</button>
       <button type="button" class="nb ghost" data-open-about>About data</button>
     </nav>
+    <button type="button" class="auth-btn" id="auth-btn" hidden><span>로그인</span></button>
   </div>
 </header>
 
@@ -1116,6 +1131,24 @@ details.more #chips{padding:0 16px 14px}
   </div>
 </footer>
 
+<dialog id="acct" class="acct">
+  <div class="dlg-head"><h3 id="acct-h">로그인</h3><button type="button" aria-label="닫기" data-close-acct>×</button></div>
+  <div class="dlg-body">
+    <div id="acct-in">
+      <p>로그인하면 <b>보관함 · 내 원가표 · 가게 프로필</b>을 휴대폰과 컴퓨터 어디서나 그대로 쓸 수 있어요. 지금 이 브라우저에 저장된 것도 그대로 옮겨져요.</p>
+      <button type="button" class="sso google" data-sso="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2.1 5-4.4 6.6v5.5h7.1c4.2-3.9 6.6-9.6 6.6-16.1z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41 15.5 46 24 46z"/><path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.3-2.9.7-4.2v-5.7H4.5C3 17.1 2 20.4 2 24s1 6.9 2.5 9.9l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.5 2 8.1 7 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/></svg>Google로 계속하기</button>
+      <button type="button" class="sso kakao" data-sso="kakao"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#191600" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오로 계속하기</button>
+      <p class="note" id="acct-msg"></p>
+      <p class="note">이름(닉네임) · 이메일 · 프로필 사진만 받아요. <a href="privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a></p>
+    </div>
+    <div id="acct-me" hidden>
+      <div class="me-row"><span id="acct-pic"></span><div><b id="acct-name"></b><small id="acct-mail"></small></div></div>
+      <p class="note" id="acct-sync"></p>
+      <div class="acct-act"><button type="button" class="btn primary" id="acct-out">로그아웃</button> <button type="button" class="btn line" id="acct-del">회원 탈퇴</button></div>
+      <p class="note"><a href="privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a></p>
+    </div>
+  </div>
+</dialog>
 <dialog id="about">
   <div class="dlg-head"><h3>About data</h3><button type="button" aria-label="닫기" data-close-about>×</button></div>
   <div class="dlg-body">
@@ -1342,7 +1375,7 @@ const UID = (() => { try { let u = localStorage.getItem('dessert-timing-uid'); i
 const OWNER = (() => { try { return localStorage.getItem('dessert-timing-owner') || ''; } catch { return ''; } })();   // stats.html에서 열쇠를 넣으면 생김 → 주인은 횟수 제한 없음·기록 안 함
 function track(type, k, goal, v) {
   if (OWNER || !UID) return;
-  try { navigator.sendBeacon(LIVE_API + '/event', JSON.stringify({ type, uid: UID, k: k || '', goal: goal || '', v: v || null })); } catch { }
+  try { navigator.sendBeacon(LIVE_API + '/event', JSON.stringify({ type, uid: authUid() || UID, k: k || '', goal: goal || '', v: v || null })); } catch { }
 }
 { const d = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); try { if (localStorage.getItem('dessert-timing-visit') !== d) { localStorage.setItem('dessert-timing-visit', d); track('visit', '', '', { ref: document.referrer ? new URL(document.referrer).hostname : '', mobile: innerWidth <= 640 }); } } catch { } }
 function entry(k) {
@@ -1528,7 +1561,7 @@ function guessReq(k) {
 }
 const PF_KEY = 'dessert-timing-profile';
 function loadProfile() { try { return JSON.parse(localStorage.getItem(PF_KEY)) || null; } catch { return null; } }
-function saveProfile(p) { try { localStorage.setItem(PF_KEY, JSON.stringify(p)); } catch {} }
+function saveProfile(p) { try { localStorage.setItem(PF_KEY, JSON.stringify(p)); } catch {} cloudSoon('profile'); }
 function readForm() {
   const f = document.getElementById('profile');
   return { cat: f.querySelector('[name=pf-cat]:checked')?.value || '', price: f.querySelector('[name=pf-price]:checked')?.value || '',
@@ -1784,7 +1817,8 @@ const loadSaved = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)
 const storeSaved = xs => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(xs)); } catch { } };
 function saveMenu(x) {
   if (!x) return; const xs = loadSaved();
-  xs.unshift({ id: Date.now(), at: new Date().toISOString().slice(0, 10), k: x.k, goal: x.goal, m: x.m }); storeSaved(xs.slice(0, 30)); renderSaved(); renderProg();
+  const it = { id: Date.now(), at: new Date().toISOString().slice(0, 10), k: x.k, goal: x.goal, m: x.m };
+  xs.unshift(it); storeSaved(xs.slice(0, 30)); renderSaved(); renderProg(); cloudAddMenu(it);
 }
 function renderSaved() {
   const xs = loadSaved(), box = document.getElementById('saved-list');
@@ -1796,7 +1830,7 @@ function renderSaved() {
       <span class="sv-m">${esc(x.k)}${x.goal ? ' · ' + esc(x.goal) : ''} · ${won(x.m.price)} · 원가율 ${x.m.rate}% · ${x.at}</span>
       <button type="button" class="sv-x" title="보관함에서 지우기" aria-label="지우기">×</button></summary>${menuCard(x.m)}</details>`).join('');
   box.querySelectorAll('.sv-x').forEach(b => b.onclick = e => { e.preventDefault(); const id = +b.closest('.sv').dataset.id;
-    if (confirm('이 메뉴를 보관함에서 지울까요?')) { storeSaved(loadSaved().filter(x => x.id !== id)); renderSaved(); renderProg(); } });
+    if (confirm('이 메뉴를 보관함에서 지울까요?')) { storeSaved(loadSaved().filter(x => x.id !== id)); renderSaved(); renderProg(); cloudDelMenu(id); } });
 }
 async function makeMenu(again) {
   if (!current) return;
@@ -1807,7 +1841,8 @@ async function makeMenu(again) {
   if (loadSheet()) { mkMsg.textContent = '연결한 원가표 시트를 확인하는 중…'; await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]); }
   mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
   try {
-    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : UID, ...(OWNER ? { 'X-Owner-Key': OWNER } : {}) },
+    const tok = await authToken();   // 로그인했으면 사람별 한도 (Worker가 Supabase로 확인)
+    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}), ...(tok ? { Authorization: 'Bearer ' + tok } : {}) },
       body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, myPrice: myPriceMap(), note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
     const m = await res.json();
     if (m.limit) { mkMsg.textContent = '⏳ ' + m.error; return; }   // 하루 사용 횟수 제한 (Worker LIMITS)
@@ -1845,7 +1880,7 @@ function showMenu(m) {
    { 재료: { unit:'g'|'ml'|'개', price: 단위당 원, buy?: '450g 8,900원' } } → 신메뉴 요청에 myPrice로 보내면 Worker가 가장 먼저 씀 */
 const MY_KEY = 'dessert-timing-costs';
 const loadMy = () => { try { return JSON.parse(localStorage.getItem(MY_KEY)) || {}; } catch { return {}; } };
-const storeMy = x => { try { localStorage.setItem(MY_KEY, JSON.stringify(x)); } catch { } };
+const storeMy = x => { try { localStorage.setItem(MY_KEY, JSON.stringify(x)); } catch { } cloudSoon('costs'); };
 const myPriceMap = () => { const o = {}; for (const [k, v] of Object.entries(loadMy())) o[k] = { unit: v.unit, price: v.price }; return o; };
 // 산 양·단위·가격 → 단위당 단가 (kg→g, L→ml)
 function unitPrice(qty, unit, price) {
@@ -1947,11 +1982,11 @@ async function syncSheet(fresh) {
 document.getElementById('mc-sheet-form').addEventListener('submit', e => {
   e.preventDefault(); const url = document.getElementById('mc-sheet').value.trim(), p = parseSheetUrl(url);
   if (!p) { sheetUI('⚠️ 구글 시트 주소(https://docs.google.com/spreadsheets/d/…)를 넣어 주세요.'); return; }
-  try { localStorage.setItem(SHEET_KEY, JSON.stringify({ url, ...p })); } catch { }
+  try { localStorage.setItem(SHEET_KEY, JSON.stringify({ url, ...p })); } catch { } cloudSoon('sheet');
   sheetUI('시트를 읽는 중…'); syncSheet(true);
 });
 document.getElementById('mc-sheet-off').addEventListener('click', () => {
-  try { localStorage.removeItem(SHEET_KEY); } catch { } applyCosts([], 'sheet'); document.getElementById('mc-sheet').value = '';
+  try { localStorage.removeItem(SHEET_KEY); } catch { } cloudSoon('sheet'); applyCosts([], 'sheet'); document.getElementById('mc-sheet').value = '';
   sheetUI('연결을 끊고 시트에서 불러온 재료를 지웠어요.');
 });
 document.getElementById('mc-file').addEventListener('change', async e => {
@@ -2541,6 +2576,98 @@ function renderClock() {
   document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = () => { select(b.dataset.k); goStep(2); });
 }
 renderClock();
+
+
+/* ---------- 로그인 (Supabase Auth: 구글 · 카카오) · 보관함/원가표/가게 프로필 서버 저장 (2026-11-09) ----------
+   표·권한은 supabase/schema.sql. publishable 키는 원래 공개용(보안은 RLS가 맡음). service_role 키는 절대 여기 넣지 않는다 */
+var SB_URL = 'https://wnntvvvnglpqtahsbasj.supabase.co', SB_KEY = 'sb_publishable_NZ6FnSd-Y4ASkDwVKP6LiA_YSzXo7dR';
+var SB = null, USER = null, SYNCING = false, CLOUD_PEND = new Set(), CLOUD_T = 0;
+try { if (window.supabase) SB = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' } }); } catch (e) { console.warn('로그인 준비 실패', e); }
+function authUid() { return USER ? 'u' + USER.id.replace(/-/g, '').slice(0, 20) : ''; }
+async function authToken() { if (!SB || !USER) return ''; try { const { data } = await SB.auth.getSession(); return (data.session && data.session.access_token) || ''; } catch { return ''; } }
+function cloudSoon(kind) { if (!USER || SYNCING) return; CLOUD_PEND.add(kind); clearTimeout(CLOUD_T); CLOUD_T = setTimeout(cloudPush, 800); }
+async function cloudPush() {
+  if (!USER || !CLOUD_PEND.size) return;
+  const row = { user_id: USER.id, updated_at: new Date().toISOString() };
+  if (CLOUD_PEND.has('profile')) row.profile = loadProfile();
+  if (CLOUD_PEND.has('costs')) row.costs = loadMy();
+  if (CLOUD_PEND.has('sheet')) row.sheet = loadSheet();
+  CLOUD_PEND.clear();
+  const { error } = await SB.from('user_data').upsert(row);
+  if (error) console.warn('서버 저장 실패', error.message);
+}
+async function cloudAddMenu(it) { if (!USER) return; const { error } = await SB.from('saved_menus').insert({ local_id: it.id, k: it.k, goal: it.goal || '', m: it.m }); if (error) console.warn('보관함 서버 저장 실패', error.message); }
+async function cloudDelMenu(id) { if (!USER) return; await SB.from('saved_menus').delete().eq('local_id', id); }
+// 로그인하면: 서버에 있는 것 + 이 브라우저에 있던 것을 합쳐 양쪽을 같게
+async function cloudSync() {
+  if (!USER) return; SYNCING = true; const msg = document.getElementById('acct-sync');
+  try {
+    const [ud, ms] = await Promise.all([SB.from('user_data').select('profile,costs,sheet').maybeSingle(),
+      SB.from('saved_menus').select('local_id,k,goal,m,created_at').order('local_id', { ascending: false }).limit(200)]);
+    if (ud.error || ms.error) throw new Error((ud.error || ms.error).message);
+    const sv = ud.data || {}, prof = sv.profile || loadProfile(), costs = { ...loadMy(), ...(sv.costs || {}) }, sheet = sv.sheet || loadSheet();
+    if (prof) { saveProfile(prof); fillForm(prof); fillName(prof); profileSummary(); }
+    storeMy(costs); renderMyCost();
+    if (sheet) { try { localStorage.setItem(SHEET_KEY, JSON.stringify(sheet)); } catch { } sheetUI(); } else { sheetUI(); }
+    await SB.from('user_data').upsert({ user_id: USER.id, profile: prof || null, costs, sheet: sheet || null, updated_at: new Date().toISOString() });
+    const server = ms.data || [], have = new Set(server.map(r => +r.local_id)), local = loadSaved(), up = local.filter(x => !have.has(+x.id));
+    if (up.length) { const { error } = await SB.from('saved_menus').insert(up.map(x => ({ local_id: x.id, k: x.k, goal: x.goal || '', m: x.m }))); if (error) console.warn(error.message); }
+    const merged = [...server.map(r => ({ id: +r.local_id, at: String(r.created_at).slice(0, 10), k: r.k, goal: r.goal, m: r.m })), ...up].sort((a, b) => b.id - a.id);
+    storeSaved(merged.slice(0, 30)); renderSaved(); renderProg();
+    if (msg) msg.textContent = `✅ 서버와 맞췄어요: 보관함 ${merged.length}개 · 내 원가표 재료 ${Object.keys(costs).length}개${up.length ? ` (이 브라우저에 있던 메뉴 ${up.length}개를 올렸어요)` : ''}`;
+  } catch (e) { console.warn('동기화 실패', e); if (msg) msg.textContent = '⚠️ 서버와 맞추지 못했어요. 잠시 뒤 다시 열어 주세요. (' + e.message + ')'; }
+  finally { SYNCING = false; }
+}
+function authUI() {
+  const b = document.getElementById('auth-btn'); if (!b) return;
+  if (!SB) { b.hidden = true; return; }
+  b.hidden = false;
+  const md = USER ? USER.user_metadata || {} : {}, nm = USER ? (md.name || md.full_name || md.nickname || md.preferred_username || (USER.email || '').split('@')[0] || '내 계정') : '';
+  b.innerHTML = USER ? `${md.avatar_url ? `<img src="${esc(md.avatar_url)}" alt="" referrerpolicy="no-referrer">` : '👤'}<span>${esc(nm)}</span>` : '<span>로그인</span>';
+  b.setAttribute('aria-label', USER ? `내 계정: ${nm}` : '로그인');
+  document.getElementById('acct-h').textContent = USER ? '내 계정' : '로그인';
+  document.getElementById('acct-in').hidden = !!USER; document.getElementById('acct-me').hidden = !USER;
+  if (USER) {
+    document.getElementById('acct-pic').innerHTML = md.avatar_url ? `<img src="${esc(md.avatar_url)}" alt="" referrerpolicy="no-referrer">` : '';
+    document.getElementById('acct-name').textContent = nm;
+    const pv = (USER.app_metadata && USER.app_metadata.provider) || '';
+    document.getElementById('acct-mail').textContent = [USER.email, pv === 'google' ? '구글 로그인' : pv === 'kakao' ? '카카오 로그인' : pv].filter(Boolean).join(' · ');
+  }
+}
+if (SB) {
+  const acct = document.getElementById('acct');
+  document.getElementById('auth-btn').onclick = () => { authUI(); acct.showModal(); };
+  document.querySelector('[data-close-acct]').onclick = () => acct.close();
+  acct.addEventListener('click', e => { if (e.target === acct) acct.close(); });
+  document.querySelectorAll('[data-sso]').forEach(btn => btn.onclick = async () => {
+    const provider = btn.dataset.sso, m = document.getElementById('acct-msg');
+    btn.disabled = true; m.textContent = `${provider === 'google' ? '구글' : '카카오'} 로그인 화면으로 가는 중…`;
+    try { sessionStorage.setItem('dt-login', provider); } catch { }
+    const { error } = await SB.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } });
+    if (error) { btn.disabled = false; m.textContent = '⚠️ ' + (/provider is not enabled|Unsupported provider/i.test(error.message) ? `${provider === 'kakao' ? '카카오' : '구글'} 로그인이 아직 준비 중이에요.` : error.message); }
+  });
+  document.getElementById('acct-out').onclick = async () => { await SB.auth.signOut(); acct.close(); };
+  document.getElementById('acct-del').onclick = async () => {
+    if (!confirm('정말 탈퇴할까요? 서버에 저장된 보관함·원가표·가게 프로필이 모두 지워지고 되돌릴 수 없어요. (이 브라우저에 있는 것은 남아요)')) return;
+    const { error } = await SB.rpc('delete_my_account');
+    if (error) { alert('탈퇴하지 못했어요: ' + error.message); return; }
+    track('account_delete'); await SB.auth.signOut(); acct.close(); alert('탈퇴했어요. 그동안 써 주셔서 고마워요.');
+  };
+  // 로그인 실패하고 돌아왔을 때 (주소에 error가 붙어 옴)
+  { const q = new URLSearchParams(location.search + '&' + location.hash.slice(1)), err = q.get('error_description') || q.get('error');
+    if (err) { authUI(); acct.showModal(); document.getElementById('acct-msg').textContent = '⚠️ 로그인하지 못했어요: ' + err.replace(/\+/g, ' ');
+      history.replaceState(null, '', location.pathname); } }
+  SB.auth.onAuthStateChange((ev, session) => {
+    const was = USER && USER.id; USER = session ? session.user : null; authUI();
+    if (USER && USER.id !== was) {
+      setTimeout(cloudSync, 0);   // onAuthStateChange 안에서 바로 await 하면 supabase-js가 멈출 수 있어 한 박자 뒤에
+      let p = ''; try { p = sessionStorage.getItem('dt-login') || ''; sessionStorage.removeItem('dt-login'); } catch { }
+      if (p) { const isNew = Date.now() - new Date(USER.created_at).getTime() < 5 * 60e3; track('login', p, '', { new: isNew }); }
+      if (/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
+    }
+  });
+}
+authUI();
 </script>
 </body>
 </html>
