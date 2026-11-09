@@ -84,6 +84,13 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `/brands?q=`: 브랜드 찾기(2026-11-09). 검색광고 연관 키워드는 새 디저트(두쫀쿠 등)엔 0개라 방식을 바꿈 → ① 지역 검색(`naverSearch()`, 블로그 검색과 같은 키, `sort=comment`)으로 전국+`BR_AREAS` 11곳에서 그 디저트를 파는 카페·디저트 가게 수집(+연관 키워드 '○○+디저트' 꼴) ② 가게 이름(`brandOf`로 '○○점' 뗌, 앞 1·2단어도) 월간 검색 수를 `adVolumes()`(키워드 도구 5개씩)로 재서 TOP 5, 대형 체인·편의점(`BIG_CHAIN`) 제외 ③ 검색어 트렌드로 `lead`·`now` ④ 인허가 영업 중 매장 수. 하루 캐시 키에 `BRANDS_VER`, 지역 검색 실패(`verified:false`) 결과는 캐시 안 함, 화면은 그때 상자를 숨김. 처음엔 지역 검색이 401('이 Application에서 활성화되어 있지 않습니다')이라 사용자가 네이버 콘솔에서 '지역'을 켬 → 2026-11-09 작동 확인(소금빵: 성심당·안스베이커리·궁전제과…, 두쫀쿠: ETF베이커리·하얀풍차제과점…). 오판 막는 규칙: 이름은 끝의 동네 이름·앞의 '카페'만 떼서도 재고(앞 단어만 떼면 '클래식' 같은 흔한 낱말이 1등), 두 글자 이름 제외, 이름 검색 수가 디저트 검색 수 20배와 30만 회를 둘 다 넘으면 제외(동명이인 '한정선' 110만 회), 2년 조회 첫 주부터 25% 넘은 가게는 '○주 먼저 뜸' 안 씀. 원인 볼 때는 `&debug=1`
 - 이 작업 환경(클라우드)에서는 workers.dev와 data.go.kr에 직접 접속이 안 될 수 있다 → 사용자가 브라우저로 확인하거나, 테스트용 복사본에서 Playwright로 응답을 흉내 낸다
 
+## 사용량 제한·사용 기록·통계 (2026-11-09)
+- Worker `Stats` Durable Object(SQLite, wrangler.toml migration v2, 바인딩 `STATS`, 인스턴스 하나 'stats-v1'): `hits`(날짜·사람·종류별 횟수), `events`(익명 사용 기록)
+- **하루 한도** `LIMITS` = 신메뉴 20 · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 150 · 시트 읽기(/sheet 캐시 밖) 60. 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
+- **익명 기록**: 화면 `track(type,k,goal,v)`가 `navigator.sendBeacon(POST /event)`. UID = localStorage `dessert-timing-uid` 무작위. 종류 `EVENT_TYPES`: visit(하루 1번)·select·step(앞으로 갈 때)·menu_save·menu_again·like·dislike(결과 카드 `#mk-fb`)·file·pdf·price_pick·rec·local·cost_edit. Worker가 직접 남기는 것: menu(이름·원가율·초·모델·내 원가표 수)·menu_fail·sheet(fresh 연결)·limit
+- **주인**: Worker 비밀 변수 **`STATS_KEY`**(대시보드에서 사용자가 넣음). `stats.html`(저장소 루트, noindex, build.sh와 상관없음)에서 열쇠를 넣으면 `GET /stats`(헤더 X-Stats-Key)로 요약을 보고, localStorage `dessert-timing-owner`에 저장 → 그 브라우저는 X-Owner-Key로 한도 없음·기록 안 함
+- 다음 단계(사용자와 합의): Supabase 로그인(구글·카카오) → 한도·기록을 사람별로, 보관함·내 원가표 서버 저장. 로그인 붙이면 개인정보 처리방침 페이지 필요
+
 ## 우리 동네 리포트 데이터
 - `live/district.json`: `scripts/district.py`가 행정안전부 인허가 **전체 데이터**(휴게음식점+제과점 원본 CSV)로 만든 시군구 255곳 통계 (기준일 2026-11-02)
 - 카페·디저트 = 커피숍·과자점·아이스크림·전통찻집·떡카페·기타 휴게음식점·제과점 (PC방·편의점·운동시설 등 이름으로 제외), 90일 안에 닫은 곳은 팝업으로 따로
@@ -112,7 +119,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 
 ## 다음에 할 수 있는 일 (사용자와 이야기한 것)
 - **판매·배포 전에 할 일 (2026-11-06 사용자가 미리 말해 둠, 아직 시작 안 함)**
-  - API 사용량 제한: 검색량(네이버 /trend·/volume 등)·AI 신메뉴 요청을 사람마다 하루 몇 번까지로 막기 (비용·한도 보호)
+  - API 사용량 제한: 2026-11-09 IP별 하루 한도로 1차 완료(위 '사용량 제한' 참고). 로그인 뒤 사람별로 바꾸기
   - 로그인 페이지 만들기: 구글 로그인 + 카카오 로그인. 로그인하면 사용량 제한·보관함 동기화·사장님별 원가표와도 연결
   - 응답이 너무 느림 → AI(API)를 더 빠른 것으로 바꾸거나 속도 개선 검토 (특히 신메뉴 만들기)
 - **유동인구 데이터 (2026-11-06 이야기, 아직 시작 안 함)**: 전국 무료로 동 단위 진짜 유동인구는 거의 없음(통신사·카드사는 유료). 그래서 무료 전국 데이터 3개를 합쳐 시군구 255곳을 **방문자형/직장인형/주거형**으로 나눠 동네 리포트에 한 줄 실행 팁으로 넣기로 제안함
