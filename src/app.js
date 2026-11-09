@@ -590,7 +590,7 @@ async function fillMarket(m, box) {
   m.market = { all, area: ar, need: all && all.need };
   if (box && box.isConnected) box.innerHTML = mktHTML(m);
 }
-function menuCard(m) {
+function menuCard(m, edit) {
   const ai = m.recipe.filter(x => x.source === 'AI 추정').length;
   return `<div class="mk-card">
       <span class="tag" style="background:var(--teal)">${m.kind}</span>${m.goal ? ` <span class="tag goal-tag">${esc(m.goal)}</span>` : ''}
@@ -607,12 +607,12 @@ function menuCard(m) {
       <p><b>타깃</b> ${esc(m.targetCustomer || '')}</p>
       <p><b>판매 포인트</b> ${esc(m.point || '')}</p>
       <div style="overflow-x:auto"><table><thead><tr><th>재료</th><th class="num-r">사용량</th><th class="num-r">단가</th><th class="num-r">원가</th><th>단가 출처</th></tr></thead><tbody>
-        ${m.recipe.map(x => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${x.unit_price}원</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : /KAMIS/.test(x.source) ? ' mk' : ''}">${x.source}</span>${x.vsMonth >= 10 ? ` <b class="up-mk">한 달 새 +${x.vsMonth}%</b>` : x.vsMonth <= -10 ? ` <b class="dn-mk">한 달 새 ${x.vsMonth}%</b>` : ''}</td></tr>`).join('')}
+        ${m.recipe.map((x, i) => `<tr><td>${esc(x.ing)}</td><td class="num-r">${x.qty}${x.unit}</td><td class="num-r">${edit ? `<button type="button" class="up-edit" data-i="${i}" title="눌러서 우리 가게 단가로 고치기">${x.unit_price}원 ✎</button>` : `${x.unit_price}원`}</td><td class="num-r">${won(x.cost)}</td><td><span class="src${x.source === 'AI 추정' ? ' ai' : x.source === '내 원가표' ? ' my' : /KAMIS/.test(x.source) ? ' mk' : ''}">${x.source}</span>${x.vsMonth >= 10 ? ` <b class="up-mk">한 달 새 +${x.vsMonth}%</b>` : x.vsMonth <= -10 ? ` <b class="dn-mk">한 달 새 ${x.vsMonth}%</b>` : ''}</td></tr>`).join('')}
       </tbody></table></div>
       ${m.steps && m.steps.length ? `<p style="margin-top:10px"><b>만드는 순서</b></p><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
       <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
       ${m.recipe.some(x => x.vsMonth >= 15) ? `<p class="gfit"><b>⚠️ 오른 재료</b> ${m.recipe.filter(x => x.vsMonth >= 15).map(x => `${esc(x.ing)} 한 달 새 +${x.vsMonth}%`).join(', ')}. 원가율을 다시 확인하거나 양을 조절해 보세요.</p>` : ''}
-      <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
+      <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요${edit ? ' (단가를 눌러 고칠 수 있어요)' : ''}` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
     </div>`;
 }
 // ---------- 내 메뉴 보관함 (이 브라우저에만 저장) ----------
@@ -644,15 +644,11 @@ async function makeMenu(again) {
   mkBtn.disabled = true; mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
   try {
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
+      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, myPrice: myPriceMap(), note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
     const m = await res.json(); if (!res.ok || m.error) throw new Error(m.error || res.status);
     if (current !== k) return;
     LAST_MENU = { m, k, goal: GOAL }; (MADE_NAMES[k] = MADE_NAMES[k] || []).push(m.name);
-    mkOut.innerHTML = menuCard(m) + `<div class="mk-act"><button type="button" class="btn primary" id="mk-save">♡ 보관함에 저장</button>
-      <button type="button" class="btn line" id="mk-again">↻ 마음에 안 들어요, 다른 메뉴</button></div>`;
-    document.getElementById('mk-save').onclick = e => { saveMenu(LAST_MENU); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; };
-    document.getElementById('mk-again').onclick = () => makeMenu(true);
-    fillMarket(m, mkOut.querySelector('.mkt'));   // 다른 카페 가격은 따로 불러와 채움 (보관함에 저장하면 같이 저장)
+    showMenu(m);
     mkMsg.textContent = '다시 누르면 다른 메뉴를 만들어요.'; MADE = true; renderProg();
   } catch (e) {
     const msg = String(e.message || e);
@@ -666,6 +662,75 @@ async function makeMenu(again) {
   finally { mkBtn.disabled = false; }
 }
 mkBtn.addEventListener('click', () => makeMenu(false));
+// 신메뉴 결과 그리기 (단가를 고치면 다시 그림)
+function showMenu(m) {
+  mkOut.innerHTML = menuCard(m, true) + `<div class="mk-act"><button type="button" class="btn primary" id="mk-save">♡ 보관함에 저장</button>
+    <button type="button" class="btn line" id="mk-again">↻ 마음에 안 들어요, 다른 메뉴</button></div>`;
+  document.getElementById('mk-save').onclick = e => { saveMenu(LAST_MENU); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; };
+  document.getElementById('mk-again').onclick = () => makeMenu(true);
+  if (!m.market) fillMarket(m, mkOut.querySelector('.mkt'));   // 다른 카페 가격은 따로 불러와 채움 (보관함에 저장하면 같이 저장)
+}
+
+/* ---------- 내 원가표 (이 브라우저에만, localStorage) ----------
+   { 재료: { unit:'g'|'ml'|'개', price: 단위당 원, buy?: '450g 8,900원' } } → 신메뉴 요청에 myPrice로 보내면 Worker가 가장 먼저 씀 */
+const MY_KEY = 'dessert-timing-costs';
+const loadMy = () => { try { return JSON.parse(localStorage.getItem(MY_KEY)) || {}; } catch { return {}; } };
+const storeMy = x => { try { localStorage.setItem(MY_KEY, JSON.stringify(x)); } catch { } };
+const myPriceMap = () => { const o = {}; for (const [k, v] of Object.entries(loadMy())) o[k] = { unit: v.unit, price: v.price }; return o; };
+// 산 양·단위·가격 → 단위당 단가 (kg→g, L→ml)
+function unitPrice(qty, unit, price) {
+  qty = +qty; price = +price; if (!(qty > 0) || !(price >= 0)) return null;
+  const u = String(unit).toLowerCase(), mul = u === 'kg' ? 1000 : u === 'l' ? 1000 : 1, base = u === 'kg' || u === 'g' ? 'g' : u === 'l' || u === 'ml' ? 'ml' : '개';
+  return { unit: base, price: +(price / (qty * mul)).toFixed(3), buy: `${qty}${unit} ${Number(price).toLocaleString()}원` };
+}
+function setMy(ing, v) { const n = String(ing).replace(/\s/g, '').slice(0, 20); if (!n || !v) return; const x = loadMy(); x[n] = v; storeMy(x); renderMyCost(); }
+function renderMyCost() {
+  const x = loadMy(), ks = Object.keys(x), box = document.getElementById('mc-list'); if (!box) return;
+  document.getElementById('mc-sum').textContent = ks.length ? `재료 ${ks.length}개 · 신메뉴 원가를 이 값으로 먼저 계산해요` : '우리 가게 구매가를 넣으면 신메뉴 원가를 그 값으로 계산해요';
+  box.innerHTML = ks.length ? `<table><thead><tr><th>재료</th><th class="num-r">단가</th><th>산 양·가격</th><th></th></tr></thead><tbody>${ks.map(k =>
+    `<tr><td>${esc(k)}</td><td class="num-r">${x[k].price}원/${x[k].unit}</td><td><small>${esc(x[k].buy || '결과 표에서 고침')}</small></td><td><button type="button" class="mc-x" data-k="${esc(k)}" aria-label="지우기">×</button></td></tr>`).join('')}</tbody></table>`
+    : '<p class="note">아직 넣은 재료가 없어요.</p>';
+  box.querySelectorAll('.mc-x').forEach(b => b.onclick = () => { const y = loadMy(); delete y[b.dataset.k]; storeMy(y); renderMyCost(); });
+}
+document.getElementById('mc-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = unitPrice(document.getElementById('mc-qty').value, document.getElementById('mc-unit').value, document.getElementById('mc-price').value);
+  const ing = document.getElementById('mc-ing').value.trim(); if (!ing || !v) return;
+  setMy(ing, v); e.target.reset(); document.getElementById('mc-ing').focus();
+});
+// 엑셀에서 붙여넣기: '버터	450g	8900' · '우유, 1L, 2800' · '버터 450 g 8,900원'
+function parseCostLine(line) {
+  const t = line.replace(/원/g, '').trim(); if (!t) return null;
+  const m = t.match(/^(.+?)[\t,]+\s*([\d.,]+)\s*(kg|g|ml|l|L|개|ea|EA)?[\t,\s]+([\d.,]+)\s*$/) || t.match(/^(\S+)\s+([\d.,]+)\s*(kg|g|ml|l|L|개|ea|EA)\s+([\d.,]+)$/);
+  if (!m) return null;
+  const n = s => +String(s).replace(/,/g, ''), u = !m[3] ? 'g' : /ea/i.test(m[3]) ? '개' : m[3];
+  const v = unitPrice(n(m[2]), u, n(m[4])); return v ? [m[1].trim(), v] : null;
+}
+document.getElementById('mc-paste-btn').addEventListener('click', () => {
+  const lines = document.getElementById('mc-text').value.split(/\n/), x = loadMy(); let ok = 0, bad = [];
+  lines.forEach(l => { if (!l.trim()) return; const r = parseCostLine(l); if (r && /[가-힣a-zA-Z]/.test(r[0])) { x[r[0].replace(/\s/g, '').slice(0, 20)] = r[1]; ok++; } else bad.push(l.trim().slice(0, 20)); });
+  storeMy(x); renderMyCost();
+  document.getElementById('mc-paste-msg').textContent = `${ok}개 넣었어요.` + (bad.length ? ` 못 읽은 줄 ${bad.length}개: ${bad.slice(0, 3).join(' / ')}` : '');
+  if (ok && !bad.length) document.getElementById('mc-text').value = '';
+});
+renderMyCost();
+// 결과 표의 단가 눌러 고치기 → 내 원가표에 저장하고 원가·원가율 다시 계산
+mkOut.addEventListener('click', e => {
+  const b = e.target.closest('.up-edit'); if (!b || !LAST_MENU) return;
+  const m = LAST_MENU.m, row = m.recipe[+b.dataset.i]; if (!row) return;
+  const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.step = 'any'; inp.className = 'up-in'; inp.value = row.unit_price;
+  b.replaceWith(inp); inp.after(document.createTextNode(` 원/${row.unit}`)); inp.focus(); inp.select();
+  let done = false;
+  const fin = save => { if (done) return; done = true; const v = +inp.value;
+    if (save && v >= 0 && inp.value !== '') {
+      setMy(row.ing, { unit: row.unit, price: v, buy: '' });
+      row.unit_price = v; row.cost = Math.round(row.qty * v); row.source = '내 원가표';
+      m.cost = m.recipe.reduce((a, r) => a + r.cost, 0); m.rate = +(m.cost / m.price * 100).toFixed(1); m.pass = m.rate <= m.target; m.margin = m.price - m.cost;
+    }
+    showMenu(m); };
+  inp.onkeydown = ev => { if (ev.key === 'Enter') fin(true); if (ev.key === 'Escape') fin(false); };
+  inp.onblur = () => fin(true);
+});
 
 /* ---------- 사례: 과일모찌 ---------- */
 const fm = D.kw['과일모찌'];

@@ -226,6 +226,24 @@
           </fieldset>
         </div>
       </details>
+      <details class="card profile" id="mycost">
+        <summary><b>🧾 내 원가표</b> <span id="mc-sum">우리 가게 구매가를 넣으면 신메뉴 원가를 그 값으로 계산해요</span></summary>
+        <div class="mc-body">
+          <p class="note">산 가격과 양을 넣으면 g·ml·개당 단가를 자동으로 계산해요. 신메뉴 결과 표의 <b>단가</b>를 눌러 바로 고쳐도 여기에 저장돼요. 이 브라우저에만 저장돼요.</p>
+          <form class="mc-add" id="mc-form">
+            <label>재료<input type="text" id="mc-ing" maxlength="20" placeholder="예: 버터" required></label>
+            <label>산 양<span><input type="number" id="mc-qty" min="0" step="any" placeholder="450" required><select id="mc-unit"><option>g</option><option>kg</option><option>ml</option><option>L</option><option>개</option></select></span></label>
+            <label>산 가격<span><input type="number" id="mc-price" min="0" step="any" placeholder="8900" required> 원</span></label>
+            <button type="submit" class="btn primary">추가</button>
+          </form>
+          <details class="mc-paste"><summary>엑셀·구글시트에서 한꺼번에 붙여넣기</summary>
+            <p class="note">한 줄에 재료 하나씩, <b>재료 · 양(단위) · 가격</b> 순서로요. 예: <code>버터	450g	8900</code> 또는 <code>우유, 1L, 2800</code></p>
+            <textarea id="mc-text" rows="5" placeholder="버터	450g	8900&#10;우유	1L	2800&#10;생딸기	500g	9900"></textarea>
+            <button type="button" class="btn line" id="mc-paste-btn">붙여넣은 내용 넣기</button> <span class="note" id="mc-paste-msg"></span>
+          </details>
+          <div id="mc-list"></div>
+        </div>
+      </details>
           <div class="card">
             <h2>내 가게에 맞춰 만들기</h2>
             <p class="sub">비워 두면 AI가 알아서 정해요.</p>

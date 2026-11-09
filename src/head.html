@@ -217,6 +217,23 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .profile summary::after{content:"＋";margin-left:auto;font-weight:900}
 .profile[open] summary::after{content:"－"}
 .profile summary span{font-size:13px;color:var(--ink-2)}
+.mc-body{padding:0 20px 18px}
+.mc-add{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:10px 0}
+.mc-add label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:900}
+.mc-add label>span{display:flex;align-items:center;gap:4px;font-weight:400}
+.mc-add input,.mc-add select,.mc-paste textarea{font:inherit;font-size:15px;padding:7px 9px;border:2px solid var(--ink);border-radius:8px;background:#fff}
+.mc-add input[type=text]{width:130px}.mc-add input[type=number]{width:96px}
+.mc-paste{margin:6px 0 12px}.mc-paste summary{cursor:pointer;font-weight:800;font-size:14px}
+.mc-paste textarea{width:100%;box-sizing:border-box;margin:6px 0}
+.mc-paste code{background:#fff8dc;padding:1px 5px;border-radius:4px;white-space:pre}
+#mc-list table{width:100%;border-collapse:collapse;font-size:14px}
+#mc-list th,#mc-list td{padding:7px 6px;border-bottom:1px solid #eee3bf;text-align:left}
+#mc-list .num-r{text-align:right}
+#mc-list .mc-x{border:0;background:none;font-size:18px;cursor:pointer;color:var(--ink-3)}
+.up-edit{border:1px dashed var(--ink-3);background:#fff;border-radius:6px;padding:2px 6px;font:inherit;cursor:pointer}
+.up-edit:hover{border-color:var(--teal);color:var(--teal-d)}
+.up-in{width:72px;font:inherit;padding:2px 4px;border:2px solid var(--teal);border-radius:6px;text-align:right}
+.mk-card .src.my{background:#ffd400;border-color:var(--ink);font-weight:900}
 .pf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 20px 20px}
 .pf-grid fieldset{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin:0;background:var(--bg)}
 .pf-grid legend{font-weight:900;font-size:13.5px;padding:0 4px}

@@ -193,9 +193,31 @@ async function marketPrices(env) {
 }
 const findMarket = (name, MKT) => { const n = String(name || '').replace(/\s/g, ''); return MKT[n] ? n : Object.keys(MKT).find(k => n.includes(k)) || null; };
 // 단가 우선순위: 내 원가표 → KAMIS 오늘 시세 → 원가표 예시값 → AI 추정
-function costOf(recipe, MKT = {}) {
+// 사장님이 화면에서 넣은 '내 원가표' {재료: {unit, price}} → 깨끗하게 (최대 150개)
+function cleanMy(x) {
+  const out = {};
+  if (!x || typeof x !== 'object') return out;
+  for (const [k, v] of Object.entries(x).slice(0, 150)) {
+    const n = String(k).replace(/[<>`"\\]/g, '').replace(/\s/g, '').slice(0, 20), price = Number(v && v.price);
+    if (n && v && ['g', 'ml', '개'].includes(v.unit) && price >= 0 && price < 100000) out[n] = { unit: v.unit, price };
+  }
+  return out;
+}
+// 내 원가표에서 재료 찾기: 이름 그대로 → 원가표 별칭 → 서로 포함 (예: '무염버터' ↔ '버터')
+const findMy = (name, MY) => {
+  const n = String(name || '').replace(/\s/g, ''); if (!n) return null;
+  if (MY[n]) return n;
+  const a = ALIAS[n]; if (a && MY[a]) return a;
+  return Object.keys(MY).find(k => k.length >= 2 && (n.includes(k) || k.includes(n))) || null;
+};
+function costOf(recipe, MKT = {}, MY = {}) {
   let total = 0;
   const rows = recipe.map(r => {
+    const myk = findMy(r.ing, MY), my = myk ? MY[myk] : null;
+    if (my && (my.unit === r.unit || !r.unit)) {   // 단위가 같을 때만 (g ↔ 개 같은 건 섞지 않음)
+      const cost = (Number(r.qty) || 0) * my.price; total += cost;
+      return { ing: r.ing, qty: Number(r.qty) || 0, unit: my.unit, unit_price: +my.price.toFixed(2), cost: Math.round(cost), source: '내 원가표' };
+    }
     const key = findPrice(r.ing), own = key ? PRICE[key] : null;
     const mk = findMarket(r.ing, MKT), mkt = mk ? MKT[mk] : null;
     let unit = r.unit, up = Number(r.est_unit_price) || 0, source = 'AI 추정', ing = r.ing, vs = null;
@@ -264,8 +286,11 @@ async function menu(body, env) {
   const price = Math.max(2000, Math.min(30000, Number(body.price) || 5500));
   const target = Math.max(15, Math.min(50, Number(body.targetRate) || 30));
   const p = body.profile || {};
-  const MKT = await marketPrices(env);
-  const known = Object.entries(PRICE).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원)`).concat(Object.entries(MKT).filter(([k]) => !PRICE[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 오늘 시세)`)).join(', ');
+  const MKT = await marketPrices(env), MY = cleanMy(body.myPrice);
+  const known = [
+    ...Object.entries(MY).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 우리 가게)`),
+    ...Object.entries(PRICE).filter(([k]) => !MY[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원)`),
+    ...Object.entries(MKT).filter(([k]) => !PRICE[k] && !MY[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 오늘 시세)`)].join(', ');
   const base = `당신은 한국 카페·디저트 프랜차이즈의 메뉴개발자입니다. 트렌드 키워드로 실제 매장에서 팔 신메뉴 1개를 만드세요.
 - 오늘: ${new Date(Date.now() + 9 * 3600e3).getUTCMonth() + 1}월 (계절이 들어간 이름·재료는 지금 계절에 맞게. 다른 계절 낱말 금지)
 - 트렌드 키워드: ${kw} (유행 단계: ${body.type || '알 수 없음'})
@@ -304,7 +329,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
     let r;
     try { r = await askOnce(); } catch (e) { if (result) break; throw e; }   // 원가율 재조정 중 실패하면 앞의 결과를 쓴다
     result = r;
-    cost = costOf(result.recipe, MKT);
+    cost = costOf(result.recipe, MKT, MY);
     const rate = cost.total / price * 100;
     log.push({ try: i, rate: +rate.toFixed(1), cost: cost.total, ai: result._ai ? result._ai.tried : [] });
     if (rate <= target) break;
