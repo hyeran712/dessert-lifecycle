@@ -71,7 +71,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - GitHub Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SERVICE_KEY`(공공데이터포털, 주간 레이더용)
 - Worker 비밀 변수(대시보드에서 관리, `keep_vars = true`라 배포해도 유지): `NAVER_ID`, `NAVER_SECRET`(NAVER API HUB 검색어 트렌드 — 검색광고 API 아님), `DATA_GO_KEY`, `GEMINI_KEY`, `GEMINI_MODEL`(gemini-3.8-flash)
 - Gemini는 홍콩(HKG)에서 막혀서 `GeminiProxy` Durable Object(locationHint 'wnam')를 거쳐 호출한다. 확인: `/where` → `gemini`가 미국 공항 코드면 정상
-- 503/429면 재시도 후 `gemini-flash-latest` → `gemini-flash-lite-latest`로 넘어감
+- **모델 순서(2026-11-09 바꿈)**: `FAST_MODEL`(gemini-flash-lite-latest) 먼저 → 실패할 때만 `GEMINI_MODEL`(3.8-flash) → `gemini-flash-latest`. 측정: lite 2~4초, flash-latest 37초~실패, 3.8-flash 40초 넘음(사용자 화면에 'Gemini 오류 524' = Cloudflare 100초 초과). 한 번 부를 때 40초 제한(`GeminiProxy`가 `x-timeout`으로 끊고 504), 신메뉴 전체 90초 안(시간 모자라면 원가율 재조정 생략), `thinkingConfig.thinkingLevel:'low'`(모르는 모델이면 400 → 빼고 재시도). 결과의 `ai`·`tries[].ai`에 모델·걸린 초가 남음. 속도 비교는 /menu body에 `model`(정해 둔 모델만). lite는 배합을 빠뜨리기 쉬워 프롬프트에 '이름 속 재료·빵은 강력분·이스트·소금, 원가표에 없어도 맞는 재료' 규칙을 넣음. 강력분·이스트·소금은 원가표에 없어 'AI 추정' 단가
 - `PRICE`: 사용자의 카페 원가표 [재료단가] 시트 단가 + 디저트 재료(2026-11-04 식봄 판매가). 생딸기·포장용기·얼음·빨대는 예시값. `ALIAS`로 재료 이름을 맞춤
 - 엔드포인트: `GET /trend?q=`, `GET /shops?q=&src=cafe|bakery&page=`, `GET /volume?q=`, `POST /menu`, `GET /where`
 - `/volume`: 네이버 검색광고 API `keywordstool`(최근 한 달 PC·모바일 검색 수 + 연관 키워드 20개). 비밀 변수 `NAVER_AD_KEY`(액세스라이선스), `NAVER_AD_SECRET`(비밀키), `NAVER_AD_CUSTOMER`(CUSTOMER_ID)가 필요 — 2026-11-05 등록 완료(소금빵 월 26,640회 확인). 레이더 화면 `#opp`(renderOpportunity)가 디저트별 /volume 합계 ÷ 영업 중 매장으로 "가게당 검색 수" 순위를 보여 준다 (VOL_TERMS: 붕어빵=붕어빵+잉어빵)
