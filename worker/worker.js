@@ -276,39 +276,81 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
 }
 
 // ---------- 브랜드 찾기: '두바이쫀득쿠키'로 많이 찾는 가게 ----------
-// 1) 검색광고 연관 키워드 중 '○○ + 디저트 이름' 꼴에서 ○○(가게 이름 후보)를 뽑고
-// 2) 네이버 지역 검색으로 실제 카페·디저트 가게 이름인지 확인 3) 검색어 트렌드로 언제 떴는지 4) 인허가로 영업 중 매장 수
+// 검색광고 연관 키워드는 새로 뜬 디저트(두쫀쿠 등)엔 하나도 안 나오고, 나와도 가게 이름이 거의 없다 (2026-11-09 확인).
+// 그래서 1) 네이버 지역 검색으로 그 디저트를 파는 카페·디저트 가게를 먼저 모으고 (+ 연관 키워드 '○○ + 디저트 이름' 꼴)
+// 2) 가게 이름의 월간 검색 수(검색광고)로 순위 3) 검색어 트렌드로 언제 떴는지 4) 인허가로 영업 중 매장 수
 const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 곳|판매|택배|배달|배송|후기|추천|근처|주문|예약|원조|유명한|유명|인기|맛|만드는법|만드는 법|재료|키트|밀키트|쿠팡|편의점|cu|gs25|gs|세븐일레븐|이마트|홈플러스|코스트코|다이소|스타벅스|대용량|선물|세트|박스|선물세트|도매|창업|전문점|카페|디저트|빵|빵집|베이커리|신상|신메뉴|오픈런|웨이팅|줄서는|품절|재고|가격비교|최저가|할인|이벤트|당일|오늘|내돈내산|먹방|칼로리표|유통기한|보관|보관법|냉동|해동|모양|종류|뜻|영어|일본|두바이|한국|서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남|홍대|성수|연남|망원|합정|이태원|한남|익선동|을지로|강남역|신사|가로수길|압구정|청담|잠실|여의도|명동|종로|건대|해운대|서면|전포|광안리|동성로|송리단길|판교|분당|일산|수원|동탄|송도)$/i;
 const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
+// 이름 검색 수가 디저트와 상관없이 큰 대형 체인·편의점은 순위에서 뺀다
+const BIG_CHAIN = /^(스타벅스|투썸|투썸플레이스|이디야|이디야커피|메가커피|메가mgc커피|메가엠지씨커피|컴포즈|컴포즈커피|빽다방|파리바게뜨|파리바게트|뚜레쥬르|배스킨라빈스|던킨|던킨도너츠|폴바셋|할리스|할리스커피|커피빈|파스쿠찌|엔제리너스|탐앤탐스|요거프레소|더벤티|매머드커피|cu|gs25|세븐일레븐|이마트24|이마트|홈플러스|코스트코|노브랜드|다이소|올리브영|쿠팡)$/i;
+const BR_AREAS = ['', '서울', '성수', '홍대', '강남', '부산', '대구', '대전', '광주', '인천', '수원', '제주'];
+const SHOP_CAT = /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키|마카롱|베이글/;
+// 지역 검색 가게 이름 → 브랜드 이름 ('○○ 성수점' → '○○')
+const brandOf = t => t.replace(/\(.*?\)|\[.*?\]/g, ' ').trim().split(/\s+/).filter((w, i) => i === 0 || !/(점|호점|지점|본점|매장)$/.test(w)).join(' ').trim();
+const adKey = s => s.replace(/[^가-힣a-zA-Z0-9]/g, '');
+// 검색광고 키워드 도구로 여러 이름의 월간 검색 수 (한 번에 5개까지) → {공백 없는 대문자 키워드: 검색 수}
+async function adVolumes(words, env) {
+  const out = {};
+  for (let i = 0; i < words.length; i += 5) {
+    const part = words.slice(i, i + 5), path = '/keywordstool', ts = String(Date.now());
+    const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.NAVER_AD_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(`${ts}.GET.${path}`)))));
+    try {
+      const r = await fetch(`https://api.searchad.naver.com${path}?hintKeywords=${encodeURIComponent(part.join(','))}&showDetail=1`, {
+        headers: { 'X-Timestamp': ts, 'X-API-KEY': env.NAVER_AD_KEY, 'X-Customer': String(env.NAVER_AD_CUSTOMER), 'X-Signature': sig } });
+      if (!r.ok) continue;
+      for (const x of (await r.json()).keywordList || []) out[String(x.relKeyword).toUpperCase()] = num(x.monthlyPcQcCnt) + num(x.monthlyMobileQcCnt);
+    } catch { }
+  }
+  return out;
+}
 async function brands(q, env, debug) {
   const vol = await volume(q, env);
   if (!vol.ok) return vol;
   const hint = vol.q, all = vol._all || [];
-  // 가게 이름 후보: 키워드 앞이나 뒤에 디저트 이름이 붙은 것
-  const cand = new Map();
+  const H = { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
+  const dbg = debug ? { related: all.length, withHint: all.filter(x => x.keyword.replace(/\s+/g, '').includes(hint)).slice(0, 40).map(x => [x.keyword, x.total]), local: {}, cand: [] } : null;
+  const cand = new Map();   // 공백 없는 이름 → 후보
+  const add = (name, info) => {
+    const key = adKey(name); if (key.length < 2 || key.length > 20 || key === hint || GENERIC.test(key) || BIG_CHAIN.test(key)) return;
+    const c = cand.get(key) || { name, key, hits: 0 }; c.hits++;
+    if (info && !c.shop) Object.assign(c, info);
+    cand.set(key, c);
+  };
+  // 1) 지역 검색(리뷰 많은 순): 전국 + 큰 동네별로 그 디저트를 파는 카페·디저트 가게
+  let localOk = true;
+  await Promise.all(BR_AREAS.map(async area => {
+    const query = (area ? area + ' ' : '') + q.trim();
+    try {
+      const r = await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/local?query=${encodeURIComponent(query)}&display=5&sort=comment`, { headers: H });
+      if (!r.ok) { localOk = false; if (dbg) dbg.local[query] = 'HTTP ' + r.status; return; }
+      const items = (await r.json()).items || [];
+      if (dbg) dbg.local[query] = items.map(i => [stripTag(i.title), i.category]);
+      for (const i of items) {
+        if (!SHOP_CAT.test(i.category || '')) continue;
+        const title = stripTag(i.title).trim();
+        const info = { shop: title, cat: (i.category || '').split('>').pop(), addr: (i.roadAddress || i.address || '').split(' ').slice(0, 2).join(' ') };
+        // '노티드 청담'처럼 동네 이름이 붙은 가게도 있어 앞 1·2단어 이름도 같이 잰다 (가게마다 검색 수가 가장 큰 이름을 쓴다)
+        const b = brandOf(title), w = b.split(' ');
+        [...new Set([b, w.slice(0, 2).join(' '), w[0]])].forEach(n => add(n, info));
+      }
+    } catch { localOk = false; }
+  }));
+  // 연관 키워드 중 '○○ + 디저트 이름' 꼴도 후보로 (나올 때만)
   for (const x of all) {
     const kw = x.keyword.replace(/\s+/g, ''); if (kw === hint || !kw.includes(hint)) continue;
     const rest = kw.replace(hint, '').trim();
-    if (rest.length < 2 || rest.length > 12 || GENERIC.test(rest) || REGIONISH.test(rest) || /\d/.test(rest)) continue;
-    const c = cand.get(rest) || { name: rest, keyword: x.keyword, total: 0 }; c.total += x.total; cand.set(rest, c);
+    if (rest.length < 2 || rest.length > 12 || REGIONISH.test(rest) || /\d/.test(rest)) continue;
+    add(rest, null);
   }
-  let list = [...cand.values()].sort((a, b) => b.total - a.total).slice(0, 12);
-  const dbg = debug ? { related: all.length, withHint: all.filter(x => x.keyword.replace(/\s+/g, '').includes(hint)).slice(0, 40).map(x => [x.keyword, x.total]), cand: list.map(c => [c.name, c.total]), local: {} } : null;
-  // 지역 검색으로 확인: 가게 이름이 그 단어로 시작하고 분류가 카페·디저트·제과면 '가게'
-  const H = { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
-  let localOk = true;
-  await Promise.all(list.map(async c => {
-    try {
-      const r = await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/local?query=${encodeURIComponent(c.name)}&display=5`, { headers: H });
-      if (!r.ok) { localOk = false; if (dbg) dbg.local[c.name] = 'HTTP ' + r.status; return; }
-      const items = (await r.json()).items || [], nm = c.name.toLowerCase();
-      if (dbg) dbg.local[c.name] = items.map(i => [stripTag(i.title), i.category]);
-      const hit = items.find(i => stripTag(i.title).replace(/\s+/g, '').toLowerCase().startsWith(nm) && /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키/.test(i.category || ''));
-      if (hit) { c.shop = stripTag(hit.title); c.cat = (hit.category || '').split('>').pop(); c.addr = (hit.roadAddress || hit.address || '').split(' ').slice(0, 2).join(' '); }
-    } catch { localOk = false; }
-  }));
-  if (localOk) list = list.filter(c => c.shop);
-  list = list.slice(0, 5);
+  // 2) 가게 이름의 월간 검색 수로 순위
+  let list = [...cand.values()].sort((a, b) => b.hits - a.hits).slice(0, 40);
+  const v = await adVolumes(list.map(c => c.key), env);
+  list.forEach(c => { c.total = v[c.key.toUpperCase()] || 0; c.keyword = c.name; });
+  if (dbg) dbg.cand = list.map(c => [c.name, c.total, c.shop || '(연관 키워드)']);
+  const seen = new Set();
+  list = list.filter(c => c.total >= 10 && (c.shop || !localOk)).sort((a, b) => b.total - a.total)
+    .filter(c => { const id = c.shop || c.key; if (seen.has(id)) return false; seen.add(id); return true; }).slice(0, 5);
   // 검색어 트렌드: 디저트 + 가게 4곳을 한 번에 (최근 2년, 주간). 각자 최고점의 25%를 처음 넘은 주 = 뜬 때
   const start = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10), end = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   let rise = {};
