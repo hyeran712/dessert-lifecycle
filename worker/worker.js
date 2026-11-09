@@ -283,7 +283,7 @@ const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 
 const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
 // 이름 검색 수가 디저트와 상관없이 큰 대형 체인·편의점은 순위에서 뺀다
 const BIG_CHAIN = /^(스타벅스|투썸|투썸플레이스|이디야|이디야커피|메가커피|메가mgc커피|메가엠지씨커피|컴포즈|컴포즈커피|빽다방|파리바게뜨|파리바게트|뚜레쥬르|배스킨라빈스|던킨|던킨도너츠|폴바셋|할리스|할리스커피|커피빈|파스쿠찌|엔제리너스|탐앤탐스|요거프레소|더벤티|매머드커피|cu|gs25|세븐일레븐|이마트24|이마트|홈플러스|코스트코|노브랜드|다이소|올리브영|쿠팡)$/i;
-const BRANDS_VER = 5;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
+const BRANDS_VER = 6;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
 const BR_AREAS = ['', '서울', '성수', '홍대', '강남', '부산', '대구', '대전', '광주', '인천', '수원', '제주'];
 const SHOP_CAT = /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키|마카롱|베이글/;
 // 지역 검색 가게 이름 → 브랜드 이름 ('○○ 성수점' → '○○')
@@ -354,7 +354,10 @@ async function brands(q, env, debug) {
   list.forEach(c => { c.total = v[c.key.toUpperCase()] || 0; c.keyword = c.name; });
   if (dbg) dbg.cand = list.map(c => [c.name, c.total, c.shop || '(연관 키워드)']);
   const seen = new Set();
-  list = list.filter(c => c.total >= 10 && (c.shop || !localOk)).sort((a, b) => b.total - a.total)
+  // 이름 검색 수가 말이 안 되게 크면(디저트 검색 수의 20배와 30만 회를 둘 다 넘음) 같은 이름의 다른 것(사람·작품 등) 검색이 섞인 것 → 뺀다
+  // 예: 두바이 초콜릿 '한정선' 월 110만 회 (2026-11-09). 성심당(28만 회)은 남는다
+  const cap = Math.max(20 * ((vol.month && vol.month.total) || 0), 300000);
+  list = list.filter(c => c.total >= 10 && c.total <= cap && (c.shop || !localOk)).sort((a, b) => b.total - a.total)
     .filter(c => { const id = c.shop || c.key; if (seen.has(id)) return false; seen.add(id); return true; }).slice(0, 5);
   // 검색어 트렌드: 디저트 + 가게 4곳을 한 번에 (최근 2년, 주간). 각자 최고점의 25%를 처음 넘은 주 = 뜬 때
   const start = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10), end = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
