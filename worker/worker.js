@@ -284,11 +284,26 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const log = [];
   let prompt = base, result, cost;
   const deadline = Date.now() + 90000;   // 전체 90초 안에 (Cloudflare는 100초가 넘으면 524로 끊는다)
+  // body.model: 속도 비교용 (정해 둔 모델만)
+  const pick = [GEMINI_MODEL, env.GEMINI_MODEL, ...FALLBACK_MODELS].includes(body.model) ? body.model : undefined;
+  // 빠른 모델이 가끔 빈 레시피를 주거나 실패한다(2026-11-09, 4번 중 2번) → 바로 포기하지 않고 빠른 모델로 두 번까지 다시, 그래도 안 되면 큰 모델까지
+  const askOnce = async () => {
+    let err;
+    for (let a = 0; a < 3; a++) {
+      if (deadline - Date.now() < 10000) break;
+      try {
+        const r = await askGemini(prompt, env, a < 2 ? Math.min(deadline, Date.now() + 25000) : deadline, pick || (a < 2 ? FAST_MODEL : undefined));
+        if (Array.isArray(r.recipe) && r.recipe.length) return r;
+        err = new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
+      } catch (e) { err = e; }
+    }
+    throw err || new Error('AI 답이 너무 늦어요. 잠시 뒤 다시 눌러 주세요.');
+  };
   for (let i = 1; i <= 3; i++) {
     if (i > 1 && deadline - Date.now() < 25000) break;   // 원가율 다시 맞출 시간이 없으면 지금 결과로
-    // body.model: 속도 비교용 (정해 둔 모델만)
-    result = await askGemini(prompt, env, deadline, [GEMINI_MODEL, env.GEMINI_MODEL, ...FALLBACK_MODELS].includes(body.model) ? body.model : undefined);
-    if (!Array.isArray(result.recipe) || !result.recipe.length) throw new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
+    let r;
+    try { r = await askOnce(); } catch (e) { if (result) break; throw e; }   // 원가율 재조정 중 실패하면 앞의 결과를 쓴다
+    result = r;
     cost = costOf(result.recipe, MKT);
     const rate = cost.total / price * 100;
     log.push({ try: i, rate: +rate.toFixed(1), cost: cost.total, ai: result._ai ? result._ai.tried : [] });
