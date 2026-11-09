@@ -461,6 +461,30 @@ async function brands(q, env, debug) {
   return { ok: true, q: hint, month: vol.month, verified: localOk, base: base || null, brands: list, ...(dbg ? { debug: dbg } : {}) };
 }
 
+// ---------- 사장님 원가표 구글 시트 읽기: '링크가 있는 모든 사용자 — 보기'로 공유된 시트의 탭을 CSV로 받아 표(2차원 배열)로 돌려준다 ----------
+// 재료·구매가·구매용량·단위 열을 찾는 건 화면(app.js rowsToCosts)이 한다. 엑셀 파일 올리기와 같은 코드를 쓰려고
+function parseCSV(t) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+async function sheetRows(id, gid) {
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(id || '')) return { ok: false, error: '구글 시트 주소가 맞는지 확인해 주세요.' };
+  const r = await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv${/^\d{1,12}$/.test(gid || '') ? '&gid=' + gid : ''}`, { redirect: 'follow' });
+  const t = await r.text();
+  if (!r.ok || /^\s*<(!doctype|html)/i.test(t)) return { ok: false, need: 'share', error: "시트를 읽지 못했어요. 시트 [공유]에서 '링크가 있는 모든 사용자 — 뷰어'로 바꿔 주세요." };
+  const rows = parseCSV(t).slice(0, 400).map(x => x.slice(0, 15).map(c => c.slice(0, 120)));
+  return { ok: true, rows, at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') };
+}
+
 // ---------- 다른 카페 판매가: 네이버 블로그 후기에서 '소금빵 3,500원' 같은 글을 모아 보통 가격을 낸다 ----------
 const stripTag = s => String(s || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;|&gt;|&#\d+;|&[a-z]+;/g, ' ');
 // 후기 한 개에서 키워드 바로 뒤에 붙은 1개 가격만 뽑는다 (2개·세트·묶음 가격은 뺀다)
@@ -546,6 +570,17 @@ export default {
         return resp;
       } catch (e) { return json({ error: String(e.message || e) }, 502, origin); }
     }
+    if (url.pathname === '/sheet') {   // 원가표 구글 시트: 5분 캐시 (시트를 고치면 5분 안에 반영)
+      const id = url.searchParams.get('id') || '', gid = url.searchParams.get('gid') || '';
+      const ck = new Request(`https://cache.local/sheet?id=${encodeURIComponent(id)}&gid=${encodeURIComponent(gid)}`);
+      const h = url.searchParams.get('fresh') === '1' ? null : await caches.default.match(ck);
+      if (h) { const r = new Response(h.body, h); Object.entries(cors(origin)).forEach(([k, v]) => r.headers.set(k, v)); return r; }
+      try {
+        const data = await sheetRows(id, gid), resp = json(data, 200, origin, data.ok ? 300 : 0);
+        if (data.ok) ctx.waitUntil(caches.default.put(ck, resp.clone()));
+        return resp;
+      } catch (e) { return json({ ok: false, error: String(e.message || e) }, 200, origin); }
+    }
     const q = cleanQuery(url.searchParams.get('q'));
     if (url.pathname !== '/' && !q) return json({ error: '검색어를 1~20자로 입력해 주세요.' }, 400, origin);
 
@@ -562,7 +597,7 @@ export default {
       else if (url.pathname === '/brands') { data = await brands(q, env, url.searchParams.get('debug') === '1'); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/price') { data = await cafePrice(q, cleanQuery(url.searchParams.get('area')) || '', env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
-      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/brands?q=', '/kamis'] }, 200, origin);
+      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/brands?q=', '/kamis', '/sheet?id=&gid='] }, 200, origin);
       const noCache = url.pathname === '/brands' && !data.verified;   // 지역 검색이 막혔던 결과는 저장하지 않는다
       const resp = json(data, 200, origin, noCache ? 0 : 86400);
       if (!noCache) ctx.waitUntil(cache.put(key, resp.clone()));

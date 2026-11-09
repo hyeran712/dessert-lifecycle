@@ -641,7 +641,9 @@ async function makeMenu(again) {
   const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
   const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
   const price = menuPrice(k, p);
-  mkBtn.disabled = true; mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
+  mkBtn.disabled = true;
+  if (loadSheet()) { mkMsg.textContent = '연결한 원가표 시트를 확인하는 중…'; await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]); }
+  mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
   try {
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, myPrice: myPriceMap(), note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
@@ -688,7 +690,7 @@ function renderMyCost() {
   const x = loadMy(), ks = Object.keys(x), box = document.getElementById('mc-list'); if (!box) return;
   document.getElementById('mc-sum').textContent = ks.length ? `재료 ${ks.length}개 · 신메뉴 원가를 이 값으로 먼저 계산해요` : '우리 가게 구매가를 넣으면 신메뉴 원가를 그 값으로 계산해요';
   box.innerHTML = ks.length ? `<table><thead><tr><th>재료</th><th class="num-r">단가</th><th>산 양·가격</th><th></th></tr></thead><tbody>${ks.map(k =>
-    `<tr><td>${esc(k)}</td><td class="num-r">${x[k].price}원/${x[k].unit}</td><td><small>${esc(x[k].buy || '결과 표에서 고침')}</small></td><td><button type="button" class="mc-x" data-k="${esc(k)}" aria-label="지우기">×</button></td></tr>`).join('')}</tbody></table>`
+    `<tr><td>${esc(k)}${x[k].src ? `<span class="mc-src">${x[k].src === 'sheet' ? '시트' : '파일'}</span>` : ''}${x[k].note ? ` <small>(${esc(x[k].note)})</small>` : ''}</td><td class="num-r">${x[k].price}원/${x[k].unit}</td><td><small>${esc(x[k].buy || '결과 표에서 고침')}</small></td><td><button type="button" class="mc-x" data-k="${esc(k)}" aria-label="지우기">×</button></td></tr>`).join('')}</tbody></table>`
     : '<p class="note">아직 넣은 재료가 없어요.</p>';
   box.querySelectorAll('.mc-x').forEach(b => b.onclick = () => { const y = loadMy(); delete y[b.dataset.k]; storeMy(y); renderMyCost(); });
 }
@@ -719,7 +721,88 @@ document.getElementById('mc-paste-btn').addEventListener('click', () => {
   document.getElementById('mc-paste-msg').textContent = `${ok}개 넣었어요.` + (bad.length ? ` 못 읽은 줄 ${bad.length}개: ${bad.slice(0, 3).join(' / ')}` : '');
   if (ok && !bad.length) document.getElementById('mc-text').value = '';
 });
-renderMyCost();
+// ---------- 원가표 시트·엑셀 파일: 머리줄에서 재료·구매가·구매용량·단위(또는 단가) 열을 찾아 읽는다 ----------
+function rowsToCosts(rows) {
+  const out = [], cell = (r, i) => i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '', num = x => +String(x).replace(/[,원\s]/g, '');
+  const hi = rows.slice(0, 6).findIndex(r => r.some(c => /^(재료|재료명|품목|품목명)$/.test(String(c).trim())));
+  if (hi < 0) { rows.forEach(r => { const v = parseCostLine(r.join('\t')); if (v) out.push(v); }); return out; }
+  const h = rows[hi].map(c => String(c).replace(/\s/g, '')), find = re => h.findIndex(c => re.test(c));
+  const iN = find(/^(재료|재료명|품목|품목명)$/), iP = find(/^(구매가|가격|구입가|매입가|금액)/), iQ = find(/^(구매용량|용량|구매량|수량|양|중량)/),
+    iU = find(/^단위$/), iUP = find(/단위당단가|^단가/), iBuy = find(/^(구매상품|상품명|상품)/);
+  for (const r of rows.slice(hi + 1)) {
+    const name = cell(r, iN); if (!name || /^[※*#]/.test(name)) continue;
+    const unit = cell(r, iU) || 'g', u = /ea/i.test(unit) ? '개' : unit;
+    let v = null;
+    if (iP >= 0 && iQ >= 0 && num(cell(r, iQ)) > 0 && cell(r, iP) !== '') v = unitPrice(num(cell(r, iQ)), u, num(cell(r, iP)));
+    else if (iUP >= 0 && cell(r, iUP) !== '' && /^(g|kg|ml|l|L|개)$/.test(u)) v = unitPrice(1, u, num(cell(r, iUP)));
+    if (!v || !isFinite(v.price)) continue;
+    if (iBuy >= 0 && cell(r, iBuy)) v.buy = `${cell(r, iBuy)}${iP >= 0 ? ' ' + num(cell(r, iP)).toLocaleString() + '원' : ''}`;
+    const nt = r.join(' ').match(/AI 추정|예시값|예시/); if (nt) v.note = nt[0];
+    out.push([name, v]);
+  }
+  return out;
+}
+// src('sheet'|'file')에서 온 재료를 새로 바꿔 넣는다 (같은 이름이면 시트·파일 값이 이김)
+function applyCosts(list, src) {
+  const x = loadMy(); Object.keys(x).forEach(k => { if (x[k].src === src) delete x[k]; });
+  list.forEach(([k, v]) => { const n = String(k).replace(/\s/g, '').slice(0, 20); if (n) x[n] = { ...v, src }; });
+  storeMy(x); renderMyCost(); return list.length;
+}
+function parseCSVText(t) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) { const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch; }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+const SHEET_KEY = 'dessert-timing-sheet';
+const loadSheet = () => { try { return JSON.parse(localStorage.getItem(SHEET_KEY)) || null; } catch { return null; } };
+const parseSheetUrl = u => { const m = String(u).match(/\/spreadsheets\/d\/([A-Za-z0-9_-]{20,80})/), g = String(u).match(/[#&?]gid=(\d+)/); return m ? { id: m[1], gid: g ? g[1] : '' } : null; };
+function sheetUI(msg) {
+  const sh = loadSheet(), off = document.getElementById('mc-sheet-off'), inp = document.getElementById('mc-sheet');
+  off.hidden = !sh; if (sh && !inp.value) inp.value = sh.url;
+  if (msg) document.getElementById('mc-sheet-msg').innerHTML = msg;
+}
+async function syncSheet(fresh) {
+  const sh = loadSheet(); if (!sh) return;
+  try {
+    const d = await fetch(`${LIVE_API}/sheet?id=${encodeURIComponent(sh.id)}&gid=${encodeURIComponent(sh.gid || '')}${fresh ? '&fresh=1' : ''}`).then(r => r.json());
+    if (!d.ok) { sheetUI(`⚠️ ${esc(d.error || '시트를 읽지 못했어요.')}`); return; }
+    const n = applyCosts(rowsToCosts(d.rows), 'sheet');
+    sheetUI(n ? `✅ 시트에서 재료 <b>${n}개</b>를 불러왔어요 (${esc(d.at || '')}). 시트를 고치면 신메뉴를 만들 때 다시 읽어요(5분 안에 반영).`
+      : '⚠️ 시트에서 재료를 찾지 못했어요. 첫 줄에 재료 · 구매가 · 구매용량 · 단위 제목이 있는지 확인해 주세요.');
+  } catch { sheetUI('⚠️ 시트를 읽는 중 연결이 끊겼어요. 잠시 뒤 다시 눌러 주세요.'); }
+}
+document.getElementById('mc-sheet-form').addEventListener('submit', e => {
+  e.preventDefault(); const url = document.getElementById('mc-sheet').value.trim(), p = parseSheetUrl(url);
+  if (!p) { sheetUI('⚠️ 구글 시트 주소(https://docs.google.com/spreadsheets/d/…)를 넣어 주세요.'); return; }
+  try { localStorage.setItem(SHEET_KEY, JSON.stringify({ url, ...p })); } catch { }
+  sheetUI('시트를 읽는 중…'); syncSheet(true);
+});
+document.getElementById('mc-sheet-off').addEventListener('click', () => {
+  try { localStorage.removeItem(SHEET_KEY); } catch { } applyCosts([], 'sheet'); document.getElementById('mc-sheet').value = '';
+  sheetUI('연결을 끊고 시트에서 불러온 재료를 지웠어요.');
+});
+document.getElementById('mc-file').addEventListener('change', async e => {
+  const f = e.target.files[0], msg = document.getElementById('mc-file-msg'); if (!f) return;
+  msg.textContent = '파일을 읽는 중…';
+  try {
+    let rows;
+    if (/\.csv$/i.test(f.name)) rows = parseCSVText(await f.text());
+    else {
+      if (!window.XLSX) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }), nm = wb.SheetNames.find(n => /재료\s*단가|원가표|단가/.test(n)) || wb.SheetNames[0];
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, raw: false, defval: '' });
+    }
+    const n = applyCosts(rowsToCosts(rows), 'file');
+    msg.textContent = n ? `${f.name}에서 재료 ${n}개를 넣었어요.` : '재료를 찾지 못했어요. 첫 줄에 재료 · 구매가 · 구매용량 · 단위 제목이 있는지 확인해 주세요.';
+  } catch { msg.textContent = '파일을 읽지 못했어요. .xlsx 또는 .csv 파일인지 확인해 주세요.'; }
+  e.target.value = '';
+});
+renderMyCost(); sheetUI(); syncSheet();
 // 결과 표의 단가 눌러 고치기 → 내 원가표에 저장하고 원가·원가율 다시 계산
 mkOut.addEventListener('click', e => {
   const b = e.target.closest('.up-edit'); if (!b || !LAST_MENU) return;
