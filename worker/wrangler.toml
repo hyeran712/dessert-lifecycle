@@ -16,3 +16,12 @@ class_name = "GeminiProxy"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["GeminiProxy"]
+
+# 사용량 제한·익명 사용 기록 (SQLite). 2026-11-09
+[[durable_objects.bindings]]
+name = "STATS"
+class_name = "Stats"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Stats"]

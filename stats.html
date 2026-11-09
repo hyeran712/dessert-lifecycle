@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>디저트 타이밍 사용 통계</title>
+<link rel="icon" href="img/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--y:#ffd400;--o:#ff5a1f;--ink:#1c1c1c;--ink2:#555;--ink3:#8a8a8a;--bg:#fff8dc;--line:#eee3bf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.55}
+header{background:var(--y);border-bottom:3px solid var(--ink);padding:14px 16px}
+header h1{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:24px;margin:0}
+header p{margin:2px 0 0;font-size:13px;color:var(--ink2)}
+main{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
+.card{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:5px 5px 0 var(--ink)}
+.card h2{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:19px;margin:0 0 4px}
+.card .sub{margin:0 0 12px;font-size:13px;color:var(--ink2)}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input,select,button{font:inherit;font-size:15px;border:2px solid var(--ink);border-radius:10px;padding:8px 12px;background:#fff}
+input{flex:1;min-width:200px}
+button{font-weight:900;cursor:pointer;background:var(--ink);color:var(--y)}
+button.line{background:#fff;color:var(--ink)}
+.note{font-size:13px;color:var(--ink2)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.tile span{display:block;font-size:12.5px;color:var(--ink2)}
+.tile b{display:block;font-size:26px;font-weight:900;line-height:1.2;margin:2px 0}
+.tile small{font-size:12px;color:var(--ink3)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:170px;border-bottom:1px solid var(--ink3);padding-top:18px}
+.bar{flex:1;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:default}
+.bar i{display:block;width:100%;max-width:34px;background:var(--o);border-radius:4px 4px 0 0;min-height:0}
+.bar em{position:absolute;font-style:normal;font-size:11.5px;font-weight:700;color:var(--ink)}
+.bar:hover i{outline:2px solid var(--ink);outline-offset:1px}
+.xl{display:flex;gap:4px;margin-top:4px}.xl span{flex:1;text-align:center;font-size:11px;color:var(--ink3)}
+.rank{list-style:none;margin:0;padding:0}
+.rank li{display:grid;grid-template-columns:120px 1fr 48px;gap:8px;align-items:center;padding:4px 0}
+.rank .t{height:14px;background:#f3ead0;border-radius:4px;overflow:hidden}
+.rank .t i{display:block;height:100%;background:var(--o);border-radius:0 4px 4px 0}
+.rank b{text-align:right;font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.grid2{grid-template-columns:1fr}.rank li{grid-template-columns:96px 1fr 40px}}
+.funnel li{grid-template-columns:150px 1fr 70px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+td.n,th.n{text-align:right}
+.tw{overflow-x:auto}
+.tag{display:inline-block;font-size:11.5px;font-weight:900;border:1px solid var(--ink);border-radius:5px;padding:0 6px;margin-right:4px;background:var(--bg)}
+.tag.like{background:#e3f4e8}.tag.dislike{background:#ffe1d6}.tag.menu_save{background:var(--y)}
+details summary{cursor:pointer;font-weight:800;font-size:14px;margin-top:10px}
+.err{color:#b3261e;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>디저트 타이밍 사용 통계</h1>
+  <p>사장님들이 사이트를 어떻게 쓰는지 익명으로 모은 숫자예요. 이름·이메일은 모으지 않아요. (주인만 보는 페이지)</p>
+</header>
+<main>
+  <section class="card" id="login">
+    <h2>열쇠 넣기</h2>
+    <p class="sub">Cloudflare Worker 비밀 변수 <b>STATS_KEY</b>에 넣은 값과 같은 글자를 넣어 주세요. 이 브라우저에 저장되고, 이 브라우저에서 쓰는 사이트는 <b>횟수 제한 없이</b>, <b>통계에도 안 잡혀요</b>.</p>
+    <form id="kf"><input type="password" id="key" placeholder="STATS_KEY" autocomplete="off" aria-label="통계 열쇠">
+      <select id="days" aria-label="기간"><option value="7">최근 7일</option><option value="14" selected>최근 14일</option><option value="30">최근 30일</option><option value="90">최근 90일</option></select>
+      <button type="submit">보기</button><button type="button" class="line" id="out">열쇠 지우기</button></form>
+    <p class="note" id="msg"></p>
+  </section>
+  <div id="out-wrap" hidden>
+    <section class="card"><h2>한눈에 보기</h2><p class="sub" id="range"></p><div class="tiles" id="tiles"></div></section>
+    <section class="card"><h2>날마다 만든 신메뉴</h2><p class="sub">막대에 마우스를 올리면 그날 방문자·저장·👍가 보여요.</p>
+      <div class="bars" id="bars" role="img" aria-label="날짜별 신메뉴 수"></div><div class="xl" id="xl"></div>
+      <details><summary>표로 보기</summary><div class="tw"><table id="daytbl"></table></div></details></section>
+    <div class="grid2">
+      <section class="card"><h2>어디까지 쓰나</h2><p class="sub">이 기간에 한 번이라도 해 본 사람 수</p><ul class="rank funnel" id="funnel"></ul></section>
+      <section class="card"><h2>많이 만든 디저트</h2><p class="sub">신메뉴 만들기 횟수</p><ul class="rank" id="topk"></ul>
+        <h2 style="margin-top:14px">메뉴 목적</h2><ul class="rank" id="goals"></ul></section>
+    </div>
+    <section class="card"><h2>최근 기록</h2><p class="sub">신메뉴 만들기 · 저장 · 👍/👎 최근 40개</p><div class="tw"><table id="recent"></table></div></section>
+    <section class="card"><h2>횟수 제한에 걸린 횟수</h2><p class="sub">많으면 하루 한도(신메뉴 20 · 검색 150 · 시트 60)를 늘릴지 생각해 보세요.</p><div id="limits" class="note"></div></section>
+  </div>
+</main>
+<script>
+const API = 'https://dessert-timing.yhr9232.workers.dev';
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+const KEY = 'dessert-timing-owner';
+const NAME = { visit: '방문', select: '디저트 고르기', step: '단계 이동', menu: '신메뉴 만들기', menu_fail: '만들기 실패', menu_save: '보관함 저장', menu_again: '다른 메뉴', like: '👍', dislike: '👎', sheet: '시트 연결', file: '엑셀 올리기', pdf: '동네 리포트 PDF', price_pick: '시장가로 짜기', rec: '추천 받기', local: '동네 리포트', cost_edit: '단가 고치기', limit: '횟수 제한' };
+try { $('key').value = localStorage.getItem(KEY) || ''; } catch { }
+$('out').onclick = () => { try { localStorage.removeItem(KEY); } catch { } $('key').value = ''; $('msg').textContent = '열쇠를 지웠어요. 이제 이 브라우저도 일반 사용자처럼 횟수 제한·통계에 잡혀요.'; $('out-wrap').hidden = true; };
+$('kf').onsubmit = e => { e.preventDefault(); load(); };
+if ($('key').value) load();
+async function load() {
+  const k = $('key').value.trim(); if (!k) return;
+  $('msg').textContent = '불러오는 중…';
+  try {
+    const d = await fetch(`${API}/stats?days=${$('days').value}`, { headers: { 'X-Stats-Key': k } }).then(r => r.json());
+    if (!d.ok) { $('msg').innerHTML = `<span class="err">${esc(d.error || '불러오지 못했어요.')}</span>`; return; }
+    try { localStorage.setItem(KEY, k); } catch { }
+    $('msg').textContent = '✅ 열쇠가 맞아요. 이 브라우저에 저장했어요.'; render(d);
+  } catch (e) { $('msg').innerHTML = `<span class="err">연결하지 못했어요: ${esc(e.message)}</span>`; }
+}
+function render(d) {
+  $('out-wrap').hidden = false;
+  // 날짜 칸 만들기 (기록 없는 날도 0으로)
+  const days = [], start = new Date(d.since + 'T00:00:00Z');
+  for (let i = 0; i < d.days; i++) days.push(new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10));
+  const by = {}; days.forEach(x => by[x] = {});
+  d.byDay.forEach(r => { if (by[r.day]) by[r.day][r.type] = { c: r.c, u: r.u }; });
+  const usersBy = Object.fromEntries(d.users.map(r => [r.day, r.u]));
+  const sum = t => d.byDay.filter(r => r.type === t).reduce((a, r) => a + r.c, 0);
+  const menus = sum('menu'), saves = sum('menu_save'), likes = sum('like'), dislikes = sum('dislike'), fails = sum('menu_fail');
+  $('range').textContent = `${d.since} ~ 오늘 (${d.days}일)`;
+  const tile = (l, v, s) => `<div class="tile"><span>${l}</span><b>${v}</b><small>${s || ''}</small></div>`;
+  $('tiles').innerHTML = tile('다녀간 사람', d.totalUsers.toLocaleString(), '익명 번호 기준') + tile('다시 온 사람', d.returning.toLocaleString(), `2일 이상 · ${pct(d.returning, d.totalUsers)}`)
+    + tile('만든 신메뉴', menus.toLocaleString(), fails ? `실패 ${fails}번` : '') + tile('보관함 저장 비율', pct(saves, menus), `${saves}번 저장`)
+    + tile('👍 비율', pct(likes, likes + dislikes), `👍 ${likes} · 👎 ${dislikes}`) + tile('원가표 연결', (sum('sheet') + sum('file')).toLocaleString(), `시트 ${sum('sheet')} · 엑셀 ${sum('file')}`);
+  // 막대: 날짜별 신메뉴 수 (한 가지 색, 높이 = 개수)
+  const vals = days.map(x => (by[x].menu || {}).c || 0), mx = Math.max(1, ...vals);
+  $('bars').innerHTML = days.map((x, i) => { const v = vals[i], h = v / mx * 100, s = by[x];
+    const tip = `${x}\n신메뉴 ${v}개 · 방문자 ${usersBy[x] || 0}명\n저장 ${(s.menu_save || {}).c || 0} · 👍 ${(s.like || {}).c || 0} · 👎 ${(s.dislike || {}).c || 0}`;
+    return `<div class="bar" title="${esc(tip)}"><em style="bottom:calc(${h}% + 2px)">${v || ''}</em><i style="height:${h}%"></i></div>`; }).join('');
+  const step = Math.ceil(days.length / 10);
+  $('xl').innerHTML = days.map((x, i) => `<span>${i % step === 0 || i === days.length - 1 ? x.slice(5).replace('-', '/') : ''}</span>`).join('');
+  const cols = ['visit', 'menu', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'pdf'];
+  $('daytbl').innerHTML = `<tr><th>날짜</th><th class="n">사람</th>${cols.map(c => `<th class="n">${NAME[c]}</th>`).join('')}</tr>`
+    + days.slice().reverse().map(x => `<tr><td>${x}</td><td class="n">${usersBy[x] || 0}</td>${cols.map(c => `<td class="n">${(by[x][c] || {}).c || 0}</td>`).join('')}</tr>`).join('');
+  // 어디까지 쓰나: 기간 전체에서 그 일을 해 본 사람 수 (날짜별 u를 더하면 중복이 생겨 '최대 하루 값'이 아니라 근사치)
+  const uOf = t => d.byDay.filter(r => r.type === t).reduce((a, r) => a + r.u, 0);
+  const fun = [['방문', uOf('visit')], ['디저트 고르기', uOf('select')], ['메뉴 만들기 단계', d.byDay.filter(r => r.type === 'step').reduce((a, r) => a + r.u, 0)], ['신메뉴 만들기', uOf('menu')], ['보관함 저장', uOf('menu_save')]];
+  const fm = Math.max(1, ...fun.map(f => f[1]));
+  $('funnel').innerHTML = fun.map(([l, v]) => `<li><span>${l}</span><span class="t"><i style="width:${v / fm * 100}%"></i></span><b>${v}</b></li>`).join('')
+    + '<li class="note" style="display:block">날짜마다 센 사람을 더한 값이라, 여러 날 온 사람은 여러 번 잡혀요.</li>';
+  const rank = (el, rows, key) => { const m = Math.max(1, ...rows.map(r => r.c));
+    $(el).innerHTML = rows.length ? rows.map(r => `<li><span>${esc(r[key] || '(없음)')}</span><span class="t"><i style="width:${r.c / m * 100}%"></i></span><b>${r.c}</b></li>`).join('') : '<li class="note">아직 없어요.</li>'; };
+  rank('topk', d.topK, 'k'); rank('goals', d.goals, 'goal');
+  $('recent').innerHTML = d.recent.length ? `<tr><th>때</th><th>무엇</th><th>디저트</th><th>목적</th><th>메뉴 이름</th><th class="n">원가율</th><th class="n">걸린 초</th></tr>`
+    + d.recent.map(r => { const v = r.v || {}, t = new Date(r.ts + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ');
+      return `<tr><td>${t}</td><td><span class="tag ${r.type}">${NAME[r.type] || r.type}</span></td><td>${esc(r.k)}</td><td>${esc(r.goal)}</td><td>${esc(v.name || '')}</td><td class="n">${v.rate != null ? v.rate + '%' : ''}</td><td class="n">${v.sec != null ? v.sec : ''}</td></tr>`; }).join('')
+    : '<tr><td class="note">아직 기록이 없어요.</td></tr>';
+  $('limits').innerHTML = d.limits.length ? d.limits.map(r => `${r.day} · ${({ menu: '신메뉴', search: '검색', sheet: '시트' })[r.kind] || r.kind} ${r.c}번`).join('<br>') : '아직 없어요 👍';
+}
+</script>
+</body>
+</html>

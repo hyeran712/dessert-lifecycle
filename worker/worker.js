@@ -30,6 +30,64 @@ export class GeminiProxy extends DurableObject {
     catch (e) { return new Response(JSON.stringify({ error: { message: 'timeout ' + ms + 'ms' } }), { status: 504 }); }
   }
 }
+// ---------- 사용량 제한·익명 사용 기록 (Durable Object 안의 SQLite, 2026-11-09) ----------
+// IP는 그대로 저장하지 않고 소금을 친 해시 앞 16자리만. uid는 화면이 만든 무작위 익명 번호(localStorage)
+export class Stats extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env); this.sql = ctx.storage.sql;
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS hits (day TEXT, who TEXT, kind TEXT, n INTEGER, PRIMARY KEY (day, who, kind))`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS events (ts INTEGER, day TEXT, type TEXT, uid TEXT, k TEXT, goal TEXT, v TEXT)`);
+    this.sql.exec(`CREATE INDEX IF NOT EXISTS ev_day ON events (day)`);
+  }
+  // 오늘 횟수 +1 하고 한도 안인지. 한도를 넘으면 늘리지 않는다
+  hit(day, who, kind, limit) {
+    const r = [...this.sql.exec(`SELECT n FROM hits WHERE day=? AND who=? AND kind=?`, day, who, kind)][0], n = r ? r.n : 0;
+    if (n >= limit) return { ok: false, n, limit };
+    this.sql.exec(`INSERT INTO hits (day, who, kind, n) VALUES (?, ?, ?, 1) ON CONFLICT(day, who, kind) DO UPDATE SET n = n + 1`, day, who, kind);
+    if (Math.random() < 0.02) this.sql.exec(`DELETE FROM hits WHERE day < ?`, new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10));
+    return { ok: true, n: n + 1, limit };
+  }
+  log(e) {
+    this.sql.exec(`INSERT INTO events (ts, day, type, uid, k, goal, v) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      Date.now(), e.day, e.type, e.uid || '', e.k || '', e.goal || '', e.v ? JSON.stringify(e.v).slice(0, 600) : '');
+  }
+  summary(days) {
+    const since = new Date(Date.now() + 9 * 3600e3 - (days - 1) * 864e5).toISOString().slice(0, 10);
+    const q = (s, ...a) => [...this.sql.exec(s, ...a)];
+    const byDay = q(`SELECT day, type, COUNT(*) c, COUNT(DISTINCT uid) u FROM events WHERE day >= ? GROUP BY day, type ORDER BY day`, since);
+    const users = q(`SELECT day, COUNT(DISTINCT uid) u FROM events WHERE day >= ? AND uid != '' GROUP BY day ORDER BY day`, since);
+    const totalUsers = q(`SELECT COUNT(DISTINCT uid) u FROM events WHERE day >= ? AND uid != ''`, since)[0].u;
+    const returning = q(`SELECT COUNT(*) c FROM (SELECT uid FROM events WHERE day >= ? AND uid != '' GROUP BY uid HAVING COUNT(DISTINCT day) >= 2)`, since)[0].c;
+    const topK = q(`SELECT k, COUNT(*) c FROM events WHERE day >= ? AND type = 'menu' GROUP BY k ORDER BY c DESC LIMIT 10`, since);
+    const goals = q(`SELECT goal, COUNT(*) c FROM events WHERE day >= ? AND type = 'menu' GROUP BY goal ORDER BY c DESC`, since);
+    const recent = q(`SELECT ts, type, k, goal, v FROM events WHERE type IN ('menu','like','dislike','menu_save') ORDER BY ts DESC LIMIT 40`);
+    const limits = q(`SELECT day, k AS kind, COUNT(*) c FROM events WHERE day >= ? AND type = 'limit' GROUP BY day, k`, since);
+    return { since, days, byDay, users, totalUsers, returning, topK, goals, recent: recent.map(r => ({ ...r, v: r.v ? JSON.parse(r.v) : null })), limits };
+  }
+}
+const LIMITS = { menu: 20, search: 150, sheet: 60 };   // 한 사람(IP)이 하루에 쓸 수 있는 횟수
+const LIMIT_NAME = { menu: '신메뉴 만들기', search: '검색·분석', sheet: '원가표 시트 읽기' };
+const kday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜
+const statsDO = env => env.STATS ? env.STATS.get(env.STATS.idFromName('stats-v1')) : null;
+async function whoOf(request, env) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode((env.STATS_SALT || 'dessert-timing-2026') + ip));
+  return [...new Uint8Array(h)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const isOwner = (request, env) => !!env.STATS_KEY && request.headers.get('X-Owner-Key') === env.STATS_KEY;
+// 한도를 넘었으면 429 응답을, 아니면 null
+async function overLimit(kind, request, env, origin) {
+  const st = statsDO(env); if (!st || isOwner(request, env)) return null;
+  try {
+    const r = await st.hit(kday(), await whoOf(request, env), kind, LIMITS[kind]);
+    if (r.ok) return null;
+    st.log({ day: kday(), type: 'limit', k: kind, uid: request.headers.get('X-Uid') || '' }).catch(() => { });
+    return json({ error: `오늘 ${LIMIT_NAME[kind]} 횟수(하루 ${r.limit}번)를 다 썼어요. 내일 다시 써 주세요.`, limit: true, kind }, 429, origin);
+  } catch { return null; }   // 기록 저장소에 문제가 있어도 서비스는 그대로
+}
+const logEvent = (env, ctx, e) => { const st = statsDO(env); if (st) ctx.waitUntil(st.log({ day: kday(), ...e }).catch(() => { })); };
+const EVENT_TYPES = new Set(['visit', 'select', 'step', 'menu_save', 'menu_again', 'like', 'dislike', 'sheet', 'file', 'pdf', 'price_pick', 'rec', 'local', 'cost_edit']);
+
 async function geminiFetch(url, init, env, ms = 40000) {
   if (!env.GEMINI_PROXY) {
     try { return await fetch(url, { ...init, signal: AbortSignal.timeout(ms) }); }
@@ -52,7 +110,7 @@ function cors(origin) {
   return {
     'Access-Control-Allow-Origin': ok ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Owner-Key, X-Stats-Key, X-Uid',
     'Vary': 'Origin',
   };
 }
@@ -562,11 +620,34 @@ export default {
       const t = await (await geminiFetch('https://www.cloudflare.com/cdn-cgi/trace', {}, env)).text();
       return json({ worker: request.cf && request.cf.colo, gemini: (t.match(/colo=(\w+)/) || [])[1], loc: (t.match(/loc=(\w+)/) || [])[1] }, 200, origin);
     }
+    const uid = String(request.headers.get('X-Uid') || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
+    if (url.pathname === '/event' && request.method === 'POST') {   // 화면에서 보내는 익명 사용 기록 (sendBeacon은 text/plain)
+      try {
+        const e = JSON.parse((await request.text()).slice(0, 2000));
+        if (EVENT_TYPES.has(e.type)) logEvent(env, ctx, { type: e.type, uid: String(e.uid || uid).replace(/[^a-z0-9]/gi, '').slice(0, 24),
+          k: String(e.k || '').slice(0, 30), goal: String(e.goal || '').slice(0, 20), v: e.v && typeof e.v === 'object' ? e.v : null });
+      } catch { }
+      return new Response(null, { status: 204, headers: cors(origin) });
+    }
+    if (url.pathname === '/stats') {   // 사용자(주인)만 보는 통계: 대시보드에 넣은 STATS_KEY와 같아야 함
+      if (!env.STATS_KEY) return json({ ok: false, error: 'Worker 비밀 변수 STATS_KEY가 아직 없어요.' }, 503, origin);
+      if (request.headers.get('X-Stats-Key') !== env.STATS_KEY) return json({ ok: false, error: '열쇠가 맞지 않아요.' }, 403, origin);
+      const st = statsDO(env); if (!st) return json({ ok: false, error: 'STATS 저장소가 없어요.' }, 503, origin);
+      return json({ ok: true, ...(await st.summary(Math.max(1, Math.min(90, Number(url.searchParams.get('days')) || 14)))) }, 200, origin);
+    }
     if (url.pathname === '/menu') {
       if (request.method !== 'POST') return json({ error: 'POST로 요청해 주세요.' }, 405, origin);
       if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY가 설정되지 않았어요.' }, 500, origin);
-      try { return json(await menu(await request.json(), env), 200, origin); }
-      catch (e) { return json({ error: String(e.message || e), ...(e.got ? { got: e.got } : {}) }, 502, origin); }
+      const lim = await overLimit('menu', request, env, origin); if (lim) return lim;
+      const t0 = Date.now(); let body = {};
+      try {
+        body = await request.json(); const m = await menu(body, env);
+        logEvent(env, ctx, { type: 'menu', uid, k: m.keyword, goal: m.goal, v: { name: m.name, rate: m.rate, pass: m.pass, price: m.price, sec: Math.round((Date.now() - t0) / 1000), model: m.ai && m.ai.model, my: m.recipe.filter(r => r.source === '내 원가표').length, again: /앞에서 제안한/.test(body.note || '') } });
+        return json(m, 200, origin);
+      } catch (e) {
+        logEvent(env, ctx, { type: 'menu_fail', uid, k: String(body.keyword || '').slice(0, 30), v: { err: String(e.message || e).slice(0, 120), sec: Math.round((Date.now() - t0) / 1000) } });
+        return json({ error: String(e.message || e), ...(e.got ? { got: e.got } : {}) }, 502, origin);
+      }
     }
     if (url.pathname === '/kamis') {   // 재료 시세: 하루 동안 캐시
       const all = url.searchParams.get('all') === '1';
@@ -585,8 +666,10 @@ export default {
       const ck = new Request(`https://cache.local/sheet?id=${encodeURIComponent(id)}&gid=${encodeURIComponent(gid)}`);
       const h = url.searchParams.get('fresh') === '1' ? null : await caches.default.match(ck);
       if (h) { const r = new Response(h.body, h); Object.entries(cors(origin)).forEach(([k, v]) => r.headers.set(k, v)); return r; }
+      const lim = await overLimit('sheet', request, env, origin); if (lim) return lim;
       try {
         const data = await sheetRows(id, gid), resp = json(data, 200, origin, data.ok ? 300 : 0);
+        if (url.searchParams.get('fresh') === '1') logEvent(env, ctx, { type: 'sheet', uid, k: data.ok ? 'ok' : 'fail', v: { rows: data.ok ? data.rows.length : 0 } });
         if (data.ok) ctx.waitUntil(caches.default.put(ck, resp.clone()));
         return resp;
       } catch (e) { return json({ ok: false, error: String(e.message || e) }, 200, origin); }
@@ -600,6 +683,7 @@ export default {
     const hit = await cache.match(key);
     if (hit) { const r = new Response(hit.body, hit); Object.entries(cors(origin)).forEach(([k, v]) => r.headers.set(k, v)); return r; }
 
+    if (['/trend', '/volume', '/brands', '/price', '/shops'].includes(url.pathname)) { const lim = await overLimit('search', request, env, origin); if (lim) return lim; }   // 캐시에서 나간 건 세지 않음
     try {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
