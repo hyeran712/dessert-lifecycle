@@ -283,7 +283,7 @@ const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 
 const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
 // 이름 검색 수가 디저트와 상관없이 큰 대형 체인·편의점은 순위에서 뺀다
 const BIG_CHAIN = /^(스타벅스|투썸|투썸플레이스|이디야|이디야커피|메가커피|메가mgc커피|메가엠지씨커피|컴포즈|컴포즈커피|빽다방|파리바게뜨|파리바게트|뚜레쥬르|배스킨라빈스|던킨|던킨도너츠|폴바셋|할리스|할리스커피|커피빈|파스쿠찌|엔제리너스|탐앤탐스|요거프레소|더벤티|매머드커피|cu|gs25|세븐일레븐|이마트24|이마트|홈플러스|코스트코|노브랜드|다이소|올리브영|쿠팡)$/i;
-const BRANDS_VER = 3;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
+const BRANDS_VER = 4;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
 const BR_AREAS = ['', '서울', '성수', '홍대', '강남', '부산', '대구', '대전', '광주', '인천', '수원', '제주'];
 const SHOP_CAT = /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키|마카롱|베이글/;
 // 지역 검색 가게 이름 → 브랜드 이름 ('○○ 성수점' → '○○')
@@ -313,7 +313,7 @@ async function brands(q, env, debug) {
   const dbg = debug ? { related: all.length, withHint: all.filter(x => x.keyword.replace(/\s+/g, '').includes(hint)).slice(0, 40).map(x => [x.keyword, x.total]), local: {}, cand: [] } : null;
   const cand = new Map();   // 공백 없는 이름 → 후보
   const add = (name, info) => {
-    const key = adKey(name); if (key.length < 2 || key.length > 20 || key === hint || GENERIC.test(key) || BIG_CHAIN.test(key)) return;
+    const key = adKey(name); if (key.length < 3 || key.length > 20 || key === hint || GENERIC.test(key) || BIG_CHAIN.test(key)) return;
     const c = cand.get(key) || { name, key, hits: 0 }; c.hits++;
     if (info && !c.shop) Object.assign(c, info);
     cand.set(key, c);
@@ -332,9 +332,12 @@ async function brands(q, env, debug) {
         if (!SHOP_CAT.test(i.category || '')) continue;
         const title = stripTag(i.title).trim();
         const info = { shop: title, cat: (i.category || '').split('>').pop(), addr: (i.roadAddress || i.address || '').split(' ').slice(0, 2).join(' ') };
-        // '노티드 청담'처럼 동네 이름이 붙은 가게도 있어 앞 1·2단어 이름도 같이 잰다 (가게마다 검색 수가 가장 큰 이름을 쓴다)
-        const b = brandOf(title), w = b.split(' ');
-        [...new Set([b, w.slice(0, 2).join(' '), w[0]])].forEach(n => add(n, info));
+        // '노티드 청담'처럼 끝에 동네 이름이 붙은 가게는 그걸 뗀 이름도 같이 잰다 (가게마다 검색 수가 가장 큰 이름을 쓴다)
+        // 앞 단어만 떼면 '클래식'처럼 흔한 낱말 검색 수가 잡혀서(2026-11-09) 끝의 동네 이름·앞의 '카페'만 뗀다
+        const b = brandOf(title); let w = b.split(' ');
+        while (w.length > 1 && (GENERIC.test(w[w.length - 1]) || REGIONISH.test(w[w.length - 1]) || /^[가-힣]{2}$/.test(w[w.length - 1]))) w = w.slice(0, -1);
+        if (w.length > 1 && /^(카페|cafe)$/i.test(w[0])) w = w.slice(1);
+        [...new Set([b, w.join(' ')])].forEach(n => add(n, info));
       }
     } catch { localOk = false; }
   }));
