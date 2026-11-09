@@ -481,7 +481,17 @@ async function sheetRows(id, gid) {
   const r = await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv${/^\d{1,12}$/.test(gid || '') ? '&gid=' + gid : ''}`, { redirect: 'follow' });
   const t = await r.text();
   if (!r.ok || /^\s*<(!doctype|html)/i.test(t)) return { ok: false, need: 'share', error: "시트를 읽지 못했어요. 시트 [공유]에서 '링크가 있는 모든 사용자 — 뷰어'로 바꿔 주세요." };
-  const rows = parseCSV(t).slice(0, 400).map(x => x.slice(0, 15).map(c => c.slice(0, 120)));
+  let rows = parseCSV(t);
+  // 링크에 열린 탭에 '재료' 머리줄이 없으면 [재료단가] 탭을 이름으로 찾아 읽는다 (예: 안내 탭 링크를 넣은 경우)
+  const hasHead = rs => rs.slice(0, 6).some(r => r.some(c => /^(재료|재료명|품목|품목명)$/.test(String(c).trim())));
+  if (!hasHead(rows)) for (const tab of ['재료단가', '원가표', '단가']) {
+    try {
+      const r2 = await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}`);
+      const t2 = r2.ok ? await r2.text() : '', rs = t2 && !/^\s*</.test(t2) ? parseCSV(t2) : [];
+      if (hasHead(rs)) { rows = rs; break; }
+    } catch { }
+  }
+  rows = rows.slice(0, 400).map(x => x.slice(0, 15).map(c => c.slice(0, 120)));
   return { ok: true, rows, at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') };
 }
 
