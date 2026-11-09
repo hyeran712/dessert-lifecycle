@@ -280,7 +280,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
 // 2) 네이버 지역 검색으로 실제 카페·디저트 가게 이름인지 확인 3) 검색어 트렌드로 언제 떴는지 4) 인허가로 영업 중 매장 수
 const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 곳|판매|택배|배달|배송|후기|추천|근처|주문|예약|원조|유명한|유명|인기|맛|만드는법|만드는 법|재료|키트|밀키트|쿠팡|편의점|cu|gs25|gs|세븐일레븐|이마트|홈플러스|코스트코|다이소|스타벅스|대용량|선물|세트|박스|선물세트|도매|창업|전문점|카페|디저트|빵|빵집|베이커리|신상|신메뉴|오픈런|웨이팅|줄서는|품절|재고|가격비교|최저가|할인|이벤트|당일|오늘|내돈내산|먹방|칼로리표|유통기한|보관|보관법|냉동|해동|모양|종류|뜻|영어|일본|두바이|한국|서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남|홍대|성수|연남|망원|합정|이태원|한남|익선동|을지로|강남역|신사|가로수길|압구정|청담|잠실|여의도|명동|종로|건대|해운대|서면|전포|광안리|동성로|송리단길|판교|분당|일산|수원|동탄|송도)$/i;
 const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
-async function brands(q, env) {
+async function brands(q, env, debug) {
   const vol = await volume(q, env);
   if (!vol.ok) return vol;
   const hint = vol.q, all = vol._all || [];
@@ -293,14 +293,16 @@ async function brands(q, env) {
     const c = cand.get(rest) || { name: rest, keyword: x.keyword, total: 0 }; c.total += x.total; cand.set(rest, c);
   }
   let list = [...cand.values()].sort((a, b) => b.total - a.total).slice(0, 12);
+  const dbg = debug ? { related: all.length, withHint: all.filter(x => x.keyword.replace(/\s+/g, '').includes(hint)).slice(0, 40).map(x => [x.keyword, x.total]), cand: list.map(c => [c.name, c.total]), local: {} } : null;
   // 지역 검색으로 확인: 가게 이름이 그 단어로 시작하고 분류가 카페·디저트·제과면 '가게'
   const H = { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
   let localOk = true;
   await Promise.all(list.map(async c => {
     try {
       const r = await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/local?query=${encodeURIComponent(c.name)}&display=5`, { headers: H });
-      if (!r.ok) { localOk = false; return; }
+      if (!r.ok) { localOk = false; if (dbg) dbg.local[c.name] = 'HTTP ' + r.status; return; }
       const items = (await r.json()).items || [], nm = c.name.toLowerCase();
+      if (dbg) dbg.local[c.name] = items.map(i => [stripTag(i.title), i.category]);
       const hit = items.find(i => stripTag(i.title).replace(/\s+/g, '').toLowerCase().startsWith(nm) && /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키/.test(i.category || ''));
       if (hit) { c.shop = stripTag(hit.title); c.cat = (hit.category || '').split('>').pop(); c.addr = (hit.roadAddress || hit.address || '').split(' ').slice(0, 2).join(' '); }
     } catch { localOk = false; }
@@ -330,7 +332,7 @@ async function brands(q, env) {
     const t = rise[c.name]; if (t && t.week) { c.rise = t.week; c.now = t.now;
       if (base && base.week) c.lead = Math.round((new Date(base.week) - new Date(t.week)) / 6048e5); }   // +면 디저트 유행보다 먼저
   }));
-  return { ok: true, q: hint, month: vol.month, verified: localOk, base: base || null, brands: list };
+  return { ok: true, q: hint, month: vol.month, verified: localOk, base: base || null, brands: list, ...(dbg ? { debug: dbg } : {}) };
 }
 
 // ---------- 다른 카페 판매가: 네이버 블로그 후기에서 '소금빵 3,500원' 같은 글을 모아 보통 가격을 낸다 ----------
@@ -425,7 +427,7 @@ export default {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
       else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); delete data._all; }
-      else if (url.pathname === '/brands') { data = await brands(q, env); if (!data.ok) return json(data, 200, origin); }
+      else if (url.pathname === '/brands') { data = await brands(q, env, url.searchParams.get('debug') === '1'); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/price') { data = await cafePrice(q, cleanQuery(url.searchParams.get('area')) || '', env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
       else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/brands?q=', '/kamis'] }, 200, origin);
