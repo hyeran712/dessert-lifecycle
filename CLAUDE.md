@@ -45,7 +45,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
   - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`
   - 2단계 `[data-panel="2"]#findings`: 판정 `.result`, 그래프 `#c-main`, 핵심 발견 ①~④, 과일모찌 사례 `#case-mochi`
-  - 3단계 `[data-panel="3"]#proposal`: 목적 카드 `#goals`, 기획 카드 `#p-plan`, 내 가게 프로필 `#profile`, 요청사항 `#mk-note`, 신메뉴 버튼 `#mk-btn`, 결과 `#mk-out`, 전략표 `#p-table`
+  - 3단계 `[data-panel="3"]#proposal`: 목적 카드 `#goals`, 기획 카드 `#p-plan`(맨 끝 '내 가게' 옆에 **시장가 카드 `#pl-mkt`**(2026-11-09): `fillPlanMarket(k)`가 /price로 다른 카페 보통·대부분 범위·동네 카페 가격 + 판매가 칸 `#pl-price`(시장가로 채움)·'원가율 30%면 재료비 ○원' → [이 가격으로 메뉴 짜기] `#pl-go`가 `PICK_PRICE[k]`에 넣고 바로 makeMenu. `menuPrice()`는 PICK_PRICE 우선. renderPlan 안에서는 `esc`·MKT_CACHE가 TDZ라 setTimeout으로 부름), 내 가게 프로필 `#profile`, 요청사항 `#mk-note`, 신메뉴 버튼 `#mk-btn`, 결과 `#mk-out`, 전략표 `#p-table`
   - 오른쪽 사이드바 `#side`: 진행 단계 `#prog`, 고른 디저트 요약 `#sel-sum`
 - `#local`: 우리 동네 리포트(사장님용). 시도 `#lc-sido`·시군구 `#lc-gu` 고르면 `#lc-sheet`에 한 장 리포트, `#lc-print`로 A4 PDF 저장(인쇄용 CSS는 head.html 끝)
 - `#radar`: 별도 화면. 디저트 타일 `#rd-tiles`, 3D 지도 `#mapstage`(`#kmap` SVG, 팝업 `#map-panel`, 확대 버튼 `.ms-ctrl`), 새 가게 이름 `#rd-list`

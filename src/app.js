@@ -463,7 +463,9 @@ function renderPlan(k, v, st) {
   if (g === '기간 한정' && v.type === '유행형') gw = ` ${k}${J} 유행이 지나서, 한정이라도 2~4주로 짧게 잡으세요.`;
   document.getElementById('p-plan').innerHTML = `<div class="pl gtip"><span class="k">${g}</span><b>${gt[0]}</b><p>${gt[1]}${gw}</p></div>` +
     cards.map(([t, h, p]) => `<div class="pl"><span class="k">${t}</span><b>${h}</b><p>${p}</p></div>`).join('') +
-    `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>`;
+    `<div class="pl fit"><span class="k">${fit[0]}</span><b>${fit[1]}</b><p>${fit[2]}</p></div>` +
+    `<div class="pl mkc" id="pl-mkt"><span class="k">시장가</span><b>다른 카페 가격을 찾는 중…</b><p>네이버 블로그 후기에서 가격을 모으고 있어요.</p></div>`;
+  setTimeout(() => fillPlanMarket(k));   // 아래쪽 MKT_CACHE 선언 뒤에 돌도록 (처음 그릴 때 TDZ 방지)
   document.querySelectorAll('#p-table tbody tr').forEach(tr => tr.classList.toggle('me', tr.dataset.t === v.type));
 }
 
@@ -526,7 +528,9 @@ function runRec() {
 }
 document.getElementById('rec-btn').addEventListener('click', runRec);
 { const p0 = loadProfile(); if (p0) { REC.cat = p0.cat || ''; REC.eq = p0.eq || []; REC.price = p0.price || ''; } }
+const PICK_PRICE = {};   // 시장가 카드에서 고른 판매가 (디저트별)
 function menuPrice(k, p) {
+  if (PICK_PRICE[k]) return PICK_PRICE[k];
   const r = REQ[k] || guessReq(k);
   if (p && p.price) { const [lo, hi] = p.price.split('-').map(Number); return Math.round((lo + hi) / 2 / 100) * 100; }
   return r ? r.price : 5500;
@@ -555,9 +559,33 @@ function mktHTML(m) {
       <div class="me"><span>내 목표가</span><b>${won(m.price)}</b></div></div>
     ${say ? `<p class="mkt-say">${say}</p>` : ''}${st}${smp}`;
 }
+const marketGet = (q, a) => { const key = q + '|' + a;
+  return MKT_CACHE[key] = MKT_CACHE[key] || fetch(`${LIVE_API}/price?q=${encodeURIComponent(q)}${a ? '&area=' + encodeURIComponent(a) : ''}`).then(r => r.json()).catch(() => ({ ok: false })); };
+// 3단계 기획 카드 '시장가': 메뉴를 만들기 전에 다른 카페 가격을 먼저 보고, 그 가격으로 메뉴를 짠다
+async function fillPlanMarket(k) {
+  const box = document.getElementById('pl-mkt'); if (!box) return;
+  const area = areaWord(), [all, ar] = await Promise.all([marketGet(k, ''), area ? marketGet(k, area) : null]);
+  if (current !== k || !box.isConnected) return;
+  const ok = x => x && x.ok && x.n >= 5, base = ok(all) ? all : ok(ar) ? ar : null;
+  const p = loadProfile() || {}, def = PICK_PRICE[k] || (base ? base.median : menuPrice(k, p));
+  const head = base ? `${esc(k)} 다른 카페 보통 ${won(base.median)}` : `${esc(k)} 시장가를 내기 어려워요`;
+  const lines = base ? [`대부분 <b>${won(base.p25)}~${won(base.p75)}</b> <small>(후기 ${base.n}개)</small>`] : [all && all.need === 'search' ? '다른 카페 가격은 준비 중이에요.' : '가격이 적힌 후기가 적어요. 판매가를 직접 넣어 주세요.'];
+  if (ok(ar) && base !== ar) lines.push(`${esc(ar.area)} 카페 보통 <b>${won(ar.median)}</b> <small>(후기 ${ar.n}개)</small>`);
+  box.innerHTML = `<span class="k">시장가</span><b>${head}</b><p>${lines.join('<br>')}</p>
+    <div class="mkc-f"><label>판매가 <input type="number" id="pl-price" min="1000" max="30000" step="100" value="${def}"> 원</label>
+      <span class="mkc-c" id="pl-cost"></span></div>
+    <button type="button" class="btn primary mkc-go" id="pl-go">이 가격으로 메뉴 짜기 →</button>`;
+  const inp = box.querySelector('#pl-price'), cost = box.querySelector('#pl-cost');
+  const upd = () => { const v = +inp.value || 0; cost.innerHTML = v ? `원가율 30%면 재료비 <b>${won(v * 0.3)}</b> 안에서` : ''; };
+  inp.oninput = upd; upd();
+  box.querySelector('#pl-go').onclick = () => {
+    const v = Math.round((+inp.value || 0) / 100) * 100; if (v < 1000) { inp.focus(); return; }
+    PICK_PRICE[k] = v; inp.value = v;
+    mkBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }); makeMenu();
+  };
+}
 async function fillMarket(m, box) {
-  const q = m.keyword, area = areaWord(), get = a => { const key = q + '|' + a;
-    return MKT_CACHE[key] = MKT_CACHE[key] || fetch(`${LIVE_API}/price?q=${encodeURIComponent(q)}${a ? '&area=' + encodeURIComponent(a) : ''}`).then(r => r.json()).catch(() => ({ ok: false })); };
+  const q = m.keyword, area = areaWord(), get = a => marketGet(q, a);
   const [all, ar] = await Promise.all([get(''), area ? get(area) : null]);
   m.market = { all, area: ar, need: all && all.need };
   if (box && box.isConnected) box.innerHTML = mktHTML(m);
@@ -613,7 +641,7 @@ async function makeMenu(again) {
   const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
   const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
   const price = menuPrice(k, p);
-  mkBtn.disabled = true; mkMsg.textContent = `AI가 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (20초쯤 걸려요)`; mkOut.innerHTML = '';
+  mkBtn.disabled = true; mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
   try {
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
