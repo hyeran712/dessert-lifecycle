@@ -23,10 +23,19 @@ import { DurableObject } from 'cloudflare:workers';
 // Gemini는 홍콩 등에서 막혀 있다. Worker는 접속한 사람과 가까운 곳(가끔 홍콩)에서 돌기 때문에,
 // 미국 서부에 고정한 Durable Object를 거쳐서 Gemini를 부른다.
 export class GeminiProxy extends DurableObject {
-  async fetch(request) { return fetch(request); }
+  // x-timeout(ms) 안에 답이 없으면 끊고 504로 돌려준다 (예전엔 제한이 없어 100초 넘으면 524로 실패, 2026-11-09)
+  async fetch(request) {
+    const ms = Number(request.headers.get('x-timeout')) || 40000;
+    try { return await fetch(request, { signal: AbortSignal.timeout(ms) }); }
+    catch (e) { return new Response(JSON.stringify({ error: { message: 'timeout ' + ms + 'ms' } }), { status: 504 }); }
+  }
 }
-function geminiFetch(url, init, env) {
-  if (!env.GEMINI_PROXY) return fetch(url, init);
+async function geminiFetch(url, init, env, ms = 40000) {
+  if (!env.GEMINI_PROXY) {
+    try { return await fetch(url, { ...init, signal: AbortSignal.timeout(ms) }); }
+    catch { return new Response('{"error":{"message":"timeout"}}', { status: 504 }); }
+  }
+  init = { ...init, headers: { ...(init.headers || {}), 'x-timeout': String(ms) } };
   const stub = env.GEMINI_PROXY.get(env.GEMINI_PROXY.idFromName('us-west-v1'), { locationHint: 'wnam' });
   return stub.fetch(new Request(url, init));
 }
@@ -203,27 +212,32 @@ function costOf(recipe, MKT = {}) {
 // 기본 모델이 붐비거나 없으면 다음 모델로 넘어감 (latest 별칭은 구글이 최신 모델로 자동 연결)
 const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
 
-async function askGemini(prompt, env) {
+// deadline: 이 시각(ms)까지는 끝내야 한다. 한 번 부를 때 최대 40초, 늦거나 붐비면 다음 모델로
+// thinkingLevel 'low': 3.x 모델이 오래 '생각'하느라 느린 것을 줄인다. 모델이 이 설정을 모르면(400) 빼고 다시
+async function askGemini(prompt, env, deadline = Date.now() + 90000) {
   const models = [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
-  let res, text, last = '';
+  let res, text = '', last = '', think = true;
   for (const model of models) {
-    // 붐빌 때(503·429)는 잠깐 쉬고 같은 모델로 한 번 더, 그래도 안 되면 다음 모델
     for (let i = 0; i < 2; i++) {
+      const left = deadline - Date.now();
+      if (left < 8000) { last = last || `${model} 시간 부족`; break; }
+      const gen = { responseMimeType: 'application/json', temperature: 0.8, ...(think ? { thinkingConfig: { thinkingLevel: 'low' } } : {}) };
       res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }),
-      }, env);
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: gen }),
+      }, env, Math.min(40000, left - 3000));
       text = await res.text();
+      if (res.status === 400 && think && /thinking/i.test(text)) { think = false; i--; continue; }   // 이 모델은 thinkingLevel 모름
       if (res.ok || (res.status !== 503 && res.status !== 429)) break;
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1500));
     }
-    if (res.ok) break;
-    last = `${model} ${res.status}`;
+    if (res && res.ok) break;
+    if (res) last = `${model} ${res.status}`;
     if (/location is not supported/i.test(text)) throw new Error('Gemini 지역 제한: Worker가 Gemini를 쓸 수 없는 지역에서 실행됐어요.');
-    if (![404, 429, 503, 500].includes(res.status)) break;   // 키 오류 등은 다른 모델로 넘겨도 소용없음
+    if (res && ![404, 429, 503, 500, 504, 524].includes(res.status)) break;   // 키 오류 등은 다른 모델로 넘겨도 소용없음
+    if (deadline - Date.now() < 8000) break;
   }
-  if (!res.ok) throw new Error(`Gemini 오류 ${res.status} (마지막 시도: ${last}): ${text.slice(0, 200)}`);
+  if (!res || !res.ok) throw new Error(res && (res.status === 504 || res.status === 524) ? 'AI 답이 너무 늦어요. 잠시 뒤 다시 눌러 주세요.' : `Gemini 오류 ${res ? res.status : ''} (마지막 시도: ${last}): ${text.slice(0, 200)}`);
   const data = JSON.parse(text);
   const out = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   return JSON.parse(out.replace(/^```json\s*|```$/g, ''));
@@ -259,8 +273,10 @@ async function menu(body, env) {
 JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","goal_fit":"메뉴 목적에 맞춘 점 한 문장","photo":"SNS 인증용일 때만: 사진이 잘 나오게 담고 찍는 법 한 문장, 아니면 빈 문자열","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
   const log = [];
   let prompt = base, result, cost;
+  const deadline = Date.now() + 90000;   // 전체 90초 안에 (Cloudflare는 100초가 넘으면 524로 끊는다)
   for (let i = 1; i <= 3; i++) {
-    result = await askGemini(prompt, env);
+    if (i > 1 && deadline - Date.now() < 25000) break;   // 원가율 다시 맞출 시간이 없으면 지금 결과로
+    result = await askGemini(prompt, env, deadline);
     if (!Array.isArray(result.recipe) || !result.recipe.length) throw new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.');
     cost = costOf(result.recipe, MKT);
     const rate = cost.total / price * 100;
