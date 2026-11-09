@@ -984,8 +984,31 @@ document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListene
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
 document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
+// ---------- 브랜드 찾기: 이 디저트로 많이 찾는 가게 TOP 5 (Worker /brands) ----------
+const BR = {};
+async function renderBrands(k) {
+  const box = document.getElementById('brands'); if (!box || !k) return;
+  const $ = id => document.getElementById(id);
+  box.hidden = false; $('br-k').textContent = k; $('br-list').innerHTML = ''; $('br-tip').innerHTML = '';
+  $('br-sub').textContent = '네이버 검색 수에서 가게 이름을 찾는 중…';
+  const d = await (BR[k] = BR[k] || fetch(`${LIVE_API}/brands?q=${encodeURIComponent(k)}`).then(r => r.json()).catch(() => ({ ok: false })));
+  if (current !== k) return;
+  if (!d.ok) { box.hidden = true; return; }
+  const bs = d.brands || [];
+  $('br-sub').textContent = `네이버에서 '${k}' 앞뒤에 붙여 많이 검색한 가게 이름이에요 (최근 한 달 검색 수 · 네이버 지역 검색으로 가게 확인${d.verified ? '' : ' 못 함'} · 인허가 매장 수)`;
+  if (!bs.length) { $('br-tip').innerHTML = `아직 <b>'${esc(k)}' 하면 떠오르는 대표 가게가 없어요.</b> 먼저 자리 잡으면 '우리 가게 이름 + ${esc(k)}'(으)로 검색되는 가게가 될 수 있어요.`; return; }
+  $('br-list').innerHTML = bs.map(b => {
+    const lead = b.lead == null ? '' : b.lead >= 2 ? `<span class="br-t first">유행보다 ${b.lead}주 먼저 뜸</span>` : b.lead <= -2 ? `<span class="br-t">${-b.lead}주 늦게 따라옴</span>` : '<span class="br-t">유행과 같이 뜸</span>';
+    return `<li><div class="br-n"><b>${esc(b.shop || b.name)}</b>${b.cat ? ` <small>${esc(b.cat)}${b.addr ? ' · ' + esc(b.addr) : ''}</small>` : ''}</div>
+      <div class="br-m"><span>월 <b>${b.total.toLocaleString()}</b>회 검색</span>${lead}${b.now >= 70 ? '<span class="br-t hot">🔺 지금도 인기</span>' : ''}${b.open || b.more ? `<span>영업 중 매장 ${b.more ? '100곳 이상' : b.open + '곳'}</span>` : ''}</div></li>`;
+  }).join('');
+  const top = bs[0], first = bs.filter(b => b.lead >= 2).sort((a, b) => b.lead - a.lead)[0];
+  $('br-tip').innerHTML = `→ 1등 <b>${esc(top.shop || top.name)}</b>의 대표 메뉴 모양·가격·포장을 먼저 확인해 보세요.`
+    + (first ? ` <b>${esc(first.shop || first.name)}</b>는 유행을 먼저 시작한 곳이에요. 이 가게 SNS에 다음 유행 힌트가 있을 수 있어요.` : '')
+    + (top.open > 3 || top.more ? ' 매장이 여러 곳인 체인이라면, 맛보다 <b>우리 가게만의 한 가지</b>(크기·토핑·동네 재료)로 차별점을 두세요.' : '');
+}
 const __select = select;
-select = k => { __select(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
+select = k => { __select(k); renderBrands(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
 renderPicks(); renderSide(); renderProg(); head();
 
 
