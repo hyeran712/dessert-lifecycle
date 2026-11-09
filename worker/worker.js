@@ -211,11 +211,13 @@ function costOf(recipe, MKT = {}) {
 
 // 기본 모델이 붐비거나 없으면 다음 모델로 넘어감 (latest 별칭은 구글이 최신 모델로 자동 연결)
 const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
+const FAST_MODEL = 'gemini-flash-lite-latest';
 
 // deadline: 이 시각(ms)까지는 끝내야 한다. 한 번 부를 때 최대 40초, 늦거나 붐비면 다음 모델로
 // thinkingLevel 'low': 3.x 모델이 오래 '생각'하느라 느린 것을 줄인다. 모델이 이 설정을 모르면(400) 빼고 다시
 async function askGemini(prompt, env, deadline = Date.now() + 90000, only) {
-  const models = only ? [only] : [...new Set([env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
+  // 2026-11-09 측정: flash-lite 2~4초, flash-latest 37초~실패, 3.8-flash 40초 넘게 → 가벼운 모델을 먼저, 실패할 때만 큰 모델
+  const models = only ? [only] : [...new Set([FAST_MODEL, env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
   let res, text = '', last = '', think = true, used = '';
   const tried = [];
   for (const model of models) {
