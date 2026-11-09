@@ -9,7 +9,7 @@
  *   GEMINI_KEY    Google AI Studio Gemini API 키 (신메뉴 제안용)
  *   KAMIS_KEY, KAMIS_ID   KAMIS(농산물유통정보) Open API 인증키·아이디 (재료 시세용)
  *   NAVER_AD_KEY, NAVER_AD_SECRET, NAVER_AD_CUSTOMER   네이버 검색광고 API 액세스라이선스·비밀키·CUSTOMER_ID (월간 검색 수용)
- *   NAVER_SEARCH_ID, NAVER_SEARCH_SECRET   네이버 개발자센터(developers.naver.com) 애플리케이션 Client ID·Secret, 사용 API '검색' (다른 카페 가격용)
+ *   (다른 카페 가격) NAVER API Hub의 '검색' 상품을 이용 신청하면 NAVER_ID·SECRET 그대로 씀. 예전 developers.naver.com 키는 NAVER_SEARCH_ID·SECRET
  *
  * GET /trend?q=과일모찌                  → 2016년부터 주간 검색량 (최고점 = 100)
  * GET /shops?q=과일모찌&src=cafe&page=1  → 상호에 단어가 들어간 휴게음식점(cafe)·제과점(bakery) 100곳씩
@@ -308,14 +308,20 @@ function priceStats(items, kw, sinceYmd) {
     samples: mid.slice(0, 5).sort((a, b) => b[3].localeCompare(a[3])) };
 }
 async function cafePrice(q, area, env) {
-  if (!env.NAVER_SEARCH_ID || !env.NAVER_SEARCH_SECRET) return { ok: false, need: 'search', error: '네이버 검색 API(NAVER_SEARCH_ID·NAVER_SEARCH_SECRET)가 아직 설정되지 않았어요.' };
+  // 네이버 블로그 검색: NAVER API Hub(검색어 트렌드와 같은 키, 콘솔에서 '검색' 상품 이용 신청 필요)를 먼저 쓰고,
+  // 예전 developers.naver.com 키(NAVER_SEARCH_ID·SECRET)가 있으면 그걸 쓴다
+  const old = env.NAVER_SEARCH_ID && env.NAVER_SEARCH_SECRET;
+  if (!old && !(env.NAVER_ID && env.NAVER_SECRET)) return { ok: false, need: 'search', error: '네이버 검색 API 키가 없어요.' };
+  const base = old ? 'https://openapi.naver.com/v1/search/blog.json' : 'https://naverapihub.apigw.ntruss.com/search/v1/blog';
+  const headers = old ? { 'X-Naver-Client-Id': env.NAVER_SEARCH_ID, 'X-Naver-Client-Secret': env.NAVER_SEARCH_SECRET }
+    : { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
   const word = (area ? area + ' ' : '') + q;
   const calls = [['가격', 'sim', 1], ['가격', 'sim', 101], ['가격', 'date', 1], ['가격', 'date', 101], ['카페', 'date', 1]].map(([w, sort, start]) =>
-    fetch(`https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(word + ' ' + w)}&display=100&start=${start}&sort=${sort}`,
-      { headers: { 'X-Naver-Client-Id': env.NAVER_SEARCH_ID, 'X-Naver-Client-Secret': env.NAVER_SEARCH_SECRET } })
+    fetch(`${base}?query=${encodeURIComponent(word + ' ' + w)}&display=100&start=${start}&sort=${sort}`, { headers })
       .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`네이버 검색 ${r.status}: ${t.slice(0, 120)}`); })));
   const res = await Promise.allSettled(calls), items = res.flatMap(r => r.status === 'fulfilled' ? r.value.items || [] : []);
-  if (!items.length) { const e = res.find(r => r.status === 'rejected'); return { ok: false, error: e ? String(e.reason.message || e.reason) : '검색 결과가 없어요.' }; }
+  if (!items.length) { const e = res.find(r => r.status === 'rejected'), msg = e ? String(e.reason.message || e.reason) : '검색 결과가 없어요.';
+    return { ok: false, need: / (401|403|404):/.test(msg) ? 'search' : '', error: msg }; }   // 401·403 = '검색' 이용 신청 전
   const d = new Date(Date.now() - 365 * 864e5), since = d.toISOString().slice(0, 10).replace(/-/g, '');
   return { ok: true, q, area: area || '', posts: items.length, since, ...priceStats(items, q, since) };
 }
