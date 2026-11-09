@@ -283,7 +283,7 @@ const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 
 const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
 // 이름 검색 수가 디저트와 상관없이 큰 대형 체인·편의점은 순위에서 뺀다
 const BIG_CHAIN = /^(스타벅스|투썸|투썸플레이스|이디야|이디야커피|메가커피|메가mgc커피|메가엠지씨커피|컴포즈|컴포즈커피|빽다방|파리바게뜨|파리바게트|뚜레쥬르|배스킨라빈스|던킨|던킨도너츠|폴바셋|할리스|할리스커피|커피빈|파스쿠찌|엔제리너스|탐앤탐스|요거프레소|더벤티|매머드커피|cu|gs25|세븐일레븐|이마트24|이마트|홈플러스|코스트코|노브랜드|다이소|올리브영|쿠팡)$/i;
-const BRANDS_VER = 4;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
+const BRANDS_VER = 5;   // 브랜드 찾기 방식을 바꾸면 올린다 (하루 캐시에 남은 예전 결과를 안 쓰게)
 const BR_AREAS = ['', '서울', '성수', '홍대', '강남', '부산', '대구', '대전', '광주', '인천', '수원', '제주'];
 const SHOP_CAT = /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키|마카롱|베이글/;
 // 지역 검색 가게 이름 → 브랜드 이름 ('○○ 성수점' → '○○')
@@ -366,7 +366,8 @@ async function brands(q, env, debug) {
     if (r.ok) for (const g of (await r.json()).results || []) {
       const v = g.data.map(d => d.ratio), pk = Math.max(...v, 0); if (!pk) continue;
       const i = v.findIndex(x => x >= pk * .25), last = v.slice(-4).reduce((a, b) => a + b, 0) / Math.max(1, v.slice(-4).length);
-      rise[g.title] = { week: g.data[i] ? g.data[i].period : '', now: Math.round(last / pk * 100) };
+      // 첫 주부터 25%를 넘었으면 조회 기간(2년) 전부터 이미 유명했던 것 → '뜬 때'를 모른다 (예전엔 '57주 먼저 뜸'으로 잘못 나옴)
+      rise[g.title] = { week: i > 0 && g.data[i] ? g.data[i].period : '', now: Math.round(last / pk * 100) };
     }
   } catch { }
   const base = rise['_'];
@@ -376,7 +377,8 @@ async function brands(q, env, debug) {
       const [a, b] = await Promise.all([shops(c.name, 'cafe', 1, env), shops(c.name, 'bakery', 1, env)]);
       const rows = [...a.rows, ...b.rows]; c.open = rows.filter(r => !r[2]).length; c.more = a.total > 100 || b.total > 100;
     } catch { }
-    const t = rise[c.name]; if (t && t.week) { c.rise = t.week; c.now = t.now;
+    const t = rise[c.name]; if (t) c.now = t.now;
+    if (t && t.week) { c.rise = t.week;
       if (base && base.week) c.lead = Math.round((new Date(base.week) - new Date(t.week)) / 6048e5); }   // +면 디저트 유행보다 먼저
   }));
   return { ok: true, q: hint, month: vol.month, verified: localOk, base: base || null, brands: list, ...(dbg ? { debug: dbg } : {}) };
