@@ -9,10 +9,13 @@
  *   GEMINI_KEY    Google AI Studio Gemini API 키 (신메뉴 제안용)
  *   KAMIS_KEY, KAMIS_ID   KAMIS(농산물유통정보) Open API 인증키·아이디 (재료 시세용)
  *   NAVER_AD_KEY, NAVER_AD_SECRET, NAVER_AD_CUSTOMER   네이버 검색광고 API 액세스라이선스·비밀키·CUSTOMER_ID (월간 검색 수용)
+ *   (다른 카페 가격) NAVER API Hub의 '검색' 상품을 이용 신청하면 NAVER_ID·SECRET 그대로 씀. 예전 developers.naver.com 키는 NAVER_SEARCH_ID·SECRET
  *
  * GET /trend?q=과일모찌                  → 2016년부터 주간 검색량 (최고점 = 100)
  * GET /shops?q=과일모찌&src=cafe&page=1  → 상호에 단어가 들어간 휴게음식점(cafe)·제과점(bakery) 100곳씩
  * GET /volume?q=소금빵                  → 네이버 검색광고: 최근 한 달 검색 수(PC·모바일) + 연관 키워드
+ * GET /brands?q=두바이쫀득쿠키         → 그 디저트로 많이 찾는 가게 TOP 5 (연관 키워드 + 지역 검색 확인 + 뜬 시기 + 영업 중 매장)
+ * GET /price?q=소금빵&area=강남       → 네이버 블로그 후기에서 뽑은 다른 카페 판매가 (최근 1년, 보통 가격·범위)
  * POST /menu  {keyword, type, kind, price, targetRate, profile}  → AI 신메뉴 제안 + 원가 검증(목표 원가율을 넘으면 최대 3번 다시)
  */
 import { DurableObject } from 'cloudflare:workers';
@@ -110,7 +113,7 @@ async function volume(q, env) {
     total: num(x.monthlyPcQcCnt) + num(x.monthlyMobileQcCnt), comp: x.compIdx }));
   const me = list.find(x => x.keyword === hint) || null;
   const related = list.filter(x => x !== me).sort((a, b) => b.total - a.total).slice(0, 20);
-  return { ok: true, q: hint, month: me, related };
+  return { ok: true, q: hint, month: me, related, _all: list };
 }
 
 async function shops(q, src, page, env) {
@@ -272,6 +275,118 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
     rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, priceDate: '2026-11-04' };
 }
 
+// ---------- 브랜드 찾기: '두바이쫀득쿠키'로 많이 찾는 가게 ----------
+// 1) 검색광고 연관 키워드 중 '○○ + 디저트 이름' 꼴에서 ○○(가게 이름 후보)를 뽑고
+// 2) 네이버 지역 검색으로 실제 카페·디저트 가게 이름인지 확인 3) 검색어 트렌드로 언제 떴는지 4) 인허가로 영업 중 매장 수
+const GENERIC = /^(맛집|만들기|레시피|가격|칼로리|파는곳|파는 곳|판매|택배|배달|배송|후기|추천|근처|주문|예약|원조|유명한|유명|인기|맛|만드는법|만드는 법|재료|키트|밀키트|쿠팡|편의점|cu|gs25|gs|세븐일레븐|이마트|홈플러스|코스트코|다이소|스타벅스|대용량|선물|세트|박스|선물세트|도매|창업|전문점|카페|디저트|빵|빵집|베이커리|신상|신메뉴|오픈런|웨이팅|줄서는|품절|재고|가격비교|최저가|할인|이벤트|당일|오늘|내돈내산|먹방|칼로리표|유통기한|보관|보관법|냉동|해동|모양|종류|뜻|영어|일본|두바이|한국|서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남|홍대|성수|연남|망원|합정|이태원|한남|익선동|을지로|강남역|신사|가로수길|압구정|청담|잠실|여의도|명동|종로|건대|해운대|서면|전포|광안리|동성로|송리단길|판교|분당|일산|수원|동탄|송도)$/i;
+const REGIONISH = /(역|동|구|시|군|읍|면|점|길|로)$/;
+async function brands(q, env, debug) {
+  const vol = await volume(q, env);
+  if (!vol.ok) return vol;
+  const hint = vol.q, all = vol._all || [];
+  // 가게 이름 후보: 키워드 앞이나 뒤에 디저트 이름이 붙은 것
+  const cand = new Map();
+  for (const x of all) {
+    const kw = x.keyword.replace(/\s+/g, ''); if (kw === hint || !kw.includes(hint)) continue;
+    const rest = kw.replace(hint, '').trim();
+    if (rest.length < 2 || rest.length > 12 || GENERIC.test(rest) || REGIONISH.test(rest) || /\d/.test(rest)) continue;
+    const c = cand.get(rest) || { name: rest, keyword: x.keyword, total: 0 }; c.total += x.total; cand.set(rest, c);
+  }
+  let list = [...cand.values()].sort((a, b) => b.total - a.total).slice(0, 12);
+  const dbg = debug ? { related: all.length, withHint: all.filter(x => x.keyword.replace(/\s+/g, '').includes(hint)).slice(0, 40).map(x => [x.keyword, x.total]), cand: list.map(c => [c.name, c.total]), local: {} } : null;
+  // 지역 검색으로 확인: 가게 이름이 그 단어로 시작하고 분류가 카페·디저트·제과면 '가게'
+  const H = { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
+  let localOk = true;
+  await Promise.all(list.map(async c => {
+    try {
+      const r = await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/local?query=${encodeURIComponent(c.name)}&display=5`, { headers: H });
+      if (!r.ok) { localOk = false; if (dbg) dbg.local[c.name] = 'HTTP ' + r.status; return; }
+      const items = (await r.json()).items || [], nm = c.name.toLowerCase();
+      if (dbg) dbg.local[c.name] = items.map(i => [stripTag(i.title), i.category]);
+      const hit = items.find(i => stripTag(i.title).replace(/\s+/g, '').toLowerCase().startsWith(nm) && /카페|디저트|제과|베이커리|떡|아이스크림|도넛|와플|빵|초콜릿|케이크|쿠키/.test(i.category || ''));
+      if (hit) { c.shop = stripTag(hit.title); c.cat = (hit.category || '').split('>').pop(); c.addr = (hit.roadAddress || hit.address || '').split(' ').slice(0, 2).join(' '); }
+    } catch { localOk = false; }
+  }));
+  if (localOk) list = list.filter(c => c.shop);
+  list = list.slice(0, 5);
+  // 검색어 트렌드: 디저트 + 가게 4곳을 한 번에 (최근 2년, 주간). 각자 최고점의 25%를 처음 넘은 주 = 뜬 때
+  const start = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10), end = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  let rise = {};
+  try {
+    const groups = [{ groupName: '_', keywords: [hint] }, ...list.slice(0, 4).map(c => ({ groupName: c.name, keywords: [...new Set([c.keyword, c.keyword.replace(/\s+/g, ''), c.name + ' ' + hint])] }))];
+    const r = await fetch(TREND_API, { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate: start, endDate: end, timeUnit: 'week', keywordGroups: groups }) });
+    if (r.ok) for (const g of (await r.json()).results || []) {
+      const v = g.data.map(d => d.ratio), pk = Math.max(...v, 0); if (!pk) continue;
+      const i = v.findIndex(x => x >= pk * .25), last = v.slice(-4).reduce((a, b) => a + b, 0) / Math.max(1, v.slice(-4).length);
+      rise[g.title] = { week: g.data[i] ? g.data[i].period : '', now: Math.round(last / pk * 100) };
+    }
+  } catch { }
+  const base = rise['_'];
+  // 인허가: 상호에 가게 이름이 들어간 카페·제과점 중 영업 중
+  await Promise.all(list.map(async c => {
+    try {
+      const [a, b] = await Promise.all([shops(c.name, 'cafe', 1, env), shops(c.name, 'bakery', 1, env)]);
+      const rows = [...a.rows, ...b.rows]; c.open = rows.filter(r => !r[2]).length; c.more = a.total > 100 || b.total > 100;
+    } catch { }
+    const t = rise[c.name]; if (t && t.week) { c.rise = t.week; c.now = t.now;
+      if (base && base.week) c.lead = Math.round((new Date(base.week) - new Date(t.week)) / 6048e5); }   // +면 디저트 유행보다 먼저
+  }));
+  return { ok: true, q: hint, month: vol.month, verified: localOk, base: base || null, brands: list, ...(dbg ? { debug: dbg } : {}) };
+}
+
+// ---------- 다른 카페 판매가: 네이버 블로그 후기에서 '소금빵 3,500원' 같은 글을 모아 보통 가격을 낸다 ----------
+const stripTag = s => String(s || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;|&gt;|&#\d+;|&[a-z]+;/g, ' ');
+// 후기 한 개에서 키워드 바로 뒤에 붙은 1개 가격만 뽑는다 (2개·세트·묶음 가격은 뺀다)
+function pickPrice(text, kw) {
+  const t = stripTag(text), k = kw.replace(/\s+/g, '').split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s?');
+  const re = new RegExp(k + '([^0-9\\n]{0,7}?)(\\d{1,2}(?:,\\d{3}|\\d{3})|\\d\\.\\d)\\s?(천\\s?)?원', 'g');
+  let m;
+  while ((m = re.exec(t))) {
+    if (/\d|개|세트|박스|묶음|입|set|종|\+|와|과|랑|,|및|할인|쿠폰|배송/i.test(m[1])) continue;
+    const v = m[3] ? Math.round(parseFloat(m[2]) * 1000) : Number(m[2].replace(',', ''));
+    if (v >= 1000 && v <= 20000) return v;
+  }
+  return 0;
+}
+function priceStats(items, kw, sinceYmd) {
+  const seen = new Set(), rows = [];
+  for (const it of items) {
+    if (!it || seen.has(it.link) || (it.postdate && it.postdate < sinceYmd)) continue;
+    seen.add(it.link);
+    const v = pickPrice(`${it.title} ${it.description}`, kw);
+    if (v) rows.push([v, stripTag(it.title).slice(0, 40), it.link, it.postdate || '']);
+  }
+  if (!rows.length) return { n: 0 };
+  const q = (xs, f) => { const i = (xs.length - 1) * f, a = Math.floor(i); return xs[a] + (xs[Math.ceil(i)] - xs[a]) * (i - a); };
+  let vs = rows.map(r => r[0]).sort((a, b) => a - b);
+  const lo = q(vs, .25), hi = q(vs, .75), w = Math.max(500, (hi - lo) * 1.5);
+  const keep = rows.filter(r => r[0] >= lo - w && r[0] <= hi + w);   // 너무 싸거나 비싼 건 빼기
+  vs = keep.map(r => r[0]).sort((a, b) => a - b);
+  const r100 = x => Math.round(x / 100) * 100;
+  const mid = keep.slice().sort((a, b) => Math.abs(a[0] - q(vs, .5)) - Math.abs(b[0] - q(vs, .5)));
+  return { n: vs.length, median: r100(q(vs, .5)), p25: r100(q(vs, .25)), p75: r100(q(vs, .75)), low: vs[0], high: vs[vs.length - 1],
+    samples: mid.slice(0, 5).sort((a, b) => b[3].localeCompare(a[3])) };
+}
+async function cafePrice(q, area, env) {
+  // 네이버 블로그 검색: NAVER API Hub(검색어 트렌드와 같은 키, 콘솔에서 '검색' 상품 이용 신청 필요)를 먼저 쓰고,
+  // 예전 developers.naver.com 키(NAVER_SEARCH_ID·SECRET)가 있으면 그걸 쓴다
+  const old = env.NAVER_SEARCH_ID && env.NAVER_SEARCH_SECRET;
+  if (!old && !(env.NAVER_ID && env.NAVER_SECRET)) return { ok: false, need: 'search', error: '네이버 검색 API 키가 없어요.' };
+  const base = old ? 'https://openapi.naver.com/v1/search/blog.json' : 'https://naverapihub.apigw.ntruss.com/search/v1/blog';
+  const headers = old ? { 'X-Naver-Client-Id': env.NAVER_SEARCH_ID, 'X-Naver-Client-Secret': env.NAVER_SEARCH_SECRET }
+    : { 'X-NCP-APIGW-API-KEY-ID': env.NAVER_ID, 'X-NCP-APIGW-API-KEY': env.NAVER_SECRET };
+  const word = (area ? area + ' ' : '') + q;
+  const calls = [['가격', 'sim', 1], ['가격', 'sim', 101], ['가격', 'date', 1], ['가격', 'date', 101], ['카페', 'date', 1]].map(([w, sort, start]) =>
+    fetch(`${base}?query=${encodeURIComponent(word + ' ' + w)}&display=100&start=${start}&sort=${sort}`, { headers })
+      .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`네이버 검색 ${r.status}: ${t.slice(0, 120)}`); })));
+  const res = await Promise.allSettled(calls), items = res.flatMap(r => r.status === 'fulfilled' ? r.value.items || [] : []);
+  if (!items.length) { const e = res.find(r => r.status === 'rejected'), msg = e ? String(e.reason.message || e.reason) : '검색 결과가 없어요.';
+    return { ok: false, need: / (401|403|404):/.test(msg) ? 'search' : '', error: msg }; }   // 401·403 = '검색' 이용 신청 전
+  const d = new Date(Date.now() - 365 * 864e5), since = d.toISOString().slice(0, 10).replace(/-/g, '');
+  return { ok: true, q, area: area || '', posts: items.length, since, ...priceStats(items, q, since) };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
@@ -311,9 +426,11 @@ export default {
     try {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
-      else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); }
+      else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); delete data._all; }
+      else if (url.pathname === '/brands') { data = await brands(q, env, url.searchParams.get('debug') === '1'); if (!data.ok) return json(data, 200, origin); }
+      else if (url.pathname === '/price') { data = await cafePrice(q, cleanQuery(url.searchParams.get('area')) || '', env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
-      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/kamis'] }, 200, origin);
+      else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/brands?q=', '/kamis'] }, 200, origin);
       const resp = json(data, 200, origin, 86400);
       ctx.waitUntil(cache.put(key, resp.clone()));
       return resp;
