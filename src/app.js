@@ -993,8 +993,8 @@ async function renderBrands(k) {
   $('br-sub').textContent = '네이버 지역 검색에서 가게를 찾는 중…';
   const d = await (BR[k] = BR[k] || fetch(`${LIVE_API}/brands?q=${encodeURIComponent(k)}`).then(r => r.json()).catch(() => ({ ok: false })));
   if (current !== k) return;
-  if (!d.ok) { box.hidden = true; return; }
   const bs = d.brands || [];
+  if (!d.ok || (!d.verified && !bs.length)) { box.hidden = true; return; }   // 지역 검색이 막혔으면 '가게 없음'이라고 잘못 말하지 않게 숨김
   $('br-sub').textContent = `네이버 지역 검색에서 '${k}'(으)로 나오는 카페·디저트 가게 중 이름 검색이 많은 곳이에요 (가게 이름 최근 한 달 검색 수${d.verified ? '' : ' · 지역 검색 확인 못 함'} · 인허가 매장 수)`;
   if (!bs.length) { $('br-tip').innerHTML = `아직 <b>'${esc(k)}' 하면 떠오르는 대표 가게가 없어요.</b> 먼저 자리 잡으면 '우리 가게 이름 + ${esc(k)}'(으)로 검색되는 가게가 될 수 있어요.`; return; }
   $('br-list').innerHTML = bs.map(b => {
