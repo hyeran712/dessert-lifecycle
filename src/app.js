@@ -655,6 +655,26 @@ function renderSaved() {
   box.querySelectorAll('.sv-x').forEach(b => b.onclick = e => { e.preventDefault(); const id = +b.closest('.sv').dataset.id;
     if (confirm('이 메뉴를 보관함에서 지울까요?')) { storeSaved(loadSaved().filter(x => x.id !== id)); renderSaved(); renderProg(); cloudDelMenu(id); } });
 }
+// 신메뉴 만드는 동안 보여 주는 진행 표시: 빙글 도는 표시 + 지난 시간 + 단계(대략) + 움직이는 막대. 끝나면 stop()으로 치움
+function mkProgress() {
+  const lab = document.getElementById('mk-label'), orig = lab.textContent, t0 = Date.now();
+  const steps = [['재료 단가를 불러오는 중', 0], ['AI가 레시피를 짜는 중', 3], ['원가율을 계산하고 목표에 맞추는 중', 11]];
+  mkOut.innerHTML = `<div class="mk-prog" role="status" aria-live="polite">
+    <div class="mk-prog-top"><i class="mk-spin" aria-hidden="true"></i><b>신메뉴를 만들고 있어요</b><span id="mkp-s">0초</span></div>
+    <div class="mk-bar" aria-hidden="true"><i></i></div>
+    <ol>${steps.map(([t]) => `<li>${t}</li>`).join('')}</ol>
+    <p class="note" id="mkp-n">보통 10~20초 걸려요. 이 화면을 닫지 말고 기다려 주세요. (단계는 대략적인 진행이에요)</p></div>`;
+  const tick = () => {
+    const sec = Math.floor((Date.now() - t0) / 1000);
+    const cur = steps.reduce((c, [, at], i) => sec >= at ? i : c, 0);
+    const sEl = document.getElementById('mkp-s'); if (sEl) sEl.textContent = `${sec}초`;
+    document.querySelectorAll('.mk-prog li').forEach((li, i) => { li.className = i < cur ? 'done' : i === cur ? 'now' : ''; });
+    const nEl = document.getElementById('mkp-n'); if (nEl && sec >= 30) nEl.textContent = '평소보다 조금 오래 걸리고 있어요. 계속 만드는 중이니 잠시만 더 기다려 주세요.';
+    lab.textContent = `만드는 중… ${sec}초`;
+  };
+  tick(); const id = setInterval(tick, 500);
+  return () => { clearInterval(id); lab.textContent = orig; if (mkOut.querySelector('.mk-prog')) mkOut.innerHTML = ''; };
+}
 async function makeMenu(again) {
   if (!current) return;
   const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
@@ -662,7 +682,7 @@ async function makeMenu(again) {
   const price = menuPrice(k, p);
   mkBtn.disabled = true;
   if (loadSheet()) { mkMsg.textContent = '연결한 원가표 시트를 확인하는 중…'; await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]); }
-  mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; mkOut.innerHTML = '';
+  mkMsg.textContent = `AI가 판매가 ${won(price)}${PICK_PRICE[k] ? '(시장가 카드에서 고른 값)' : ''}에 맞춰 '${k}' 신메뉴를 만들고 원가를 계산하는 중… (10초쯤 걸려요)`; const stopProg = mkProgress();
   try {
     const tok = await authToken();   // 로그인했으면 사람별 한도 (Worker가 Supabase로 확인)
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}), ...(tok ? { Authorization: 'Bearer ' + tok } : {}) },
@@ -683,7 +703,7 @@ async function makeMenu(again) {
       : `만들지 못했어요: ${msg}`;
     mkMsg.title = msg;   // 마우스를 올리면 원래 오류 문구가 보임
   }
-  finally { mkBtn.disabled = false; }
+  finally { stopProg(); mkBtn.disabled = false; }
 }
 mkBtn.addEventListener('click', () => makeMenu(false));
 // 신메뉴 결과 그리기 (단가를 고치면 다시 그림)

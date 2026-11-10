@@ -289,6 +289,23 @@ dialog.acct{max-width:420px;width:calc(100% - 32px)}
 #mk-btn{font:inherit;font-weight:900;font-size:15px;padding:12px 18px;border:3px solid var(--ink);border-radius:12px;background:var(--pop-y);color:var(--ink);cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
 #mk-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
 #mk-btn[disabled]{opacity:.6;cursor:wait}
+#mk-btn[disabled]{background:#ff5a1f;color:#fff;opacity:1}
+.mk-prog{margin-top:16px;background:#fffdf3;border:3px solid var(--ink);border-radius:14px;padding:16px 18px;box-shadow:4px 4px 0 var(--ink)}
+.mk-prog-top{display:flex;align-items:center;gap:10px;font-size:16px}
+.mk-prog-top b{flex:1}
+.mk-prog-top span{font:900 15px "Noto Sans KR";color:#ff5a1f;font-variant-numeric:tabular-nums}
+.mk-spin{width:22px;height:22px;border-radius:50%;border:4px solid #e9d9a6;border-top-color:#ff5a1f;animation:mk-rot .8s linear infinite;flex:none}
+.mk-bar{height:10px;margin:12px 0;border:2px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}
+.mk-bar i{display:block;height:100%;width:40%;background:repeating-linear-gradient(45deg,var(--pop-y) 0 10px,#ff5a1f 10px 20px);border-radius:99px;animation:mk-slide 1.4s ease-in-out infinite}
+.mk-prog ol{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:6px;font-size:14px;color:var(--ink-3)}
+.mk-prog li::before{content:"○";display:inline-block;width:22px;color:var(--ink-3)}
+.mk-prog li.now{color:var(--ink);font-weight:900}.mk-prog li.now::before{content:"●";color:#ff5a1f;animation:mk-blink 1s steps(2) infinite}
+.mk-prog li.done{color:var(--ink-2)}.mk-prog li.done::before{content:"✓";color:#1a9a55;font-weight:900}
+.mk-prog .note{margin:6px 0 0;font-size:12.5px}
+@keyframes mk-rot{to{transform:rotate(360deg)}}
+@keyframes mk-slide{0%{margin-left:-40%}100%{margin-left:100%}}
+@keyframes mk-blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.mk-spin,.mk-bar i,.mk-prog li.now::before{animation:none}.mk-bar i{width:100%}}
 .mk-card{margin-top:16px;border:3px solid var(--ink);border-radius:16px;background:#fff;padding:18px}
 .mk-card h4{font-family:var(--display);font-weight:400;font-size:24px;margin:4px 0 6px}
 .mk-card .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
