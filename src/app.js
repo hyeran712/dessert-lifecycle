@@ -61,16 +61,26 @@ GROUPS.forEach(([name, ks]) => {
 // 매년 같은 날은 코드가 올해·내년 날짜를 만들고, 수능은 '11월 셋째 목요일'로 계산,
 // 설·추석(음력)은 주간 레이더가 공공데이터 특일 정보에서 받아 둔 live/holidays.json을 쓴다
 const ANNUAL = [
-  ['02-14', '발렌타인데이', ['두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
-  ['03-14', '화이트데이', ['마카롱', '뚱카롱', '탕후루', '딸기모찌']],
+  ['02-14', '발렌타인데이', ['발렌타인 초콜릿', '두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
+  ['03-14', '화이트데이', ['마카롱', '뚱카롱', '탕후루', '딸기모찌', '딸기 케이크']],
   ['05-05', '어린이날', ['탕후루', '요거트 아이스크림', '크로플', '마카롱']],
-  ['05-08', '어버이날', ['약과', '찹쌀떡', '모찌떡', '흑임자']],
-  ['05-15', '스승의날', ['마카롱', '약과', '과일모찌']],
-  ['11-11', '빼빼로데이', ['두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
+  ['05-08', '어버이날', ['카네이션 케이크', '약과', '찹쌀떡', '모찌떡', '흑임자']],
+  ['05-15', '스승의날', ['카네이션 케이크', '마카롱', '약과', '과일모찌']],
+  ['10-31', '할로윈', ['고구마 디저트', '밤 디저트']],
+  ['11-11', '빼빼로데이', ['발렌타인 초콜릿', '두바이 초콜릿', '마카롱', '뚱카롱', '피스타치오']],
   ['12-22', '동지', ['찹쌀떡', '붕어빵', '찹쌀모찌']],
-  ['12-25', '크리스마스', ['과일모찌', '딸기모찌', '마카롱', '두바이 초콜릿', '크로플']],
+  ['12-25', '크리스마스', ['크리스마스 케이크', '딸기 케이크', '과일모찌', '딸기모찌', '마카롱', '두바이 초콜릿', '크로플']],
 ];
-const LUNAR_KS = { '설날': ['약과', '찹쌀떡', '모찌떡', '흑임자', '쑥'], '추석': ['약과', '찹쌀떡', '모찌떡', '쑥', '흑임자'] };
+const BOK_KS = ['빙수', '요거트 아이스크림'];
+// 복날: 초복=하지(6/21) 뒤 셋째 경일, 중복=넷째 경일, 말복=입추(8/7) 뒤 첫 경일 (경일 = 날짜의 천간이 庚). 2023~2026년 실제 날짜와 맞춰 봄
+function bokdays(y) {
+  const gy = d => ((Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5) + 2440588 + 9) % 10) === 6, out = [];
+  let d = new Date(y, 5, 21), c = 0;
+  for (; c < 4; d = new Date(y, d.getMonth(), d.getDate() + 1)) if (gy(d)) { c++; if (c === 3) out.push([ymd(d), '초복']); if (c === 4) out.push([ymd(d), '중복']); }
+  for (d = new Date(y, 7, 7); !gy(d); d = new Date(y, d.getMonth(), d.getDate() + 1));
+  out.push([ymd(d), '말복']); return out;
+}
+const LUNAR_KS = { '설날': ['약과', '찹쌀떡', '모찌떡', '흑임자', '쑥'], '추석': ['약과', '찹쌀떡', '모찌떡', '쑥', '흑임자', '밤 디저트'] };
 const SUNEUNG_KS = ['찹쌀떡', '찹쌀모찌', '모찌떡', '약과'];
 let LUNAR = [['2027-02-07', '설날'], ['2027-09-15', '추석'], ['2028-01-27', '설날'], ['2028-10-03', '추석']];   // holidays.json을 못 받았을 때 쓰는 값
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -78,7 +88,7 @@ function suneung(y) { const d = new Date(y, 10, 1); d.setDate(1 + (4 - d.getDay(
 let EVENTS = [];
 function buildEvents() {
   const y = new Date().getFullYear();
-  EVENTS = [y, y + 1].flatMap(yy => [...ANNUAL.map(([md, n, ks]) => [`${yy}-${md}`, n, ks]), [suneung(yy), '수능', SUNEUNG_KS]])
+  EVENTS = [y, y + 1].flatMap(yy => [...ANNUAL.map(([md, n, ks]) => [`${yy}-${md}`, n, ks]), [suneung(yy), '수능', SUNEUNG_KS], ...bokdays(yy).map(([d, n]) => [d, n, BOK_KS])])
     .concat(LUNAR.filter(([, n]) => LUNAR_KS[n]).map(([d, n]) => [d, n, LUNAR_KS[n]]));
 }
 buildEvents();
@@ -246,7 +256,7 @@ document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
 
 /* ---------- 발견 ①~③: 고른 디저트 기준으로 다시 그리기 ---------- */
 const med = a => { const b = a.filter(x => x !== null && x !== undefined).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
-const BASE = Object.entries(D.kw).filter(([k, v]) => k !== '모찌류(합산)' && v.type !== '진행중' && v.rise);
+const BASE = Object.entries(D.kw).filter(([k, v]) => k !== '모찌류(합산)' && !v.cal && v.type !== '진행중' && v.rise);   // cal = 대목 달력용으로 나중에 넣은 디저트(비교 통계에서는 뺌)
 const FAST = BASE.filter(([, v]) => v.rise <= 20).map(([, v]) => v), SLOW = BASE.filter(([, v]) => v.rise >= 40).map(([, v]) => v);
 const AVG = { fast: { rise: med(FAST.map(v => v.rise)), half: med(FAST.map(v => v.half)), n: FAST.length },
               slow: { rise: med(SLOW.map(v => v.rise)), half: med(SLOW.map(v => v.half)), n: SLOW.length } };
@@ -261,7 +271,7 @@ function lifeRow(name, sub, rise, half, me, maxW) {
 }
 function renderFindings(k) {
   const v = entry(k).v, J = eul(k);
-  const others = Object.keys(D.kw).filter(n => n !== '모찌류(합산)' && n !== k).length;
+  const others = Object.keys(D.kw).filter(n => n !== '모찌류(합산)' && !D.kw[n].cal && n !== k).length;
   document.getElementById('f-sub').textContent = `'${k}'을(를) 다른 디저트 ${others}종과 비교했어요. 위에서 디저트를 바꾸면 아래도 같이 바뀌어요.`;
   // ① 유행의 수명
   const tot = (r, h) => (r || 22) + (h || 30);
@@ -279,7 +289,7 @@ function renderFindings(k) {
   else l1 = `${k}${J} ${v.rise}주 동안 올라서 급하게 뜬 디저트와 천천히 뜬 디저트의 중간이에요.`;
   document.getElementById('f1-lead').textContent = l1;
   // ② 지금도 찾는 순위
-  const list = Object.entries(D.kw).filter(([n]) => n !== '모찌류(합산)').map(([n, x]) => ({ n, now: x.now, rise: x.rise, type: x.type }));
+  const list = Object.entries(D.kw).filter(([n, x]) => n !== '모찌류(합산)' && !x.cal).map(([n, x]) => ({ n, now: x.now, rise: x.rise, type: x.type }));
   if (LIVE[k]) list.push({ n: k, now: v.now, rise: v.rise, type: v.type });
   list.sort((a, b) => b.now - a.now);
   const col = x => x.type === '진행중' || !x.rise ? '#c9c3b0' : x.rise <= 20 ? css('--teal') : x.rise < 40 ? css('--pop-y') : css('--pop-b');
@@ -1361,42 +1371,46 @@ renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
 document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));
 
 /* ---------- 1단계 디저트 시계: 12달 자리마다 그 달에 가장 많이 늘어나는 디저트 ---------- */
-// 겨울 간식처럼 네이버 검색 데이터가 없는 디저트의 달별 기본값 (경험 기준, 연평균=1)
-const SEASON_PRIOR = { '붕어빵': [1.5, 1.2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.5, 1.0, 1.6, 1.8] };
+// 달별 판매 계획 (사용자가 정한 표, 2026-11-10): k = 시계에 놓을 디저트, ev = 그달 대목, also = 같이 팔기 좋은 것, prep = 준비 시작 시기
+const MONTH_PLAN = [
+  { k: '딸기모찌', ev: '신정·겨울방학·딸기 제철', also: '붕어빵·호떡, 설 선물용 약과', prep: '12월 중순' },
+  { k: '발렌타인 초콜릿', ev: '설·발렌타인 2/14·졸업', also: '딸기모찌, 설 선물세트', prep: '1월 중순' },
+  { k: '마카롱', ev: '화이트데이 3/14·입학·개학', also: '딸기 케이크(딸기 끝물), 벚꽃 음료', prep: '2월 말' },
+  { k: '쑥', ev: '벚꽃·봄나들이', also: '쑥라떼·쑥떡, 피크닉 세트, 베이글', prep: '3월 중순' },
+  { k: '카네이션 케이크', ev: '가정의 달 (어린이날·어버이날·스승의날)', also: '약과·양갱 답례 세트, 쑥, 마카롱', prep: '4월 중순' },
+  { k: '빙수', ev: '초여름', also: '요거트 아이스크림, 아이스 음료', prep: '5월 말' },
+  { k: '빙수', ev: '초복·중복·휴가 시작', also: '요거트 아이스크림, 복숭아 디저트', prep: '6월 중순' },
+  { k: '요거트 아이스크림', ev: '말복·휴가 절정', also: '빙수, 샤인머스캣·포도 디저트', prep: '7월' },
+  { k: '약과', ev: '추석', also: '떡·양갱, 밤 디저트', prep: '8월 중순' },
+  { k: '고구마 디저트', ev: '가을·할로윈 10/31', also: '밤 디저트(몽블랑), 할로윈 호박 쿠키·케이크, 붕어빵 시작', prep: '9월 말' },
+  { k: '찹쌀떡', ev: '수능·빼빼로데이 11/11', also: '합격 초콜릿·엿, 붕어빵, 크리스마스 케이크 예약 시작', prep: '10월 말' },
+  { k: '크리스마스 케이크', ev: '크리스마스·연말·딸기 제철 시작', also: '쿠키 박스·슈톨렌, 딸기모찌, 붕어빵', prep: '11월 초 (예약)' },
+];
+// 사진이 아직 없는 디저트는 이모지로 (img/menu에 사진을 넣고 IMG에 추가하면 사진으로 바뀜)
+const DK_EMO = { '크리스마스 케이크': '🎄', '딸기 케이크': '🍓', '발렌타인 초콜릿': '🍫', '빙수': '🍧', '고구마 디저트': '🍠', '밤 디저트': '🌰', '카네이션 케이크': '🌸' };
+const dkPhoto = k => photo(k) || `<span class="dk-emo">${DK_EMO[k] || '🍰'}</span>`;
 function clockPlan() {
-  // 달마다 (검색이 늘어나는 정도 + 그 달의 대목)을 점수로 매겨 디저트를 하나씩 배정 (한 디저트는 한 달만).
-  // 대목 = 수능·설·추석·밸런타인·어버이날 등 (EVENTS), 유행형은 0.85배
+  // 달마다 MONTH_PLAN의 디저트 + 그달 대목 날짜(EVENTS, 그 디저트가 해당되는 것)
   const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), 1), t1 = new Date(now.getFullYear(), now.getMonth() + 12, 1);
   const evs = EVENTS.map(([d, n, ks]) => ({ d: new Date(d + 'T00:00:00'), n, ks })).filter(e => e.d >= t0 && e.d < t1);
-  const seas = {};
-  Object.entries(D.kw).filter(([k]) => IMG[k] && k !== '마라탕').forEach(([k, v]) => { seas[k] = { s: v.season, type: v.type }; });
-  Object.entries(SEASON_PRIOR).forEach(([k, s]) => { if (IMG[k] && !seas[k]) seas[k] = { s, type: '겨울 간식' }; });
-  const pairs = [];
-  Object.entries(seas).forEach(([k, o]) => o.s.forEach((x, i) => {
-    const es = evs.filter(e => e.d.getMonth() === i && e.ks.includes(k));
-    pairs.push({ k, i, x, es, type: o.type, sc: x * (o.type === '유행형' ? 0.85 : 1) + Math.min(es.length, 2) * 0.8 });
-  }));
-  pairs.sort((a, b) => b.sc - a.sc);
-  const mon = Array(12).fill(null), used = new Set();
-  pairs.forEach(p => { if (!mon[p.i] && !used.has(p.k)) { mon[p.i] = p; used.add(p.k); } });
-  return mon;
+  return MONTH_PLAN.map((m, i) => ({ ...m, i, es: evs.filter(e => e.d.getMonth() === i && e.ks.includes(m.k)),
+    x: D.kw[m.k] ? D.kw[m.k].season[i] : null, type: D.kw[m.k] ? D.kw[m.k].type : '' }));
 }
 function renderClock() {
   const face = document.getElementById('dk-face'); if (!face) return;
   const mon = clockPlan(), now = new Date().getMonth(), nx = (now + 1) % 12, today = new Date(); today.setHours(0, 0, 0, 0);
   face.innerHTML = mon.map((p, i) => { const a = (i + 1) * 30 * Math.PI / 180, x = 50 + 39 * Math.sin(a), y = 50 - 39 * Math.cos(a);
-    return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${p.k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 · ${p.k}${p.es[0] ? ' · ' + p.es[0].n + ' 대목' : ''}">${photo(p.k)}<b>${i + 1}월</b></button>`; }).join('') +
+    return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${p.k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 · ${p.k} · ${p.ev}">${dkPhoto(p.k)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
   const evOf = p => { const e = p.es[0]; return e ? { ...e, left: Math.round((e.d - today) / 864e5) } : null; };
-  const row = (i, tag) => { const p = mon[i], e = evOf(p), live = e && e.left >= 0;
-    const why = [p.type === '겨울 간식' ? '겨울 대표 간식' : `${i + 1}월 검색이 연평균의 ${p.x.toFixed(1)}배`, e ? (live ? evTxt(e) : `${e.n} 대목`) : ''].filter(Boolean).join(' · ');
+  const row = (i, tag, early) => { const p = mon[i], e = evOf(p), live = e && e.left >= 0;
+    const why = [p.ev, p.x ? `${i + 1}월 검색 연평균의 ${p.x.toFixed(1)}배` : '', live ? evTxt(e) : ''].filter(Boolean).join(' · ');
     const act = live ? (e.left <= 7 ? '지금 바로 판매 시작' : e.left <= 21 ? '메뉴 확정·재료 발주할 때' : '시험 판매·사진 준비할 때') : '';
-    return `<button type="button" data-k="${p.k}">${photo(p.k)}<span><small>${tag}</small><b>${esc(p.k)}</b><em>${why}</em>${act ? `<em class="dk-act">→ ${act}</em>` : ''}</span></button>`; };
-  const e0 = evOf(mon[now]);
-  document.getElementById('dk-title').textContent = e0 ? `${now + 1}월 ${e0.n} 대목엔 ${mon[now].k}` : `${now + 1}월은 ${mon[now].k}의 시간`;
-  document.getElementById('dk-sub').textContent = `달마다 '검색이 늘어나는 정도'와 그달 대목(수능·명절·기념일)을 합쳐 가장 잘 팔릴 디저트를 골랐어요. 다음 달 준비도 같이 보세요.`;
-  document.getElementById('dk-now').innerHTML = row(now, `이번 달 (${now + 1}월)`) + row(nx, `다음 달 준비 (${nx + 1}월)`);
+    return `<button type="button" data-k="${p.k}">${dkPhoto(p.k)}<span><small>${tag}</small><b>${esc(p.k)}</b><em>${esc(why)}</em><em>같이 팔기: ${esc(p.also)}</em>${early ? `<em class="dk-act">→ 준비 시작: ${esc(p.prep)}</em>` : act ? `<em class="dk-act">→ ${act}</em>` : ''}</span></button>`; };
+  document.getElementById('dk-title').textContent = `${now + 1}월은 ${mon[now].k}의 시간`;
+  document.getElementById('dk-sub').textContent = `달마다 그달 대목(수능·명절·기념일)과 10년치 검색 흐름을 보고 가장 잘 팔릴 디저트를 골랐어요. 다음 달 준비도 같이 보세요.`;
+  document.getElementById('dk-now').innerHTML = row(now, `이번 달 (${now + 1}월)`) + row(nx, `다음 달 준비 (${nx + 1}월)`, true);
   document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = b.dataset.k;
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
 }
