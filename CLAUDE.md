@@ -86,7 +86,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 
 ## 사용량 제한·사용 기록·통계 (2026-11-09)
 - Worker `Stats` Durable Object(SQLite, wrangler.toml migration v2, 바인딩 `STATS`, 인스턴스 하나 'stats-v1'): `hits`(날짜·사람·종류별 횟수), `events`(익명 사용 기록)
-- **하루 한도** `LIMITS` = 신메뉴 10 · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 30 · 시트 읽기(/sheet 캐시 밖) 10 (사용자 결정 2026-11-09). 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
+- **하루 한도** `LIMITS` = 신메뉴 10 · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 60(2026-11-10에 30에서 올림) · 시트 읽기(/sheet 캐시 밖) 10 (사용자 결정 2026-11-09). 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
 - **익명 기록**: 화면 `track(type,k,goal,v)`가 `navigator.sendBeacon(POST /event)`. UID = localStorage `dessert-timing-uid` 무작위. 종류 `EVENT_TYPES`: visit(하루 1번)·select·step(앞으로 갈 때)·menu_save·menu_again·like·dislike(결과 카드 `#mk-fb`)·file·pdf·price_pick·rec·local·cost_edit. Worker가 직접 남기는 것: menu(이름·원가율·초·모델·내 원가표 수)·menu_fail·sheet(fresh 연결)·limit
 - **주인**: Worker 비밀 변수 **`STATS_KEY`**(대시보드에서 사용자가 넣음). `stats.html`(저장소 루트, noindex, build.sh와 상관없음)에서 열쇠를 넣으면 `GET /stats`(헤더 X-Stats-Key)로 요약을 보고, localStorage `dessert-timing-owner`에 저장 → 그 브라우저는 X-Owner-Key로 한도 없음·기록 안 함
 - **로그인(2026-11-09)**: Supabase 프로젝트 `dessert-timing`(조직 '젠지표류기', 서울, automatic RLS 켬, 새 표 자동 공개 끔). URL·publishable 키는 app.js 끝 `SB_URL`/`SB_KEY`와 worker `SB_URL`/`SB_PUBLISHABLE`(공개용). **service_role 키·DB 비밀번호는 코드·채팅에 절대 X**
@@ -144,7 +144,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
   - 소개: 21종 10년 검색량 + 인허가 72만 건 분석 → 사장님이 **판단 → 확인 → 실행**까지 한 화면에서
   - 주요 구현 대신 세 단계 상자: 1 판단(5가지 유행 단계 진단·출시 전략) / 2 확인(주간 매장 레이더 + 시군구 255곳 동네 리포트) / 3 실행(AI 신메뉴·레시피 + 식자재 단가 원가율 검증)
   - 기능을 하나하나 나열하지 않기 (보관함·3D 지도·실시간 검색 등은 카드에 안 씀). 숫자 3개(10주 vs 48주, 2.6배, +187%)는 유지
-- **새 디저트 7종 검색량 넣기 (2026-11-10, 아직 못 함)**: 크리스마스 케이크·딸기 케이크·발렌타인 초콜릿·빙수·고구마 디저트·밤 디저트·카네이션 케이크. `node scripts/add_kw.mjs`가 Worker `/trend`로 받아 `src/data.json`의 kw에 `cal:true`로 넣음(화면의 lifecycle() 그대로 사용, 각자 피크=100 기준이라 기존 21종과 크기 비교는 안 됨, 기존 비교 통계·순위에서는 `cal`이라 뺌). 이 컴퓨터는 2026-11-10에 Worker 하루 검색 한도 30번을 이미 써서 못 받음 → 한도가 풀린 날 실행 후 `./build.sh`. 카네이션 케이크는 검색어 '카네이션 케이크' 하나로(떡케이크는 연중 생일 수요라 따로)
+- **새 디저트 7종 검색량(2026-11-10 완료)**: 크리스마스 케이크·딸기 케이크·발렌타인 초콜릿·빙수·고구마 디저트·밤 디저트·카네이션 케이크를 `node scripts/add_kw.mjs`(Worker `/trend` 사용, 주인 열쇠는 터미널 환경변수 `OWNER_KEY`로만)로 받아 `src/data.json` kw에 `cal:true`로 넣음. 화면의 lifecycle() 그대로, 각자 피크=100 기준이라 기존 21종과 크기 비교는 안 됨(기존 순위·평균 비교에서는 `cal`이라 뺌). 계절 차이 2.5배 이상이면 비수기에 낮아 보여도 '시즌형'. 월별 최대: 크리스마스 케이크 12월 9.0배·딸기 케이크 12월 3.2배·발렌타인 초콜릿 2월 8.7배·빙수 7월 2.8배·고구마 10월 2.4배·밤 10월 3.4배·카네이션 케이크 4월 5.7배/5월 5.4배. Worker 검색류 하루 한도는 2026-11-10 개발·테스트 중 걸려서 30→60으로 올림(판매 전에 다시 정할 것)
 - 네이버 검색광고 API(월간 검색 수)를 붙여 "검색 수 대비 매장이 부족한 디저트", 연관 키워드로 신메뉴 형태 찾기
 - 원가표에 디저트 재료 단가 계속 추가 (생딸기·포장용기 실제 가격으로)
 - (마무리 작업) 저장된 메뉴를 모아 보기: Supabase 또는 기존 Worker + Cloudflare D1로. 연결 전 localStorage 보관함은 각 브라우저에만 있어 모이지 않음 → 연결 시점부터 집계. 로그인 없이 익명 집계면 개인정보 안내 최소화

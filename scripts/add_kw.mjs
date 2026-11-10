@@ -21,7 +21,7 @@ const NEW = {   // data.json 키 : 네이버에서 찾을 검색어
   '카네이션 케이크': '카네이션 케이크',
 };
 
-const src = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+const src = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8').split(String.fromCharCode(13)).join('');   // 윈도우 줄바꿈(CRLF)도 읽게
 const grab = re => { const m = src.match(re); if (!m) throw new Error('app.js 에서 함수를 못 찾았어요: ' + re); return m[0]; };
 const code = [grab(/const mean = [^\n]*\n/), grab(/function rolling\([^\n]*\n/), grab(/function lifecycle\(dates, raw\) \{[\s\S]*?\n\}\n/)].join('\n');
 const lifecycle = new Function(code + '\nreturn lifecycle;')();
@@ -42,7 +42,8 @@ for (const [key, q] of todo) {
   const raw = D.dates.map(d => by.get(d) ?? 0);
   const v = lifecycle(D.dates, raw);
   if (!v) { console.log(`✗ ${key}: 검색량이 너무 적어서 분석 불가`); continue; }
-  D.kw[key] = { cal: true, type: v.type, peak: v.peak, rise: v.rise, half: v.half, now: v.now, yoy: v.yoy, smonth: v.smonth, amp: round(v.amp, 2), pre52: v.pre52, s: v.s, season: v.season.map(x => round(x, 3)) };
+  D.kw[key] = { cal: true, type: v.amp >= 2.5 ? '시즌형' : v.type,   // 계절이 뚜렷하면 비수기에 낮아 보여도 시즌형(유행형으로 오해 방지)
+     peak: v.peak, rise: v.rise, half: v.half, now: v.now, yoy: v.yoy, smonth: v.smonth, amp: round(v.amp, 2), pre52: v.pre52, s: v.s, season: v.season.map(x => round(x, 3)) };
   done++;
   console.log(`✓ ${key}: ${v.type} · 피크 ${v.peak} · 대목 ${v.smonth}월 · 계절 배수 최대 ${round(v.amp, 1)}배 · 월별 ${v.season.map(x => x.toFixed(1)).join(' ')}`);
   fs.writeFileSync(dataPath, JSON.stringify(D));   // 하나 받을 때마다 저장
