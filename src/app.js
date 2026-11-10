@@ -1182,7 +1182,6 @@ function setView(v) {
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setView('flow'); goStep(+b.dataset.go); }));
 document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListener('click', () => goStep(+b.dataset.step)));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
-document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
 document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
 // ---------- 브랜드 찾기: 이 디저트로 많이 찾는 가게 TOP 5 (Worker /brands) ----------
 const BR = {};
@@ -1317,9 +1316,6 @@ function renderRadar(L) {
     return `<button type="button" class="tile" data-k="${k}"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></button>`;
   }).join('');
   RADAR = L;
-  { const al = L.radar.filter(i => i.level === 'alert'), wt = L.radar.filter(i => i.level === 'watch');
-    document.getElementById('nt-title').textContent = `이번 주 레이더 · 새로 늘어나는 가게 이름 ${al.length + wt.length}개`;
-    document.getElementById('nt-body').textContent = `기준일 ${L.data_date} · 새로 늘어나는 가게 이름: ${(al.length ? al : wt).slice(0, 4).map(i => i.word).join(', ') || '없음'} · 지도에서 지역별 개업·폐업을 확인해 보세요.`; }
   document.querySelectorAll('#rd-tiles .tile').forEach(t => t.addEventListener('click', () => mapSelect(t.dataset.k, null)));
   mapSelect(mapK, mapR);
   const group = (lv, title) => {

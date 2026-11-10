@@ -763,12 +763,6 @@ details.more #chips{padding:0 16px 14px}
 </header>
 
 <main id="top" class="wrap">
-  <div class="notice" id="notice">
-    <div><b id="nt-title">이번 주 레이더 · 불러오는 중</b><p id="nt-body">전국 휴게음식점·제과점 인허가 데이터로 매주 월요일 자동 업데이트돼요.</p></div>
-    <button type="button" class="btn dark" data-view="radar">레이더 보기</button>
-    <button type="button" class="nt-x" aria-label="알림 닫기">×</button>
-  </div>
-
   <!-- ===== 메뉴 개발 흐름 (3단계) ===== -->
   <div id="view-flow">
     <span class="tagpill" id="ph-tag">1단계 · 트렌드 고르기</span>
@@ -2376,7 +2370,6 @@ function setView(v) {
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setView('flow'); goStep(+b.dataset.go); }));
 document.querySelectorAll('#stepper [data-step]').forEach(b => b.addEventListener('click', () => goStep(+b.dataset.step)));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
-document.querySelector('.nt-x').onclick = () => { document.getElementById('notice').hidden = true; };
 document.getElementById('profile').addEventListener('input', () => { renderSide(); head(); });
 // ---------- 브랜드 찾기: 이 디저트로 많이 찾는 가게 TOP 5 (Worker /brands) ----------
 const BR = {};
@@ -2511,9 +2504,6 @@ function renderRadar(L) {
     return `<button type="button" class="tile" data-k="${k}"><span>${k}</span><b>${s.open_now.toLocaleString()}곳</b><small><span class="up">+${s.week_open_n}</span> / <span class="dn">−${s.week_close_n}</span></small></button>`;
   }).join('');
   RADAR = L;
-  { const al = L.radar.filter(i => i.level === 'alert'), wt = L.radar.filter(i => i.level === 'watch');
-    document.getElementById('nt-title').textContent = `이번 주 레이더 · 새로 늘어나는 가게 이름 ${al.length + wt.length}개`;
-    document.getElementById('nt-body').textContent = `기준일 ${L.data_date} · 새로 늘어나는 가게 이름: ${(al.length ? al : wt).slice(0, 4).map(i => i.word).join(', ') || '없음'} · 지도에서 지역별 개업·폐업을 확인해 보세요.`; }
   document.querySelectorAll('#rd-tiles .tile').forEach(t => t.addEventListener('click', () => mapSelect(t.dataset.k, null)));
   mapSelect(mapK, mapR);
   const group = (lv, title) => {
