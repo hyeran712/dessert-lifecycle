@@ -388,6 +388,10 @@ th{color:var(--ink);font-weight:900;border-bottom:2px solid var(--ink)}
 footer{border-top:3px solid var(--ink);background:var(--pop-y);color:var(--ink);font-weight:700}
 footer a{color:var(--ink)}
 .ft-link{font:inherit;font-weight:700;color:var(--ink);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+footer{padding:18px 0 22px;font-size:12.5px}
+footer .ft-row{justify-content:center;align-items:center;gap:6px 18px}
+footer a{text-decoration:underline}
+@media (max-width:640px){footer .ft-row{gap:4px 14px;font-size:12px}footer{padding:16px 0 20px}}
 dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .dlg-head{background:var(--pop-y);border-bottom:3px solid var(--ink)}
 .dlg-head h3{font-family:var(--display);font-weight:400;font-size:22px}
@@ -1125,11 +1129,14 @@ details.more #chips{padding:0 16px 14px}
 </main>
 
 <footer>
-  <div class="wrap">
-    <span>디저트 타이밍 · 데이터: 네이버 데이터랩 · 행정안전부 인허가</span>
-    <span><a href="privacy.html"><b>개인정보 처리방침</b></a> · <button type="button" class="ft-link" data-open-about>데이터 자세히</button></span>
+  <div class="wrap ft-row">
+    <span>© 2026 디저트 타이밍</span>
+    <a href="privacy.html">개인정보처리방침</a>
+    <button type="button" class="ft-link" data-open-about>데이터 출처</button>
+    <span>문의 <span data-contact></span></span>
   </div>
 </footer>
+<script src="site-config.js"></script>
 
 <dialog id="acct" class="acct">
   <div class="dlg-head"><h3 id="acct-h">로그인</h3><button type="button" aria-label="닫기" data-close-acct>×</button></div>
