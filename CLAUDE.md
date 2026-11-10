@@ -40,7 +40,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 4. 커밋·푸시하면 GitHub Pages가 1~2분 안에 자동 배포된다.
 
 ## 화면 구조 (src/body.html)
-- 위쪽 바: 로고(2026-11-10 사용자가 만든 '디저트 타이밍' 글자 로고 `img/brand/logo-wordmark.webp`·png 하나로 교체, 원본 투명 배경 2172×724를 글자 영역만 잘라 364×72로 줄임, 화면 높이 PC 34px·휴대폰 28px `.logo-word`. 예전 시계 그림 로고 `logo-clock.webp`와 바늘 애니메이션 `.lm-tick`은 화면에서 뺐고 파일만 남음. 파비콘 `img/brand/favicon.png`·apple-touch-icon은 정사각형이라 시계 그림 그대로. 카톡 미리보기 `img/brand/og-image.png`(1200×630 크림 배경에 로고 가운데) + head.html의 og:title·description·image·url·twitter:card — 카카오는 미리보기를 캐시하니 바꾸면 카카오 디버거에서 새로 받아야 함) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
+- 위쪽 바: 로고(2026-11-10 사용자가 만든 '디저트 타이밍' 글자 로고 `img/brand/logo-wordmark.webp`·png 하나로 교체, 원본 투명 배경 2172×724를 글자 영역만 잘라 1000×198 무손실 webp(화면 높이 PC 28px·휴대폰 26px `.logo-word`, 고해상도 화면에서도 선명), 로고 아래 `.logo-sub` '지금 출시해도 될까?'(PC 11px·휴대폰 10px). 예전 시계 그림 로고 `logo-clock.webp`와 바늘 애니메이션 `.lm-tick`은 화면에서 뺐고 파일만 남음. 파비콘 `img/brand/favicon.png`·apple-touch-icon은 정사각형이라 시계 그림 그대로. 카톡 미리보기 `img/brand/og-image.png`(1200×630 크림 배경에 로고 가운데) + head.html의 og:title·description·image·url·twitter:card — 카카오는 미리보기를 캐시하니 바꾸면 카카오 디버거에서 새로 받아야 함) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
 - 알림 띠 `#notice`(이번 주 레이더 요약)는 2026-11-10 사용자 요청으로 통째로 뺌
 - `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
   - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`
