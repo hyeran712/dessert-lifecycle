@@ -631,6 +631,7 @@ function menuCard(m, edit) {
       <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
       ${m.recipe.some(x => x.vsMonth >= 15) ? `<p class="gfit"><b>⚠️ 오른 재료</b> ${m.recipe.filter(x => x.vsMonth >= 15).map(x => `${esc(x.ing)} 한 달 새 +${x.vsMonth}%`).join(', ')}. 원가율을 다시 확인하거나 양을 조절해 보세요.</p>` : ''}
       <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요${edit ? ' (단가를 눌러 고칠 수 있어요)' : ''}` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
+      <p class="note mk-disc">${esc(SITE_COPY.menuNote)}</p>
     </div>`;
 }
 // ---------- 내 메뉴 보관함 (이 브라우저에만 저장) ----------
@@ -1167,19 +1168,35 @@ function renderGoals() {
 }
 function renderSide() {
   const el = document.getElementById('sel-sum');
-  if (!current) { el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>'; return; }
-  const E = entry(current), v = E.v;
-  el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
+  if (!current) el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>';
+  else {
+    const E = entry(current), v = E.v;
+    el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
     <div class="ss-g"><div><b>${v.now}%</b>최고 때 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>작년 이맘때보다</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
-  const p = loadProfile();
-  document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
-  const n = storeName();
+  }
+  // 반영되는 가게 정보: 있으면 요약 + [수정], 없으면 넣으라는 안내(누르면 프로필로)
+  const p = loadProfile(), has = hasProfile(p), body = document.getElementById('side-store-body');
+  document.getElementById('side-edit').hidden = !has;
+  if (has) body.textContent = document.getElementById('pf-sum').textContent;
+  else body.innerHTML = `<button type="button" class="ss-add">${esc(SITE_COPY.noProfile)}</button>`;
+  renderSideTip();
 }
+// 사이드바 '지금 할 일' (단계마다 바뀜)
+function renderSideTip() { const el = document.getElementById('side-tip-body'); if (el) el.textContent = SITE_COPY.tip[STEP] || ''; }
+// [수정]·'넣으면 …' 를 누르면 내 가게 프로필로: 디저트를 골랐으면 3단계의 프로필, 아직이면 1단계의 가게 질문(같은 프로필에 저장됨)
+function goProfile() {
+  const el = document.getElementById(current ? 'profile' : 'rec');
+  if (current) { goStep(3); el.open = true; }
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+document.getElementById('side-store').addEventListener('click', e => { if (e.target.closest('#side-edit, .ss-add')) goProfile(); });
+const madeNow = () => !!(current && MADE_NAMES[current] && MADE_NAMES[current].length);   // 지금 고른 디저트로 메뉴를 만들었는지
 function renderProg() {
-  const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: loadSaved().length > 0 };
-  const act = MADE ? 4 : STEP;
+  const done = { 1: !!current, 2: REACHED >= 3, 3: madeNow(), 4: madeNow() };   // 3·4단계는 지금 고른 디저트로 메뉴를 만들었을 때만 체크 (보관함에 예전 메뉴가 있어도 X)
+  const act = madeNow() ? 4 : STEP;
   document.querySelectorAll('#prog li').forEach(li => { const p = +li.dataset.p;
     li.className = done[p] ? 'done' : (p === act ? 'act' : ''); li.querySelector('i').textContent = done[p] ? '✓' : p; });
+  renderSideTip();
   document.querySelectorAll('#stepper button').forEach(b => { const s = +b.dataset.step;
     b.className = s === STEP ? 'act' : (s < REACHED || (s === 1 && current) ? 'done' : ''); b.querySelector('i').textContent = (s !== STEP && (s < REACHED)) ? '✓' : s;
     b.disabled = s > REACHED + (current ? 1 : 0) || (s > 1 && !current); });

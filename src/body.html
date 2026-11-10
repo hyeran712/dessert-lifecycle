@@ -108,6 +108,7 @@
             <p class="shop-v" id="shop-v"></p>
             <p class="shop-s" id="shop-s"></p>
           </div>
+          <p class="v-note" data-copy="verdictNote"></p>
         </div>
         <div class="card">
           <div class="chart-head">
@@ -290,7 +291,7 @@
       </div>
 
       <aside class="side" id="side">
-        <div class="card side-card">
+        <div class="card side-card prog-card">
           <h3>진행 단계</h3>
           <ol class="prog" id="prog">
             <li data-p="1"><i>1</i>디저트 고르기</li>
@@ -301,9 +302,13 @@
           <div class="sel-sum" id="sel-sum"></div>
           <a href="#saved" class="note" id="side-saved" style="display:block;margin-top:8px;font-weight:700"></a>
         </div>
-        <details class="card side-card"><summary><b>이 분석에 쓰인 데이터</b></summary>
-          <p class="note">네이버 데이터랩 주간 검색량(2016~2026), 행정안전부 인허가(휴게음식점 65만 + 제과점 7만 건), 내 원가표 재료 단가.</p></details>
-        <details class="card side-card" id="side-store"><summary><b>반영되는 가게 정보</b></summary><p class="note" id="side-store-body"></p></details>
+        <div class="card side-card" id="side-store">
+          <div class="ss-head"><h3>반영되는 가게 정보</h3><button type="button" class="ss-edit" id="side-edit">수정</button></div>
+          <p class="note" id="side-store-body"></p>
+        </div>
+        <div class="card side-card side-tip" id="side-tip"><b>💡 지금 할 일</b><p id="side-tip-body"></p></div>
+        <a href="guide.html" class="side-guide">자세한 사용법 →</a>
+        <p class="side-note" data-copy="sideNote"></p>
       </aside>
     </div>
   </div>
@@ -383,8 +388,11 @@
     <span>© 2026 디저트 타이밍</span>
     <a href="privacy.html">개인정보처리방침</a>
     <button type="button" class="ft-link" data-open-about>데이터 출처</button>
+    <a href="guide.html">사용법</a>
   </div>
+  <div class="wrap"><p class="ft-disc" data-copy="detail"></p></div>
 </footer>
+<script src="site-copy.js"></script>
 
 <dialog id="acct" class="acct">
   <div class="dlg-head"><h3 id="acct-h">로그인</h3><button type="button" aria-label="닫기" data-close-acct>×</button></div>

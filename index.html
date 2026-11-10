@@ -645,6 +645,17 @@ details.more #chips{padding:0 16px 14px}
 .side-card{padding:16px 18px!important}
 .side-card h3{font-size:16px;font-weight:900;margin:0 0 10px;padding-left:10px;border-left:4px solid var(--ink)}
 .side-card summary{cursor:pointer;font-size:14px}
+.ss-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.ss-head h3{margin:0!important}
+.ss-edit{font:inherit;font-weight:800;font-size:12.5px;padding:3px 12px;border:2px solid var(--ink);border-radius:99px;background:#fff;color:var(--ink);cursor:pointer}
+.ss-edit:hover{background:var(--pop-y)}
+.ss-add{font:inherit;font-weight:700;font-size:13.5px;line-height:1.5;text-align:left;color:var(--ink);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+#side-store-body{margin:0}
+.side-tip{background:#fff8dc}.side-tip b{display:block;margin-bottom:4px;font-size:14px}.side-tip p{margin:0;font-size:14px;line-height:1.55}
+.side-guide{display:block;text-align:right;font-size:12.5px;font-weight:700;color:var(--ink-2);padding:0 4px}
+.side-note{font-size:11.5px;color:var(--ink-3);line-height:1.55;margin:0;padding:0 4px}
+.v-note{margin:14px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.mk-disc{margin-top:8px}
+.ft-disc{max-width:760px;margin:10px auto 0;font-size:11px;font-weight:500;line-height:1.55;text-align:center;opacity:.85}
 .prog{list-style:none;margin:0;padding:0}
 .prog li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px;color:var(--ink-3);font-weight:700}
 .prog li i{font-style:normal;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink-3);font-size:12px;flex:none}
@@ -735,7 +746,7 @@ details.more #chips{padding:0 16px 14px}
   .stepper li{flex:1;min-width:0}
   .stepper button{width:100%;justify-content:center;gap:4px;padding:6px 2px;font-size:12px;white-space:nowrap}
   .stepper button i{width:22px;height:22px;font-size:11px}
-  .side{display:none}
+  .side .prog-card{display:none}   /* 휴대폰: 진행 단계는 위쪽 표시줄이 대신해서 숨기고, 가게 정보·할 일·안내만 내용 아래에 */
   .step-nav{justify-content:stretch}.step-nav .note{flex-basis:100%;text-align:center}
   #p-table{min-width:0!important;width:100%}#p-table thead{display:none}
   #p-table tr{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px 4px;border-bottom:1px solid var(--line)}
@@ -925,6 +936,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
             <p class="shop-v" id="shop-v"></p>
             <p class="shop-s" id="shop-s"></p>
           </div>
+          <p class="v-note" data-copy="verdictNote"></p>
         </div>
         <div class="card">
           <div class="chart-head">
@@ -1107,7 +1119,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
       </div>
 
       <aside class="side" id="side">
-        <div class="card side-card">
+        <div class="card side-card prog-card">
           <h3>진행 단계</h3>
           <ol class="prog" id="prog">
             <li data-p="1"><i>1</i>디저트 고르기</li>
@@ -1118,9 +1130,13 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
           <div class="sel-sum" id="sel-sum"></div>
           <a href="#saved" class="note" id="side-saved" style="display:block;margin-top:8px;font-weight:700"></a>
         </div>
-        <details class="card side-card"><summary><b>이 분석에 쓰인 데이터</b></summary>
-          <p class="note">네이버 데이터랩 주간 검색량(2016~2026), 행정안전부 인허가(휴게음식점 65만 + 제과점 7만 건), 내 원가표 재료 단가.</p></details>
-        <details class="card side-card" id="side-store"><summary><b>반영되는 가게 정보</b></summary><p class="note" id="side-store-body"></p></details>
+        <div class="card side-card" id="side-store">
+          <div class="ss-head"><h3>반영되는 가게 정보</h3><button type="button" class="ss-edit" id="side-edit">수정</button></div>
+          <p class="note" id="side-store-body"></p>
+        </div>
+        <div class="card side-card side-tip" id="side-tip"><b>💡 지금 할 일</b><p id="side-tip-body"></p></div>
+        <a href="guide.html" class="side-guide">자세한 사용법 →</a>
+        <p class="side-note" data-copy="sideNote"></p>
       </aside>
     </div>
   </div>
@@ -1200,8 +1216,11 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
     <span>© 2026 디저트 타이밍</span>
     <a href="privacy.html">개인정보처리방침</a>
     <button type="button" class="ft-link" data-open-about>데이터 출처</button>
+    <a href="guide.html">사용법</a>
   </div>
+  <div class="wrap"><p class="ft-disc" data-copy="detail"></p></div>
 </footer>
+<script src="site-copy.js"></script>
 
 <dialog id="acct" class="acct">
   <div class="dlg-head"><h3 id="acct-h">로그인</h3><button type="button" aria-label="닫기" data-close-acct>×</button></div>
@@ -1890,6 +1909,7 @@ function menuCard(m, edit) {
       <p style="margin-top:10px"><b>함께 팔기</b> ${esc(m.pairing || '')}</p>
       ${m.recipe.some(x => x.vsMonth >= 15) ? `<p class="gfit"><b>⚠️ 오른 재료</b> ${m.recipe.filter(x => x.vsMonth >= 15).map(x => `${esc(x.ing)} 한 달 새 +${x.vsMonth}%`).join(', ')}. 원가율을 다시 확인하거나 양을 조절해 보세요.</p>` : ''}
       <p class="note">AI 조정 ${m.tries.map(t => `${t.try}차 ${t.rate}%`).join(' → ')} · 마진 ${won(m.margin)} · 원가표 단가 기준일 ${m.priceDate}${ai ? ` · <b>AI 추정 단가 ${ai}개</b>는 실제 구매가로 확인이 필요해요${edit ? ' (단가를 눌러 고칠 수 있어요)' : ''}` : ''}${m.banned && m.banned.length ? ` · <b style="color:var(--teal-d)">쓰지 않는 재료(${m.banned.join(', ')})가 들어갔어요</b>` : ''}</p>
+      <p class="note mk-disc">${esc(SITE_COPY.menuNote)}</p>
     </div>`;
 }
 // ---------- 내 메뉴 보관함 (이 브라우저에만 저장) ----------
@@ -2426,19 +2446,35 @@ function renderGoals() {
 }
 function renderSide() {
   const el = document.getElementById('sel-sum');
-  if (!current) { el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>'; return; }
-  const E = entry(current), v = E.v;
-  el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
+  if (!current) el.innerHTML = '<p class="note">아직 고른 디저트가 없어요.</p>';
+  else {
+    const E = entry(current), v = E.v;
+    el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
     <div class="ss-g"><div><b>${v.now}%</b>최고 때 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>작년 이맘때보다</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
-  const p = loadProfile();
-  document.getElementById('side-store-body').textContent = hasProfile(p) ? document.getElementById('pf-sum').textContent : '3단계의 내 가게 프로필을 넣으면 장비·가격대·쓰지 않는 재료가 메뉴에 반영돼요.';
-  const n = storeName();
+  }
+  // 반영되는 가게 정보: 있으면 요약 + [수정], 없으면 넣으라는 안내(누르면 프로필로)
+  const p = loadProfile(), has = hasProfile(p), body = document.getElementById('side-store-body');
+  document.getElementById('side-edit').hidden = !has;
+  if (has) body.textContent = document.getElementById('pf-sum').textContent;
+  else body.innerHTML = `<button type="button" class="ss-add">${esc(SITE_COPY.noProfile)}</button>`;
+  renderSideTip();
 }
+// 사이드바 '지금 할 일' (단계마다 바뀜)
+function renderSideTip() { const el = document.getElementById('side-tip-body'); if (el) el.textContent = SITE_COPY.tip[STEP] || ''; }
+// [수정]·'넣으면 …' 를 누르면 내 가게 프로필로: 디저트를 골랐으면 3단계의 프로필, 아직이면 1단계의 가게 질문(같은 프로필에 저장됨)
+function goProfile() {
+  const el = document.getElementById(current ? 'profile' : 'rec');
+  if (current) { goStep(3); el.open = true; }
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+document.getElementById('side-store').addEventListener('click', e => { if (e.target.closest('#side-edit, .ss-add')) goProfile(); });
+const madeNow = () => !!(current && MADE_NAMES[current] && MADE_NAMES[current].length);   // 지금 고른 디저트로 메뉴를 만들었는지
 function renderProg() {
-  const done = { 1: !!current, 2: REACHED >= 3, 3: MADE, 4: loadSaved().length > 0 };
-  const act = MADE ? 4 : STEP;
+  const done = { 1: !!current, 2: REACHED >= 3, 3: madeNow(), 4: madeNow() };   // 3·4단계는 지금 고른 디저트로 메뉴를 만들었을 때만 체크 (보관함에 예전 메뉴가 있어도 X)
+  const act = madeNow() ? 4 : STEP;
   document.querySelectorAll('#prog li').forEach(li => { const p = +li.dataset.p;
     li.className = done[p] ? 'done' : (p === act ? 'act' : ''); li.querySelector('i').textContent = done[p] ? '✓' : p; });
+  renderSideTip();
   document.querySelectorAll('#stepper button').forEach(b => { const s = +b.dataset.step;
     b.className = s === STEP ? 'act' : (s < REACHED || (s === 1 && current) ? 'done' : ''); b.querySelector('i').textContent = (s !== STEP && (s < REACHED)) ? '✓' : s;
     b.disabled = s > REACHED + (current ? 1 : 0) || (s > 1 && !current); });
