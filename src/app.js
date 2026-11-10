@@ -1421,7 +1421,8 @@ function monthScores(i, C, evs) {
   }).sort((a, b) => b.sc - a.sc);
 }
 // 한 줄 이유: 점수를 많이 준 이유 3개까지
-const dkWhy = m => m.parts.filter(x => x.txt && x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 3).map(x => x.txt).join(' · ') || '꾸준히 찾는 디저트';
+const DK_TAG = ['이 달 대표 메뉴', '같이 팔기 좋음'];   // 표 가점 꼬리표는 이유 글에서 뺌(자리가 좁고 정보가 적음)
+const dkWhy = m => m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => b.pts - a.pts).slice(0, 2).map(x => x.txt).join(' · ') || '꾸준히 찾는 디저트';
 function top3(list) { const out = [], fam = new Set();
   for (const m of list) { const f = FAMILY[m.k] || m.k; if (fam.has(f)) continue; fam.add(f); out.push(m); if (out.length === 3) break; } return out; }
 function clockPlan() {
