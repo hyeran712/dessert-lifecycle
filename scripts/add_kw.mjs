@@ -2,7 +2,8 @@
 // 사용: node scripts/add_kw.mjs            (아래 NEW 전부)
 //       node scripts/add_kw.mjs 빙수 밤디저트  (일부만; NEW 의 키 이름으로)
 // - 분석 방식은 화면의 lifecycle() 과 같은 함수를 src/app.js 에서 그대로 꺼내 쓴다 (13주 이동평균, 피크, 유형, 월별 계절 배수)
-// - 검색 한도(하루 30번)를 쓴다. 한도가 차면 멈추고 알려 준다. 키는 필요 없다 (Worker 가 들고 있음)
+// - 주인 열쇠가 있으면 한도 없이 받는다: 터미널에서 직접  OWNER_KEY=열쇠  node scripts/add_kw.mjs  (열쇠는 채팅·코드에 쓰지 말 것)
+// - 열쇠가 없으면 검색 한도(하루 30번)를 쓴다. 한도가 차면 멈추고 알려 준다. 키는 필요 없다 (Worker 가 들고 있음)
 // - 새 디저트는 각자 자기 피크=100 기준이다 (노트북의 '디저트' 기준 맞춤과 다름). 계절 배수·유형·현재 수준에는 영향 없음
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,7 +34,7 @@ const round = (x, n) => x === null || x === undefined ? x : +x.toFixed(n);
 
 let done = 0;
 for (const [key, q] of todo) {
-  const res = await fetch(`${API}/trend?q=${encodeURIComponent(q)}`);
+  const res = await fetch(`${API}/trend?q=${encodeURIComponent(q)}`, { headers: process.env.OWNER_KEY ? { 'X-Owner-Key': process.env.OWNER_KEY } : {} });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || j.error) { console.log(`✗ ${key}: ${j.error || res.status}`); if (res.status === 429) { console.log('하루 한도를 다 썼어요. 내일(한국 시간 0시 이후) 다시 실행하세요. 이미 받은 건 저장돼 있어요.'); break; } continue; }
   // 기존 주간 날짜(D.dates)에 맞춘다. 없는 주는 0
