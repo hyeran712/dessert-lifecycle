@@ -40,7 +40,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 4. 커밋·푸시하면 GitHub Pages가 1~2분 안에 자동 배포된다.
 
 ## 화면 구조 (src/body.html)
-- 위쪽 바: 로고(2026-11-10 사용자가 만든 '디저트 타이밍' 글자 로고 `img/brand/logo-wordmark.webp`·png 하나로 교체, 원본 투명 배경 2172×724를 글자 영역만 잘라 1000×198 무손실 webp(화면 높이 PC 28px·휴대폰 26px `.logo-word`, 고해상도 화면에서도 선명), 로고 아래 `.logo-sub` '지금 출시해도 될까?'(PC 11px·휴대폰 10px). 예전 시계 그림 로고 `logo-clock.webp`와 바늘 애니메이션 `.lm-tick`은 화면에서 뺐고 파일만 남음. 파비콘 `img/brand/favicon.png`·apple-touch-icon은 정사각형이라 시계 그림 그대로. 카톡 미리보기 `img/brand/og-image.png`(1200×630 크림 배경에 로고 가운데) + head.html의 og:title·description·image·url·twitter:card — 카카오는 미리보기를 캐시하니 바꾸면 카카오 디버거에서 새로 받아야 함) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
+- 위쪽 바: 로고(2026-11-10 사용자가 만든 '디저트 타이밍' 글자 로고 `img/brand/logo-wordmark.webp`·png 하나로 교체, 원본 투명 배경 2172×724를 글자 영역만 잘라 1000×198 무손실 webp(화면 높이 PC 28px·휴대폰 26px `.logo-word`, 고해상도 화면에서도 선명), 로고 아래 `.logo-sub` '지금 출시해도 될까?'(PC 11px·휴대폰 10px, '디' 글자 시작선에 맞춰 왼쪽 여백 1px). 예전 시계 그림 로고 `logo-clock.webp`와 바늘 애니메이션 `.lm-tick`은 화면에서 뺐고 파일만 남음. 파비콘 `img/brand/favicon.png`·apple-touch-icon은 정사각형이라 시계 그림 그대로. 카톡 미리보기 `img/brand/og-image.png`(1200×630 크림 배경에 로고 가운데) + head.html의 og:title·description·image·url·twitter:card — 카카오는 미리보기를 캐시하니 바꾸면 카카오 디버거에서 새로 받아야 함) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
 - 알림 띠 `#notice`(이번 주 레이더 요약)는 2026-11-10 사용자 요청으로 통째로 뺌
 - `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
   - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`
@@ -49,6 +49,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
   - 오른쪽 사이드바 `#side`: 진행 단계 `#prog`, 고른 디저트 요약 `#sel-sum`
 - `#local`: 우리 동네 리포트(사장님용). 시도 `#lc-sido`·시군구 `#lc-gu` 고르면 `#lc-sheet`에 한 장 리포트, `#lc-print`로 A4 PDF 저장(인쇄용 CSS는 head.html 끝)
 - `#radar`: 별도 화면. 디저트 타일 `#rd-tiles`, 3D 지도 `#mapstage`(`#kmap` SVG, 팝업 `#map-panel`, 확대 버튼 `.ms-ctrl`), 새 가게 이름 `#rd-list`
+  - **레이더 검증표(2026-11-10 쉽게 바꿈)**: 제목 '이 레이더, 예전 유행도 미리 잡았을까?'. app.js `BACKTEST`([단어, 종류, 레이더가 처음 알아챈 달, 검색 최고 달(없으면 null)]) → `renderBacktest()`가 요약 한 줄(`#bt-sum`: 채점한 N개 중 M개를 ○~○개월 먼저, 자동 계산)·표(`#bt-body`, 열 '🚨 레이더가 알아챈 때'·'📈 유행 꼭대기(검색 최고)'·'결과' 문장 ✅ ○개월 전에 알아챘어요 / ❌ ○개월 늦었어요)·'채점 못 한 단어'(`#bt-skip`, 검색 자료 없는 줄은 표에서 뺌)를 그림. 기준(3개월·4배·6개 시군구)은 `<details class="bt-how">` '어떻게 알아채나요?'에 접어 둠. 새 사례는 BACKTEST에 한 줄 추가. 기존 `table.small`(최소 폭 520px) 규칙을 덮으려고 `table.small.bt-tbl`로 씀
 
 ## 동작 핵심 (src/app.js)
 - `select(k)`: 디저트 선택 → 판정·그래프·발견·기획 갱신. 아래쪽에서 한 번 감싸서 카드/사이드바도 갱신함

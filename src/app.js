@@ -1388,6 +1388,26 @@ async function renderOpportunity(L) {
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
+/* ---------- 레이더 검증표: 이 레이더, 예전 유행도 미리 잡았을까? (2017~2026 가게 데이터에 같은 방법을 매달 적용한 결과) ---------- */
+// [단어, 종류, 레이더가 처음 알아챈 달, 검색이 가장 많았던 달(검색 자료 없으면 null)]
+const BACKTEST = [
+  ['왕가탕후루', '브랜드', '2022.11', '2023.08'], ['탕후루', '메뉴', '2023.04', '2023.08'], ['요거트아이스크림의정석', '브랜드', '2024.03', '2024.08'],
+  ['크로플', '메뉴', '2021.01', '2020.09'], ['쌀핫도그', '메뉴', '2017.03', null], ['티라미수', '메뉴', '2020.08', null], ['잉어빵', '메뉴', '2024.12', null], ['땅콩빵', '메뉴', '2025.07', null],
+];
+function renderBacktest() {
+  const body = document.getElementById('bt-body'); if (!body) return;
+  const ym = x => { const [y, m] = x.split('.').map(Number); return y * 12 + m; };
+  const scored = BACKTEST.filter(r => r[3]).map(([w, k, a, pk]) => ({ w, k, a, pk, d: ym(pk) - ym(a) })), skipped = BACKTEST.filter(r => !r[3]).map(r => r[0]);
+  const early = scored.filter(r => r.d > 0), ds = early.map(r => r.d);
+  document.getElementById('bt-sum').innerHTML = early.length
+    ? `채점한 <b>${scored.length}개</b> 중 <b>${early.length}개</b>를 유행 꼭대기보다 <b>${Math.min(...ds)}${Math.max(...ds) !== Math.min(...ds) ? '~' + Math.max(...ds) : ''}개월 먼저</b> 알아챘어요`
+    : `채점한 ${scored.length}개 중 유행 꼭대기보다 먼저 알아챈 단어는 없어요`;
+  body.innerHTML = scored.map(r => `<tr><td>${esc(r.w)} <span class="kb ${r.k === '브랜드' ? 'kbr' : 'km'}">${r.k}</span></td><td>${r.a}</td><td>${r.pk}</td><td>${r.d > 0
+    ? `<b class="bt-ok">✅ ${r.d}개월 전에 알아챘어요</b>` : r.d < 0 ? `<span class="bt-late">❌ ${-r.d}개월 늦었어요</span>` : '<b class="bt-ok">✅ 같은 달에 알아챘어요</b>'}</td></tr>`).join('');
+  document.getElementById('bt-skip').textContent = skipped.length ? `채점 못 한 단어: ${skipped.join('·')} (비교할 검색 자료 없음)` : '';
+}
+renderBacktest();
+
 renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
 document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));
 

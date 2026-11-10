@@ -542,7 +542,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .logo-mark svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .logo{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px;line-height:1}
 .logo-word{display:block;height:28px;width:auto}
-.logo-sub{display:block;font:700 11px/1 "Noto Sans KR",sans-serif;color:var(--ink-2);letter-spacing:-.2px;white-space:nowrap;margin-left:12px}
+.logo-sub{display:block;font:700 11px/1 "Noto Sans KR",sans-serif;color:var(--ink-2);letter-spacing:-.2px;white-space:nowrap;margin-left:1px}
 .lm-tick{transform-box:view-box;transform-origin:50px 50px;animation:lm-tick 1.1s cubic-bezier(.3,1.7,.5,1) .25s both}
 @keyframes lm-tick{0%{transform:rotate(-80deg)}55%{transform:rotate(6deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.lm-tick{animation:none}}
@@ -719,7 +719,7 @@ details.more #chips{padding:0 16px 14px}
 /* ===== 휴대폰 화면 (640px 이하): 앱처럼 아래쪽 메뉴 바, 위쪽은 로고·내 가게만 ===== */
 @media (max-width:640px){
   header .wrap{height:54px;gap:8px}
-  .logo{font-size:20px;white-space:nowrap}.logo-word{height:26px}.logo-sub{font-size:10px;margin-left:9px}
+  .logo{font-size:20px;white-space:nowrap}.logo-word{height:26px}.logo-sub{font-size:10px;margin-left:1px}
   .store{display:inline-flex;margin-left:auto;padding-left:0;border-left:0;font-size:14px}
   .store #store-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#fff;border-top:3px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
@@ -766,6 +766,15 @@ details.more #chips{padding:0 16px 14px}
 .dk-now span b{font-size:17px}
 .dk-emo{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:30px;background:#fff8dc;border-radius:inherit}
 .dk-now .dk-emo{width:52px;height:52px;border-radius:10px;border:1.5px solid var(--ink);font-size:26px;flex:none}
+.bt-sum{margin:12px 0;padding:10px 14px;background:#fff8dc;border:2px solid var(--ink);border-radius:12px;font-size:15px;line-height:1.5}
+.bt-how{margin:0 0 4px}.bt-how summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-2)}
+table.small.bt-tbl{width:100%;min-width:0;table-layout:fixed}
+table.small.bt-tbl th,table.small.bt-tbl td{padding:8px 6px;font-size:13px;word-break:keep-all;vertical-align:top}
+table.small.bt-tbl td:nth-child(2),table.small.bt-tbl td:nth-child(3){white-space:nowrap}
+table.small.bt-tbl .kb{display:block;width:max-content;margin:3px 0 0}
+table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
+.bt-ok{color:#14804a}.bt-late{color:#c2410c;font-weight:700}
+@media (max-width:640px){table.small.bt-tbl th,table.small.bt-tbl td{padding:6px 4px;font-size:12px}.bt-sum{font-size:14px}}
 .dk-how{margin-top:22px;padding-top:16px;border-top:2px dashed var(--line)}
 .dk-how-t{display:block;font-size:14px;margin-bottom:10px}.dk-how-t small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:6px}
 .dk-how-g{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -1155,23 +1164,17 @@ details.more #chips{padding:0 16px 14px}
           <div id="rd-list"><p class="note">불러오는 중…</p></div>
         </div>
         <div class="card">
-          <div class="chart-head"><h4>이 레이더, 예전에도 맞았을까?</h4></div>
-          <p class="note" style="margin:0 0 6px">2017~2026년 가게 데이터에 지금과 같은 방법을 매달 적용해 봤어요. 레이더가 <b>"이 이름의 가게가 갑자기 늘어요"</b>라고 처음 알려 줬을 달과, 네이버 검색이 가장 많았던 달을 비교했어요.</p>
-          <p class="note" style="margin:0 0 12px">레이더가 알려 주는 기준: 최근 3개월 새로 문 연 가게 이름에 그 단어가 1년 전보다 4배 넘게 늘고, 6개 넘는 시군구에서 동시에 보일 때</p>
-          <div style="overflow-x:auto"><table class="small" style="min-width:420px">
-            <thead><tr><th>잡아낸 단어</th><th>레이더가 처음 알려 준 달</th><th>검색이 가장 많았던 달</th><th>결과</th></tr></thead>
-            <tbody>
-              <tr><td>왕가탕후루 <span class="kb kbr">브랜드</span></td><td>2022.11</td><td>2023.08</td><td><b style="color:var(--teal-d)">9개월 먼저</b></td></tr>
-              <tr><td>탕후루 <span class="kb km">메뉴</span></td><td>2023.04</td><td>2023.08</td><td><b style="color:var(--teal-d)">4개월 먼저</b></td></tr>
-              <tr><td>요거트아이스크림의정석 <span class="kb kbr">브랜드</span></td><td>2024.03</td><td>2024.08</td><td><b style="color:var(--teal-d)">5개월 먼저</b></td></tr>
-              <tr><td>크로플 <span class="kb km">메뉴</span></td><td>2021.01</td><td>2020.09</td><td style="color:var(--ink-3)">4개월 늦음</td></tr>
-              <tr><td>쌀핫도그 <span class="kb km">메뉴</span></td><td>2017.03</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
-              <tr><td>티라미수 <span class="kb km">메뉴</span></td><td>2020.08</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
-              <tr><td>잉어빵 <span class="kb km">메뉴</span></td><td>2024.12</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
-              <tr><td>땅콩빵 <span class="kb km">메뉴</span></td><td>2025.07</td><td>–</td><td style="color:var(--ink-3)">검색 데이터 없음</td></tr>
-            </tbody>
+          <div class="chart-head"><h4>이 레이더, 예전 유행도 미리 잡았을까?</h4></div>
+          <p class="note" style="margin:0 0 6px">2017~2026년 가게 데이터에 지금과 같은 방법을 매달 적용해 봤어요. 레이더가 <b>"이 이름의 가게가 갑자기 늘어요"</b>라고 처음 알려 준 때와, 네이버 검색이 가장 많았던 때를 비교했어요.</p>
+          <details class="bt-how"><summary>어떻게 알아채나요?</summary><p class="note" style="margin:6px 0 0">최근 3개월 새로 문 연 가게 이름에 그 단어가 1년 전보다 4배 넘게 늘고, 6개 넘는 시군구에서 동시에 보일 때 알려 줘요.</p></details>
+          <p class="bt-sum" id="bt-sum"></p>
+          <div style="overflow-x:auto"><table class="small bt-tbl">
+            <colgroup><col style="width:27%"><col style="width:17%"><col style="width:19%"><col style="width:37%"></colgroup>
+            <thead><tr><th>잡아낸 단어</th><th>🚨 레이더가 알아챈 때</th><th>📈 유행 꼭대기(검색 최고)</th><th>결과</th></tr></thead>
+            <tbody id="bt-body"></tbody>
           </table></div>
-          <p class="note"><b>결과</b>는 검색이 가장 많았던 달보다 레이더가 몇 달 먼저 알려 줬는지예요. 가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어 예시 가게 이름을 같이 보여줘요.</p>
+          <p class="note" id="bt-skip" style="margin:8px 0 0"></p>
+          <p class="note"><b>결과</b>는 검색이 가장 많았던 때보다 레이더가 몇 달 먼저(또는 늦게) 알려 줬는지예요. 가게 창업은 SNS보다 늦게 시작되기도 해서(크로플), 검색량 분석과 함께 봐야 해요. 메뉴가 아닌 단어도 섞일 수 있어요.</p>
         </div>
       </div>
   </section>
@@ -2644,6 +2647,26 @@ async function renderOpportunity(L) {
 fetch('live/live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).then(L => { renderRadar(L); renderOpportunity(L); })
   .catch(() => { document.getElementById('rd-list').innerHTML = '<p class="note">레이더 데이터를 불러오지 못했어요.</p>'; });
 renderSaved();   // 보관함 (esc 정의 뒤에 그려야 해서 맨 끝)
+/* ---------- 레이더 검증표: 이 레이더, 예전 유행도 미리 잡았을까? (2017~2026 가게 데이터에 같은 방법을 매달 적용한 결과) ---------- */
+// [단어, 종류, 레이더가 처음 알아챈 달, 검색이 가장 많았던 달(검색 자료 없으면 null)]
+const BACKTEST = [
+  ['왕가탕후루', '브랜드', '2022.11', '2023.08'], ['탕후루', '메뉴', '2023.04', '2023.08'], ['요거트아이스크림의정석', '브랜드', '2024.03', '2024.08'],
+  ['크로플', '메뉴', '2021.01', '2020.09'], ['쌀핫도그', '메뉴', '2017.03', null], ['티라미수', '메뉴', '2020.08', null], ['잉어빵', '메뉴', '2024.12', null], ['땅콩빵', '메뉴', '2025.07', null],
+];
+function renderBacktest() {
+  const body = document.getElementById('bt-body'); if (!body) return;
+  const ym = x => { const [y, m] = x.split('.').map(Number); return y * 12 + m; };
+  const scored = BACKTEST.filter(r => r[3]).map(([w, k, a, pk]) => ({ w, k, a, pk, d: ym(pk) - ym(a) })), skipped = BACKTEST.filter(r => !r[3]).map(r => r[0]);
+  const early = scored.filter(r => r.d > 0), ds = early.map(r => r.d);
+  document.getElementById('bt-sum').innerHTML = early.length
+    ? `채점한 <b>${scored.length}개</b> 중 <b>${early.length}개</b>를 유행 꼭대기보다 <b>${Math.min(...ds)}${Math.max(...ds) !== Math.min(...ds) ? '~' + Math.max(...ds) : ''}개월 먼저</b> 알아챘어요`
+    : `채점한 ${scored.length}개 중 유행 꼭대기보다 먼저 알아챈 단어는 없어요`;
+  body.innerHTML = scored.map(r => `<tr><td>${esc(r.w)} <span class="kb ${r.k === '브랜드' ? 'kbr' : 'km'}">${r.k}</span></td><td>${r.a}</td><td>${r.pk}</td><td>${r.d > 0
+    ? `<b class="bt-ok">✅ ${r.d}개월 전에 알아챘어요</b>` : r.d < 0 ? `<span class="bt-late">❌ ${-r.d}개월 늦었어요</span>` : '<b class="bt-ok">✅ 같은 달에 알아챘어요</b>'}</td></tr>`).join('');
+  document.getElementById('bt-skip').textContent = skipped.length ? `채점 못 한 단어: ${skipped.join('·')} (비교할 검색 자료 없음)` : '';
+}
+renderBacktest();
+
 renderRecForm();   // 1단계 추천 질문 (프로필 폼을 읽어서 그림)
 document.getElementById('ev4').addEventListener('toggle', () => Object.values(Chart.instances).forEach(c => c.resize()));
 
