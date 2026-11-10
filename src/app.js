@@ -1128,7 +1128,7 @@ const GOALS = [
 const ro = w => { const c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return '로'; const t = (c - 0xAC00) % 28; return t && t !== 8 ? '으로' : '로'; };
 const storeName = () => ((loadProfile() || {}).name || '').trim();
 // 디저트 사진 (AI로 만든 이미지, 크림 배경 480px webp · img/menu/)
-const IMG = {'크리스마스 케이크': 'img/menu/christmas-cake.webp', '딸기 케이크': 'img/menu/strawberry-cake.webp', '발렌타인 초콜릿': 'img/menu/valentine-chocolate.webp', '빙수': 'img/menu/bingsu.webp', '고구마 디저트': 'img/menu/sweet-potato-latte.webp', '밤 디저트': 'img/menu/mont-blanc.webp', '카네이션 케이크': 'img/menu/carnation-rice-cake.webp', '과일모찌': 'img/menu/strawberry-cream-mochi.webp', '딸기모찌': 'img/menu/strawberry-white-bean-mochi.webp', '찹쌀모찌': 'img/menu/red-bean-mochi.webp', '모찌떡': 'img/menu/cream-mochi.webp', '찹쌀떡': 'img/menu/red-bean-rice-cakes.webp', '약과': 'img/menu/yakgwa.webp', '두바이 초콜릿': 'img/menu/pistachio-kataifi-chocolate.webp', '소금빵': 'img/menu/salt-bread.webp', '베이글': 'img/menu/cream-cheese-bagels.webp', '크로플': 'img/menu/croffle-no-cream.webp', '탕후루': 'img/menu/tanghulu.webp', '마카롱': 'img/menu/pastel-macarons.webp', '뚱카롱': 'img/menu/fat-macarons.webp', '흑당': 'img/menu/brown-sugar-bubble-tea.webp', '달고나': 'img/menu/dalgona-latte.webp', '요거트 아이스크림': 'img/menu/yogurt-ice-cream.webp', '피스타치오': 'img/menu/pistachio-latte.webp', '말차': 'img/menu/matcha-latte.webp', '흑임자': 'img/menu/black-sesame-latte-2.webp', '쑥': 'img/menu/mugwort-latte.webp', '붕어빵': 'img/menu/bungeoppang.webp', '땅콩빵': 'img/menu/peanut-shaped-buns.webp'};
+const IMG = {'망고빙수': 'img/menu/mango-bingsu.webp', '크리스마스 케이크': 'img/menu/christmas-cake.webp', '딸기 케이크': 'img/menu/strawberry-cake.webp', '발렌타인 초콜릿': 'img/menu/valentine-chocolate.webp', '빙수': 'img/menu/bingsu.webp', '고구마 디저트': 'img/menu/sweet-potato-latte.webp', '밤 디저트': 'img/menu/mont-blanc.webp', '카네이션 케이크': 'img/menu/carnation-rice-cake.webp', '과일모찌': 'img/menu/strawberry-cream-mochi.webp', '딸기모찌': 'img/menu/strawberry-white-bean-mochi.webp', '찹쌀모찌': 'img/menu/red-bean-mochi.webp', '모찌떡': 'img/menu/cream-mochi.webp', '찹쌀떡': 'img/menu/red-bean-rice-cakes.webp', '약과': 'img/menu/yakgwa.webp', '두바이 초콜릿': 'img/menu/pistachio-kataifi-chocolate.webp', '소금빵': 'img/menu/salt-bread.webp', '베이글': 'img/menu/cream-cheese-bagels.webp', '크로플': 'img/menu/croffle-no-cream.webp', '탕후루': 'img/menu/tanghulu.webp', '마카롱': 'img/menu/pastel-macarons.webp', '뚱카롱': 'img/menu/fat-macarons.webp', '흑당': 'img/menu/brown-sugar-bubble-tea.webp', '달고나': 'img/menu/dalgona-latte.webp', '요거트 아이스크림': 'img/menu/yogurt-ice-cream.webp', '피스타치오': 'img/menu/pistachio-latte.webp', '말차': 'img/menu/matcha-latte.webp', '흑임자': 'img/menu/black-sesame-latte-2.webp', '쑥': 'img/menu/mugwort-latte.webp', '붕어빵': 'img/menu/bungeoppang.webp', '땅콩빵': 'img/menu/peanut-shaped-buns.webp'};
 const photo = (k, cls = '') => IMG[k] ? `<img src="${IMG[k]}" alt="${k}" loading="lazy"${cls ? ` class="${cls}"` : ''}>` : '';
 const card = (cls, key, emo, bg, title, sub, on, badge) => `<button type="button" class="${cls}${on ? ' on' : ''}" data-k="${key}" aria-pressed="${on}">
   ${IMG[key] ? `<span class="art ph">${photo(key)}</span>` : `<span class="art" style="background:${bg}">${emo}</span>`}<span class="pk-t">${title}${badge ? `<em>${badge}</em>` : ''}</span><span class="pk-s">${sub}</span><span class="pk-c">${on ? '✓' : '↗'}</span></button>`;
@@ -1375,12 +1375,12 @@ document.getElementById('ev4').addEventListener('toggle', () => Object.values(Ch
 // ---- 달마다 점수로 TOP 3 (2026-11-10) ----
 // 점수 = ① 그 달 검색 증가(season) + ② 유행 단계 + ③ 전년 대비 + ④ 그 달 대목 + ⑤ 재료값(KAMIS) + ⑥ 가게당 검색(레이더) + ⑦ 내 가게 프로필 + ⑧ 월별 판매 표(사용자가 정함)
 // 검색 데이터가 없는 붕어빵은 겨울 간식 기본값(경험 기준)
-// ⑧ 월별 판매 표 (사용자가 정한 표, 2026-11-10): 달마다 대표 메뉴 +1점, 같이 팔기 좋은 메뉴 +0.5점
-const MD_TOP = ['딸기모찌', '발렌타인 초콜릿', '마카롱', '쑥', '카네이션 케이크', '빙수', '빙수', '요거트 아이스크림', '약과', '고구마 디저트', '찹쌀떡', '크리스마스 케이크'];
-const MD_ALSO = [['붕어빵', '약과'], ['딸기모찌'], ['딸기 케이크'], ['베이글'], ['약과', '쑥', '마카롱'], ['요거트 아이스크림'], ['요거트 아이스크림'], ['빙수'], ['밤 디저트'], ['밤 디저트', '붕어빵'], ['붕어빵', '크리스마스 케이크'], ['딸기모찌', '붕어빵']];
+// ⑧ 월별 판매 표 (사용자가 정한 표, 2026-11-10): 달마다 대표 메뉴 +3점, 같이 팔기 좋은 메뉴 +0.5점
+const MD_TOP = ['딸기모찌', '발렌타인 초콜릿', '마카롱', '쑥', '카네이션 케이크', '요거트 아이스크림', '빙수', '망고빙수', '약과', '고구마 디저트', '찹쌀떡', '크리스마스 케이크'];
+const MD_ALSO = [['붕어빵', '약과'], ['딸기모찌'], ['딸기 케이크'], ['베이글'], ['약과', '쑥', '마카롱'], [], ['요거트 아이스크림'], ['요거트 아이스크림'], ['밤 디저트'], ['밤 디저트', '붕어빵'], ['붕어빵', '크리스마스 케이크'], ['딸기모찌', '붕어빵']];
 const SEASON_PRIOR = { '붕어빵': [1.5, 1.2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.3, 0.5, 1.0, 1.6, 1.8] };
 // 비슷한 디저트는 TOP 3에 하나만
-const FAMILY = { '과일모찌': '모찌', '딸기모찌': '모찌', '찹쌀모찌': '모찌', '모찌떡': '모찌', '마카롱': '마카롱', '뚱카롱': '마카롱', '크리스마스 케이크': '딸기케이크', '딸기 케이크': '딸기케이크' };
+const FAMILY = { '과일모찌': '모찌', '딸기모찌': '모찌', '찹쌀모찌': '모찌', '모찌떡': '모찌', '마카롱': '마카롱', '뚱카롱': '마카롱', '크리스마스 케이크': '딸기케이크', '딸기 케이크': '딸기케이크', '빙수': '빙수', '망고빙수': '빙수' };
 // 디저트에 쓰는 제철 재료 (KAMIS 이름)
 const DESSERT_ING = { '딸기모찌': ['딸기'], '과일모찌': ['딸기'], '딸기 케이크': ['딸기'], '크리스마스 케이크': ['딸기'], '탕후루': ['딸기'], '고구마 디저트': ['고구마'], '밤 디저트': ['밤'],
   '찹쌀떡': ['찹쌀', '팥'], '찹쌀모찌': ['찹쌀', '팥'], '모찌떡': ['찹쌀'], '쑥': ['쑥'], '흑임자': ['참깨'], '빙수': ['팥'] };
@@ -1390,9 +1390,11 @@ let KAMIS_VS = {};   // 재료 → 한 달 새 소매가 변화(%), /kamis 에�
 let OPP = {};        // 디저트 → 가게당 검색 순위(1이 가장 많음), renderOpportunity 가 채움
 const dkPhoto = k => photo(k) || `<span class="dk-emo">${DK_EMO[k] || '🍰'}</span>`;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const CLICK_AS = { '망고빙수': '빙수' };   // 누르면 진단은 빙수 데이터로
 function dkCands() {
   const c = {};
   Object.entries(D.kw).filter(([k, v]) => IMG[k] && k !== '마라탕' && k !== '모찌류(합산)').forEach(([k, v]) => { c[k] = { s: v.season, type: v.type, yoy: v.cal ? null : v.yoy }; });
+  if (c['빙수'] && IMG['망고빙수']) c['망고빙수'] = { ...c['빙수'] };   // 망고빙수는 빙수 검색 흐름을 그대로 씀(따로 받은 데이터 없음)
   Object.entries(SEASON_PRIOR).forEach(([k, s]) => { if (IMG[k] && !c[k]) c[k] = { s, type: '겨울 간식', yoy: null }; });
   return c;
 }
@@ -1410,7 +1412,7 @@ function monthScores(i, C, evs) {
     es.slice(0, 2).forEach(e => add(0.8, `${e.n}(${e.d.getMonth() + 1}/${e.d.getDate()}) 대목`));
     if (near) (DESSERT_ING[k] || []).forEach(g => { const v = KAMIS_VS[g]; if (v === undefined || v === null) return;
       if (v <= -10) add(0.8, `${g}값 한 달 새 −${Math.abs(v)}%`); else if (v <= -5) add(0.4, `${g}값 한 달 새 −${Math.abs(v)}%`); else if (v >= 15) add(-0.5, `${g}값 한 달 새 +${v}%`); });
-    if (MD_TOP[i] === k) add(1, '이 달 대표 메뉴'); else if (MD_ALSO[i].includes(k)) add(0.5, '같이 팔기 좋음');
+    if (MD_TOP[i] === k) add(3, '이 달 대표 메뉴'); else if (MD_ALSO[i].includes(k)) add(0.5, '같이 팔기 좋음');
     const rk = OPP[k]; if (rk) { if (rk <= 3) add(0.8, '가게당 검색 많음'); else if (rk <= 6) add(0.4, '가게당 검색 많은 편'); }
     if (hasP) { const r = REQ[k] || guessReq(k);
       if (r) { const miss = r.eq.filter(e => !have.includes(e)); if (!miss.length && r.eq.length) add(0.8, '내 장비로 바로 가능'); else if (miss.length && !r.alt) add(-0.5, '');
@@ -1442,7 +1444,7 @@ function renderClock() {
   document.getElementById('dk-title').textContent = `${now + 1}월은 ${plan[now].top[0].k}의 시간`;
   document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요. 달마다 점수가 가장 높은 디저트가 시계에 놓여요.`;
   document.getElementById('dk-now').innerHTML = topRows + nextRow;
-  document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = b.dataset.k;
+  document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = CLICK_AS[b.dataset.k] || b.dataset.k;
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
 }
 function refreshClock() { try { renderClock(); } catch (e) { console.error(e); } }
