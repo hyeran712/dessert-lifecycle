@@ -736,7 +736,14 @@ details.more #chips{padding:0 16px 14px}
 .dk-now span b{font-size:17px}
 .dk-emo{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:30px;background:#fff8dc;border-radius:inherit}
 .dk-now .dk-emo{width:52px;height:52px;border-radius:10px;border:1.5px solid var(--ink);font-size:26px;flex:none}
-.dk-how{font-size:12px;line-height:1.55}.dk-how b{color:var(--ink)}
+.dk-how{margin-top:22px;padding-top:16px;border-top:2px dashed var(--line)}
+.dk-how-t{display:block;font-size:14px;margin-bottom:10px}.dk-how-t small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:6px}
+.dk-how-g{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dk-how-g li{background:#fffdf3;border:1.5px solid var(--ink);border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.45;color:var(--ink-2)}
+.dk-how-g i{font-style:normal;font-weight:900;color:#ff5a1f;margin-right:4px}
+.dk-how-g b{font-size:13px;color:var(--ink)}.dk-how-g span{display:block;margin-top:2px}
+.dk-how .note{margin:8px 0 0;font-size:12px}
+@media (max-width:900px){.dk-how-g{grid-template-columns:repeat(2,1fr)}}
 .dk-now em.dk-act{color:#ff5a1f;font-weight:800;margin-top:2px}
 .dk-now em{display:block;font-style:normal;font-size:13px;color:var(--ink-2)}
 @media (max-width:760px){.dk-wrap{grid-template-columns:1fr;gap:18px}.dk{max-width:360px;margin:0 auto;width:100%}.dk-it b{font-size:9.5px;bottom:-8px}}
@@ -791,8 +798,21 @@ details.more #chips{padding:0 16px 14px}
                 <h2 id="dk-title">지금은 이 디저트의 시간</h2>
                 <p class="sub" id="dk-sub"></p>
                 <div class="dk-now" id="dk-now"></div>
-                <p class="note dk-how"><b>점수는 이렇게 매겨요</b> ① 그 달 검색이 평소보다 늘어나는 정도(10년치) + ② 유행 단계(뜨는 중·정착형은 +, 식어 가는 유행은 −) + ③ 작년 같은 때보다 늘었는지 + ④ 그 달 대목(수능·명절·기념일) + ⑤ 재료값이 한 달 새 내렸는지(KAMIS, 이번·다음 달만) + ⑥ 가게 수에 비해 검색이 많은지(이번 주 레이더) + ⑦ 내 가게 장비·가격대에 맞는지(프로필을 넣었을 때만) + ⑧ 월별 판매 기준표(대표 메뉴 +3, 같이 팔기 +0.5). 점수가 높은 3개를 보여 주고, 비슷한 디저트(모찌 종류 등)는 하나만 넣어요. 시계 사진은 달마다 1등이에요. 붕어빵은 검색 데이터가 없어 겨울 간식 기본값을 썼어요.</p>
               </div>
+            </div>
+            <div class="dk-how">
+              <b class="dk-how-t">점수는 이렇게 매겨요 <small>높은 3개를 보여 줘요 · 비슷한 디저트(모찌 종류 등)는 하나만 · 시계 사진은 달마다 1등</small></b>
+              <ol class="dk-how-g">
+                <li><i>①</i><b>검색 증가</b><span>그 달 검색이 평소보다 늘어나는 정도 (10년치)</span></li>
+                <li><i>②</i><b>유행 단계</b><span>뜨는 중·정착형은 +, 식어 가는 유행은 −</span></li>
+                <li><i>③</i><b>전년 대비</b><span>작년 같은 때보다 늘었는지</span></li>
+                <li><i>④</i><b>대목</b><span>그 달 수능·명절·기념일</span></li>
+                <li><i>⑤</i><b>재료값</b><span>한 달 새 내렸는지 (KAMIS, 이번·다음 달만)</span></li>
+                <li><i>⑥</i><b>가게당 검색</b><span>가게 수에 비해 검색이 많은지 (이번 주 레이더)</span></li>
+                <li><i>⑦</i><b>내 가게</b><span>장비·가격대에 맞는지 (프로필을 넣었을 때만)</span></li>
+                <li><i>⑧</i><b>월별 판매 표</b><span>대표 메뉴 +3, 같이 팔기 +0.5</span></li>
+              </ol>
+              <p class="note">붕어빵은 검색 데이터가 없어 겨울 간식 기본값을 썼어요.</p>
             </div>
           </div>
           <div class="card" id="rec">
