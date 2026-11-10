@@ -1575,6 +1575,7 @@ if (SB) {
   const acct = document.getElementById('acct');
   document.getElementById('auth-btn').onclick = () => { authUI(); acct.showModal(); };
   document.querySelector('[data-close-acct]').onclick = () => acct.close();
+  document.getElementById('acct-later').onclick = () => acct.close();   // [나중에 할게요]
   acct.addEventListener('click', e => { if (e.target === acct) acct.close(); });
   document.querySelectorAll('[data-sso]').forEach(btn => btn.onclick = async () => {
     const provider = btn.dataset.sso, m = document.getElementById('acct-msg');

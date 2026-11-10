@@ -235,11 +235,24 @@ dialog::backdrop{background:rgba(30,35,38,.45)}
 .auth-btn img{width:22px;height:22px;border-radius:50%;object-fit:cover}
 @media (max-width:640px){.auth-btn{margin-left:auto;font-size:13px;padding:4px 10px}}
 dialog.acct{max-width:420px;width:calc(100% - 32px)}
-.sso{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font:inherit;font-weight:800;font-size:16px;border-radius:12px;padding:12px;margin:10px 0 0;cursor:pointer;border:2px solid var(--ink)}
-.sso svg{width:22px;height:22px}
-.sso.google{background:#fff;color:#1f1f1f}
-.sso.kakao{background:#FEE500;color:#191600;border-color:#191600}
+/* 로그인 창: 카카오(#FEE500·검은 말풍선)·구글(흰 배경·G 로고) 공식 버튼 규칙, 두 버튼 높이·간격 같게, 아이콘 왼쪽 끝 고정·글자 가운데 */
+dialog.acct .dlg-head{background:#fff8dc}
+.dlg-body .acct-lead{margin:2px 0 8px;font-size:16px;font-weight:900;color:var(--ink)}
+.dlg-body .acct-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px;color:var(--ink)}
+.acct-list li::before{content:"✓";color:#14804a;font-weight:900;margin-right:8px}
+.dlg-body .acct-sub{margin:0 0 18px;font-size:13.5px}
+.sso{position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:48px;padding:0 44px;margin:0;border-radius:12px;font:inherit;font-weight:700;font-size:15px;line-height:1;cursor:pointer}
+.sso+.sso{margin-top:10px}
+.sso svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:20px;height:20px}
+.sso.kakao{background:#FEE500;color:rgba(0,0,0,.85);border:0}
+.sso.google{background:#fff;color:#1f1f1f;border:1px solid #747775}
 .sso:disabled{opacity:.6;cursor:wait}
+#acct-msg{margin:10px 0 0;text-align:center}
+.acct-later{text-align:center;margin:18px 0 0}
+.dlg-body .acct-later p{margin:0 0 8px;font-size:13px}
+.acct-later button{font:inherit;font-weight:700;font-size:14px;padding:8px 20px;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer}
+.acct-later button:hover{background:var(--pop-y)}
+.dlg-body .acct-fine{text-align:center;font-size:11.5px;line-height:1.5;color:var(--ink-3);margin:18px 0 0}
 .me-row{display:flex;gap:12px;align-items:center;margin-bottom:8px}.me-row img{width:48px;height:48px;border-radius:50%;object-fit:cover}
 .me-row b{display:block;font-size:17px}.me-row small{color:var(--ink-2)}
 .acct-act{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
