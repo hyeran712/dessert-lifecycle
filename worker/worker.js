@@ -65,7 +65,7 @@ export class Stats extends DurableObject {
     return { since, days, byDay, users, totalUsers, returning, topK, goals, recent: recent.map(r => ({ ...r, v: r.v ? JSON.parse(r.v) : null })), limits };
   }
 }
-const LIMITS = { menu: 10, search: 30, sheet: 10 };   // 한 사람(IP)이 하루에 쓸 수 있는 횟수
+const LIMITS = { menu: 10, search: 60, sheet: 10 };   // 한 사람(IP)이 하루에 쓸 수 있는 횟수
 const LIMIT_NAME = { menu: '신메뉴 만들기', search: '검색·분석', sheet: '원가표 시트 읽기' };
 const kday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜
 const statsDO = env => env.STATS ? env.STATS.get(env.STATS.idFromName('stats-v1')) : null;
