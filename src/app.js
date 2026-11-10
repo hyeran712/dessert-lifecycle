@@ -1442,7 +1442,7 @@ function renderClock() {
   const evLeft = nm.e ? Math.round((nm.e.d - today) / 864e5) : null;
   const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em>${esc(dkWhy(nm))}</em><em class="dk-act">→ ${evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`} 남았어요 · 재료·사진 미리 준비</em></span></button>`;
   document.getElementById('dk-title').textContent = `${now + 1}월은 ${plan[now].top[0].k}의 시간`;
-  document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요. 달마다 점수가 가장 높은 디저트가 시계에 놓여요.`;
+  document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요.`;
   document.getElementById('dk-now').innerHTML = topRows + nextRow;
   document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = CLICK_AS[b.dataset.k] || b.dataset.k;
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
