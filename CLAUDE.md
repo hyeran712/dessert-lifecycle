@@ -13,7 +13,7 @@
 
 ## 사이트 주소
 - 새 버전(단계형): https://hyeran712.github.io/dessert-lifecycle/
-- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). 맨 아래 v1·GitHub 링크는 2026-11-09 사용자 요청으로 뺌(푸터 = 짧은 데이터 출처 · 개인정보 처리방침 · 데이터 자세히). v1.html 파일은 남아 있음. **푸터 정리(2026-11-10)**: `© 2026 디저트 타이밍 · 개인정보처리방침 · 데이터 출처(눌러서 About data 창) · 문의`. 문의 연락처는 저장소 루트 **`site-config.js`의 `SITE_CONTACT` 한 곳**만 고치면 푸터와 privacy.html 문의란에 같이 채워짐(메일 주소면 mailto 링크, https 주소면 링크, 비어 있으면 '준비 중')
+- 예전 버전(한 페이지형, 비교용): https://hyeran712.github.io/dessert-lifecycle/v1.html — 새 버전으로 결정(2026-11-05). 맨 아래 v1·GitHub 링크는 2026-11-09 사용자 요청으로 뺌(푸터 = 짧은 데이터 출처 · 개인정보 처리방침 · 데이터 자세히). v1.html 파일은 남아 있음. **푸터 정리(2026-11-10)**: `© 2026 디저트 타이밍 · 개인정보처리방침 · 데이터 출처(눌러서 About data 창)` (2026-11-10 '문의 준비 중' 칸은 뺌). 문의 연락처는 저장소 루트 **`site-config.js`의 `SITE_CONTACT` 한 곳**만 고치면 privacy.html 문의란에 채워짐(푸터에서는 2026-11-10에 뺌, 판매 시작 때 다시 넣을지 정하기)(메일 주소면 mailto 링크, https 주소면 링크, 비어 있으면 '준비 중')
 - 포트폴리오 메인: https://hyeran712.github.io (다른 저장소 `hyeran712/hyeran712.github.io`, `#dessert` 카드)
 
 ## 파일 구조
@@ -40,7 +40,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 4. 커밋·푸시하면 GitHub Pages가 1~2분 안에 자동 배포된다.
 
 ## 화면 구조 (src/body.html)
-- 위쪽 바: 로고(사용자가 AI로 만든 바늘 없는 디저트 나무 시계 이미지 `img/brand/logo-clock.webp` 위에 SVG 나무 바늘(끝 주황, 11시 고정, 처음 열 때 째깍 들어오는 `.lm-tick` 애니메이션) + '디저트 타이밍', 파비콘 `img/brand/favicon.png`·apple-touch-icon도 같은 그림) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
+- 위쪽 바: 로고(2026-11-10 사용자가 만든 '디저트 타이밍' 글자 로고 `img/brand/logo-wordmark.webp`·png 하나로 교체, 원본 투명 배경 2172×724를 글자 영역만 잘라 364×72로 줄임, 화면 높이 PC 34px·휴대폰 28px `.logo-word`. 예전 시계 그림 로고 `logo-clock.webp`와 바늘 애니메이션 `.lm-tick`은 화면에서 뺐고 파일만 남음. 파비콘 `img/brand/favicon.png`·apple-touch-icon은 정사각형이라 시계 그림 그대로. 카톡 미리보기 `img/brand/og-image.png`(1200×630 크림 배경에 로고 가운데) + head.html의 og:title·description·image·url·twitter:card — 카카오는 미리보기를 캐시하니 바꾸면 카카오 디버거에서 새로 받아야 함) · [메뉴 개발] [이번 주 레이더] [동네 리포트] · 오른쪽 [로그인] `#auth-btn`. About data는 2026-11-09 위쪽에서 빼고 푸터 '데이터 자세히'로. '내 가게' 칸은 2026-11-05 뺐음. 휴대폰(640px 이하)에서는 메뉴가 화면 아래 고정 바
 - 알림 띠 `#notice`(이번 주 레이더 요약)는 2026-11-10 사용자 요청으로 통째로 뺌
 - `#view-flow`: 3단계 흐름. 단계 꼬리표 `#ph-tag`, 제목 `#ph-title`, 표시줄 `#stepper`
   - 1단계 `[data-panel="1"]#diagnose`: 대표 디저트 카드 `#picks`, 검색 `#q-form`, 전체 목록 `#chips`

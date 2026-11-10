@@ -8,6 +8,16 @@
 <link rel="icon" type="image/png" href="img/brand/favicon.png">
 <link rel="apple-touch-icon" href="img/brand/apple-touch-icon.png">
 <meta name="description" content="네이버 10년치 검색량으로 본 디저트 수명주기와 출시 타이밍">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="디저트 타이밍">
+<meta property="og:title" content="디저트 타이밍">
+<meta property="og:description" content="신메뉴, 언제 내고 언제 접을까? 네이버 10년치 검색량과 전국 매장 데이터로 보는 디저트 타이밍">
+<meta property="og:url" content="https://hyeran712.github.io/dessert-lifecycle/">
+<meta property="og:image" content="https://hyeran712.github.io/dessert-lifecycle/img/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://hyeran712.github.io/dessert-lifecycle/img/brand/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -513,6 +523,7 @@ dialog{border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
 .logo-mark{grid-row:1/3;position:relative;width:40px;height:40px;display:block}
 .logo-mark img{width:100%;height:100%;display:block;border-radius:50%;filter:drop-shadow(1.5px 1.5px 0 #1c1c1c)}
 .logo-mark svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.logo-word{display:block;height:34px;width:auto}
 .lm-tick{transform-box:view-box;transform-origin:50px 50px;animation:lm-tick 1.1s cubic-bezier(.3,1.7,.5,1) .25s both}
 @keyframes lm-tick{0%{transform:rotate(-80deg)}55%{transform:rotate(6deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.lm-tick{animation:none}}
@@ -689,7 +700,7 @@ details.more #chips{padding:0 16px 14px}
 /* ===== 휴대폰 화면 (640px 이하): 앱처럼 아래쪽 메뉴 바, 위쪽은 로고·내 가게만 ===== */
 @media (max-width:640px){
   header .wrap{height:54px;gap:8px}
-  .logo{font-size:20px;white-space:nowrap}.logo-mark{width:34px;height:34px}
+  .logo{font-size:20px;white-space:nowrap}.logo-word{height:28px}
   .store{display:inline-flex;margin-left:auto;padding-left:0;border-left:0;font-size:14px}
   .store #store-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
   nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#fff;border-top:3px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
@@ -779,7 +790,7 @@ details.more #chips{padding:0 16px 14px}
 <body>
 <header class="appbar">
   <div class="wrap">
-    <a class="logo" href="#" data-go="1"><span class="logo-mark"><img src="img/brand/logo-clock.webp" alt="" width="40" height="40"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lm-wal" x1="0" x2="1"><stop offset="0" stop-color="#2a1a12"/><stop offset=".5" stop-color="#5a3a26"/><stop offset="1" stop-color="#2a1a12"/></linearGradient><radialGradient id="lm-brass" cx=".35" cy=".35" r=".8"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#8a5a1a"/></radialGradient><filter id="lm-sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="1.2" dy="1.6" stdDeviation="1.1" flood-color="#3a2010" flood-opacity=".45"/></filter></defs><g class="lm-tick"><g filter="url(#lm-sh)" transform="rotate(-30 50 50)"><path d="M48.3 56 L48.9 22 Q50 17 51.1 22 L51.7 56 Q50 58 48.3 56 Z" fill="url(#lm-wal)"/><path d="M49 25.5 L49.3 21.5 Q50 18 50.7 21.5 L51 25.5 Z" fill="#ff5a1f"/><circle cx="50" cy="50" r="4.2" fill="url(#lm-brass)"/><circle cx="50" cy="50" r="1.2" fill="#6b4512"/></g></g></svg></span><span>디저트 <b>타이밍</b></span><small>지금 출시해도 될까?</small></a>
+    <a class="logo" href="#" data-go="1" aria-label="디저트 타이밍"><img class="logo-word" src="img/brand/logo-wordmark.webp" alt="디저트 타이밍" width="364" height="72"></a>
     <nav>
       <button type="button" class="nb" data-view="flow" aria-pressed="true">메뉴 개발</button>
       <button type="button" class="nb" data-view="radar" aria-pressed="false">이번 주 레이더</button>
@@ -1167,10 +1178,8 @@ details.more #chips{padding:0 16px 14px}
     <span>© 2026 디저트 타이밍</span>
     <a href="privacy.html">개인정보처리방침</a>
     <button type="button" class="ft-link" data-open-about>데이터 출처</button>
-    <span>문의 <span data-contact></span></span>
   </div>
 </footer>
-<script src="site-config.js"></script>
 
 <dialog id="acct" class="acct">
   <div class="dlg-head"><h3 id="acct-h">로그인</h3><button type="button" aria-label="닫기" data-close-acct>×</button></div>
