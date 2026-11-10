@@ -1437,10 +1437,10 @@ function renderClock() {
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
   const medal = ['🥇', '🥈', '🥉'];
-  const topRows = plan[now].top.map((m, r) => `<button type="button" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em>${esc(dkWhy(m))}</em></span></button>`).join('');
+  const topRows = plan[now].top.map((m, r) => `<button type="button" class="dk-top" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em>${esc(dkWhy(m))}</em></span></button>`).join('');
   const nm = plan[nx].top[0], daysToNext = Math.round((new Date(today.getFullYear(), now + 1, 1) - today) / 864e5);
   const evLeft = nm.e ? Math.round((nm.e.d - today) / 864e5) : null;
-  const nextRow = `<button type="button" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em>${esc(dkWhy(nm))}</em><em class="dk-act">→ ${evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`} 남았어요 · 재료·사진 미리 준비</em></span></button>`;
+  const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em>${esc(dkWhy(nm))}</em><em class="dk-act">→ ${evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`} 남았어요 · 재료·사진 미리 준비</em></span></button>`;
   document.getElementById('dk-title').textContent = `${now + 1}월은 ${plan[now].top[0].k}의 시간`;
   document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요. 달마다 점수가 가장 높은 디저트가 시계에 놓여요.`;
   document.getElementById('dk-now').innerHTML = topRows + nextRow;

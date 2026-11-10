@@ -746,6 +746,13 @@ details.more #chips{padding:0 16px 14px}
 @media (max-width:900px){.dk-how-g{grid-template-columns:repeat(2,1fr)}}
 .dk-now em.dk-act{color:#ff5a1f;font-weight:800;margin-top:2px}
 .dk-now em{display:block;font-style:normal;font-size:13px;color:var(--ink-2)}
+.dk-now{gap:12px}
+.dk-now button>span{min-width:0;flex:1}
+.dk-now em{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;line-height:1.45}
+.dk-now .dk-top{box-sizing:border-box;height:104px;align-items:center;overflow:hidden}
+.dk-now .dk-top small,.dk-now .dk-top span b{line-height:1.3}
+.dk-now .dk-next{box-sizing:border-box;min-height:104px;align-items:center}
+.dk-now em.dk-act{display:block;-webkit-line-clamp:unset;overflow:visible}
 @media (max-width:760px){.dk-wrap{grid-template-columns:1fr;gap:18px}.dk{max-width:360px;margin:0 auto;width:100%}.dk-it b{font-size:9.5px;bottom:-8px}}
 @media print{
   @page{size:A4;margin:10mm}
