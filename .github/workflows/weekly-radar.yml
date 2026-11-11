@@ -3,6 +3,8 @@ name: 주간 디저트 레이더 업데이트
 on:
   schedule:
     - cron: '23 23 * * 0'   # 매주 월요일 08:23 (한국 시간)
+    - cron: '23 11 * * 1'   # 월요일 20:23 — 아침 실행이 실패했을 때 다시 시도 (이미 성공했으면 아래 '건너뛰기'가 알아서 멈춤)
+    - cron: '23 23 * * 1'   # 화요일 08:23 — 한 번 더 시도
   workflow_dispatch:         # Actions 탭에서 직접 실행 가능
 
 permissions:
@@ -18,17 +20,37 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: 최근 3일 안에 이미 갱신했으면 건너뛰기 (재시도용 예약 실행일 때만)
+        id: chk
+        run: |
+          python3 - <<'EOF'
+          import json, os, datetime as dt
+          skip = False
+          if os.environ.get('GITHUB_EVENT_NAME') == 'schedule':
+              try:
+                  u = json.load(open('live/live.json', encoding='utf-8'))['updated']
+                  now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).replace(tzinfo=None)
+                  skip = now - dt.datetime.strptime(u, '%Y-%m-%d %H:%M') < dt.timedelta(days=3)
+              except Exception:
+                  pass
+          open(os.environ['GITHUB_OUTPUT'], 'a').write('skip=' + ('true' if skip else 'false') + chr(10))
+          print('이미 최근에 갱신해서 건너뜀' if skip else '갱신 진행')
+          EOF
       - uses: actions/setup-python@v5
+        if: steps.chk.outputs.skip != 'true'
         with:
           python-version: '3.12'
       - name: 패키지 설치
+        if: steps.chk.outputs.skip != 'true'
         run: pip install pandas==2.2.3 numpy==2.1.3 requests==2.32.3
       - name: 인허가 데이터 받아서 레이더 계산
+        if: steps.chk.outputs.skip != 'true'
         env:
           SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
           API_ENDPOINTS: ${{ vars.API_ENDPOINTS }}
         run: python scripts/update.py
       - name: 바뀐 데이터 저장
+        if: steps.chk.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
