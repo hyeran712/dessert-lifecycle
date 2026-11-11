@@ -12,7 +12,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.55}
 header{background:var(--y);border-bottom:3px solid var(--ink);padding:14px 16px}
-header h1{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:24px;margin:0}
+header{text-align:center}
+.pg-t{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:28px;margin:6px 0 16px;text-align:center}
 header p{margin:2px 0 0;font-size:13px;color:var(--ink2)}
 main{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
 .card{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:5px 5px 0 var(--ink)}
@@ -55,10 +56,10 @@ details summary{cursor:pointer;font-weight:800;font-size:14px;margin-top:10px}
 </head>
 <body>
 <header>
-  <h1>디저트 타이밍 사용 통계</h1>
   <p>사장님들이 사이트를 어떻게 쓰는지 익명으로 모은 숫자예요. 이름·이메일은 모으지 않아요. (주인만 보는 페이지)</p>
 </header>
 <main>
+  <h1 class="pg-t">디저트 타이밍 사용 통계</h1>
   <section class="card" id="login">
     <h2>열쇠 넣기</h2>
     <p class="sub">Cloudflare Worker 비밀 변수 <b>STATS_KEY</b>에 넣은 값과 같은 글자를 넣어 주세요. 이 브라우저에 저장되고, 이 브라우저에서 쓰는 사이트는 <b>횟수 제한 없이</b>, <b>통계에도 안 잡혀요</b>.</p>
