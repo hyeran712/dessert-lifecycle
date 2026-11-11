@@ -127,6 +127,10 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 - '모찌'는 데이터랩에서 0으로 나와 모찌떡·찹쌀모찌·과일모찌를 합산
 - 매장: 상호에 키워드가 들어간 인허가 가게, 90일 안에 닫은 곳은 팝업으로 분류
 
+## README · 발표 자료 (2026-11-11)
+- README.md는 사용자 요청으로 참고 저장소(su4228-prog/orga_whole_food) README 구성을 따라 다시 씀: 가운데 로고·배지 → 시연 영상(준비 중) → 숫자 표 → 목차 → 01 소개(개요·기능 지도·데이터 7가지) → 02 주요 기능 1~9(판단·시계·레이더·동네·AI 신메뉴·원가표 시트·로그인·관리자·모바일, 화면 캡처 `docs/readme/shots/*.webp`) → 03 도구·구조(mermaid)·서버 기능·고치기 전후·검증 → 분석(접기) → 한계 → 실행 방법 → 슬라이드 24장 펼쳐보기(`docs/readme/slides/01~24.webp`)
+- 발표 슬라이드 원본은 claude.ai Slides 아티팩트 '디저트 타이밍 포트폴리오'(https://claude.ai/artifact/3Beg8Qok5eFv3BTGGyYGqJ, 24장). README의 슬라이드 그림은 그 슬라이드를 1600×900으로 찍은 것 — 슬라이드를 고치면 다시 찍어 바꿔야 함. 시연 영상은 사용자가 만드는 중 → 완성되면 `docs/readme/demo/`에 넣고 README 맨 위 '시연 영상' 줄을 링크로 바꾸기
+
 ## 커밋
 - 커밋 작성자는 `Claude <noreply@anthropic.com>`
 - 커밋 메시지는 한국어로, 무엇을 바꿨는지 한 줄
