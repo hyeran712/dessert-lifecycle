@@ -343,7 +343,7 @@ dialog.acct .dlg-head{background:#fff8dc}
 .mk-card table{min-width:0;font-size:13.5px;margin-top:6px}
 .mk-card td,.mk-card th{padding:7px 8px}
 .goal-tag{background:#ffd400!important;color:#1c1c1c!important;border:1.5px solid #1c1c1c}
-.brands{margin-top:16px}.br-h{margin:0 0 4px;font-size:19px}.br-h small{font-size:12px;font-weight:500;color:var(--ink-2);background:#fff8dc;border-radius:99px;padding:2px 8px;vertical-align:middle}
+.brands{margin-top:16px}.br-h{margin:0 0 4px;font-size:19px}.br-h small{display:block;width:fit-content;margin-top:6px;font-size:12px;font-weight:500;color:var(--ink-2);background:#fff8dc;border-radius:99px;padding:2px 8px;vertical-align:middle}
 .br-list{margin:12px 0 0;padding:0;list-style:none;counter-reset:br}
 .br-list li{counter-increment:br;display:flex;flex-direction:column;gap:4px;padding:10px 0 10px 40px;border-top:1px dashed rgba(28,28,28,.2);position:relative}
 .br-list li::before{content:counter(br);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;background:#ffd400;border:2px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:14px}
@@ -828,7 +828,9 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .dk-how-t::-webkit-details-marker{display:none}
 .dk-how-t::before{content:"▸";display:inline-block;width:16px;color:var(--ink-2);transition:transform .15s}
 .dk-how[open] .dk-how-t::before{transform:rotate(90deg)}
-.dk-how-t small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:6px}
+.dk-how-t small{display:block;font-weight:500;color:var(--ink-3);font-size:12px;margin:4px 0 0 16px}
+.shop-pop{font-family:var(--body,inherit);font-size:13px;font-weight:500;color:var(--ink-2);margin-left:10px;white-space:nowrap}
+@media (max-width:640px){.dc-go{flex-wrap:nowrap;gap:8px}.dc-go .btn{flex:1 1 auto;min-width:0;padding-left:8px;padding-right:6px;font-size:12.5px;white-space:nowrap}}
 .dk-how[open] .dk-how-t{margin-bottom:10px}
 .dk-how:not([open]){padding-top:12px}
 .dk-how-g{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}

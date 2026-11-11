@@ -237,7 +237,7 @@ function select(k) {
   box.hidden = !st;
   if (st) {
     document.getElementById('shop-note').textContent = E.shopNote;
-    document.getElementById('shop-v').textContent = st.alive_max ? `최고 ${st.alive_max.toLocaleString()}곳 (${fmtYM(st.alive_peak)}) → 현재 ${st.open_now.toLocaleString()}곳` : '상호에 이 단어가 들어간 매장이 거의 없어요';
+    document.getElementById('shop-v').innerHTML = st.alive_max ? `최고 ${st.alive_max.toLocaleString()}곳 (${fmtYM(st.alive_peak)}) → 현재 ${st.open_now.toLocaleString()}곳` + (st.total ? `<small class="shop-pop">팝업 ${Math.round(st.popup / st.total * 100)}%</small>` : '') : '상호에 이 단어가 들어간 매장이 거의 없어요';
     const parts = [];
     if (st.close1y_after !== null && st.close1y_before !== null) parts.push(`1년 내 폐업률: 검색 피크 전 개업 ${st.close1y_before}% · 피크 후 개업 ${st.close1y_after}%`);
     if (st.total) parts.push(`팝업 매장 비율 ${Math.round(st.popup / st.total * 100)}%`);
