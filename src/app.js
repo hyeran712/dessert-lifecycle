@@ -1450,7 +1450,7 @@ const FAMILY = { '과일모찌': '모찌', '딸기모찌': '모찌', '찹쌀모�
 // 디저트에 쓰는 제철 재료 (KAMIS 이름)
 const DESSERT_ING = { '딸기모찌': ['딸기'], '과일모찌': ['딸기'], '딸기 케이크': ['딸기'], '크리스마스 케이크': ['딸기'], '탕후루': ['딸기'], '고구마 디저트': ['고구마'], '밤 디저트': ['밤'],
   '찹쌀떡': ['찹쌀', '팥'], '찹쌀모찌': ['찹쌀', '팥'], '모찌떡': ['찹쌀'], '쑥': ['쑥'], '흑임자': ['참깨'], '빙수': ['팥'] };
-const TYPE_PTS = { '진행중': [1, '지금 뜨는 중'], '정착형': [0.7, '정착형'], '유행형': [-1, '식어 가는 유행'], '관망형': [-0.2, ''], '시즌형': [0, ''] };
+const TYPE_PTS = { '진행중': [1, '뜨는 중'], '정착형': [0.7, '정착형'], '유행형': [-1, '식는 유행'], '관망형': [-0.2, ''], '시즌형': [0, ''] };
 const DK_EMO = { '크리스마스 케이크': '🎄', '딸기 케이크': '🍓', '발렌타인 초콜릿': '🍫', '빙수': '🍧', '고구마 디저트': '🍠', '밤 디저트': '🌰', '카네이션 케이크': '🌸' };
 let KAMIS_VS = {};   // 재료 → 한 달 새 소매가 변화(%), /kamis 에서 받음
 let OPP = {};        // 디저트 → 가게당 검색 순위(1이 가장 많음), renderOpportunity 가 채움
@@ -1470,26 +1470,26 @@ function monthScores(i, C, evs) {
   const p = loadProfile(), have = (p && p.eq) || [], hasP = !!(p && ((p.eq && p.eq.length) || p.price));
   const [lo, hi] = p && p.price ? p.price.split('-').map(Number) : [0, 1e9];
   return Object.entries(C).map(([k, o]) => {
-    const parts = [], add = (pts, txt) => parts.push({ pts, txt });
-    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `검색 평소의 ${s.toFixed(1)}배` : '');
+    const parts = [], add = (pts, txt, ev) => parts.push({ pts, txt, ev });
+    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `검색 ${s.toFixed(1)}배↑` : '');
     const t = TYPE_PTS[o.type]; if (t) add(t[0], t[1]);
-    if (o.yoy !== null && o.yoy !== undefined && Math.abs(o.yoy) >= 20) add(clamp(o.yoy / 200, -0.5, 0.5), `작년보다 ${o.yoy > 0 ? '+' : ''}${Math.round(o.yoy)}%`);
+    if (o.yoy !== null && o.yoy !== undefined && Math.abs(o.yoy) >= 20) add(clamp(o.yoy / 200, -0.5, 0.5), `작년 ${o.yoy > 0 ? '+' : ''}${Math.round(o.yoy)}%`);
     const es = evs.filter(e => e.d.getMonth() === i && e.ks.includes(k));
-    es.slice(0, 2).forEach(e => add(0.8, `${e.n}(${e.d.getMonth() + 1}/${e.d.getDate()}) 대목`));
+    es.slice(0, 2).forEach(e => add(0.8, `${e.n} ${e.d.getMonth() + 1}/${e.d.getDate()}`, true));   // 대목 이름+날짜 (예: '수능 11/19')
     if (near) (DESSERT_ING[k] || []).forEach(g => { const v = KAMIS_VS[g]; if (v === undefined || v === null) return;
-      if (v <= -10) add(0.8, `${g}값 한 달 새 −${Math.abs(v)}%`); else if (v <= -5) add(0.4, `${g}값 한 달 새 −${Math.abs(v)}%`); else if (v >= 15) add(-0.5, `${g}값 한 달 새 +${v}%`); });
+      if (v <= -10) add(0.8, `${g}값 −${Math.abs(v)}%`); else if (v <= -5) add(0.4, `${g}값 −${Math.abs(v)}%`); else if (v >= 15) add(-0.5, `${g}값 +${v}%`); });
     if (MD_TOP[i] === k) add(3, '이 달 대표 메뉴'); else if (MD_ALSO[i].includes(k)) add(0.5, '같이 팔기 좋음');
-    const rk = OPP[k]; if (rk) { if (rk <= 3) add(0.8, '가게당 검색 많음'); else if (rk <= 6) add(0.4, '가게당 검색 많은 편'); }
+    const rk = OPP[k]; if (rk) { if (rk <= 3) add(0.8, '가게당 검색↑'); else if (rk <= 6) add(0.4, '가게당 검색↑'); }
     if (hasP) { const r = REQ[k] || guessReq(k);
-      if (r) { const miss = r.eq.filter(e => !have.includes(e)); if (!miss.length && r.eq.length) add(0.8, '내 장비로 바로 가능'); else if (miss.length && !r.alt) add(-0.5, '');
-        if (p.price && r.price >= lo && r.price <= hi) add(0.4, '내 가격대에 맞음'); } }
+      if (r) { const miss = r.eq.filter(e => !have.includes(e)); if (!miss.length && r.eq.length) add(0.8, '내 장비 OK'); else if (miss.length && !r.alt) add(-0.5, '');
+        if (p.price && r.price >= lo && r.price <= hi) add(0.4, '내 가격대 OK'); } }
     return { k, i, sc: parts.reduce((a, x) => a + x.pts, 0), parts, e: es[0] || null };
   }).sort((a, b) => b.sc - a.sc);
 }
 // 한 줄 이유: 점수를 많이 준 이유 3개까지
 const DK_TAG = ['이 달 대표 메뉴', '같이 팔기 좋음'];   // 표 가점 꼬리표는 이유 글에서 뺌(자리가 좁고 정보가 적음)
 // 이유 글 후보(긴 것 → 짧은 것). 칸 폭에 한 줄로 들어가는 가장 긴 것을 fitWhy()가 골라 보여 줌
-const dkWhy = m => { const p = m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => (b.pts + (/대목$/.test(b.txt) ? 10 : 0)) - (a.pts + (/대목$/.test(a.txt) ? 10 : 0))).slice(0, 2).map(x => x.txt);   // 대목(날짜가 있는 행동거리)을 맨 앞에
+const dkWhy = m => { const p = m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => (b.pts + (b.ev ? 10 : 0)) - (a.pts + (a.ev ? 10 : 0))).slice(0, 2).map(x => x.txt);   // 대목(날짜가 있는 행동거리)을 맨 앞에
   return p.length ? (p.length > 1 ? [p.join(' · '), p[0]] : [p[0]]) : ['꾸준히 찾는 디저트']; };
 const whyAttr = list => encodeURIComponent(JSON.stringify(list));
 function fitWhy() {
