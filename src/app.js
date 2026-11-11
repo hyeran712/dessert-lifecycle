@@ -676,10 +676,19 @@ function mkProgress() {
   tick(); const id = setInterval(tick, 500);
   return () => { clearInterval(id); lab.textContent = orig; if (mkOut.querySelector('.mk-prog')) mkOut.innerHTML = ''; };
 }
+// 메뉴 종류(디저트/음료): 기본은 고른 디저트 자신의 분야(흑당·달고나처럼 음료면 음료, 나머지는 디저트). 사장님이 3단계에서 바꿀 수 있음
+const KIND_PICK = {};
+function defaultKind(k) { const r = REQ[k] || guessReq(k); return r && r.cat === '음료' ? '음료' : '디저트'; }
+const kindOf = k => KIND_PICK[k] || defaultKind(k);
+function renderKind() {
+  const box = document.getElementById('mk-kind'); if (!box || !current) return;
+  box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === kindOf(current))));
+}
+document.getElementById('mk-kind').addEventListener('click', e => { const b = e.target.closest('button[data-kind]'); if (!b || !current) return; KIND_PICK[current] = b.dataset.kind; renderKind(); });
 async function makeMenu(again) {
   if (!current) return;
   const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
-  const kind = p.cat === '음료' || (r && r.cat === '음료') ? '음료' : '디저트';
+  const kind = kindOf(k);   // 가게 프로필의 분야(음료 중심 등)가 아니라, 고른 디저트 자체와 사장님이 고른 메뉴 종류를 따름 (2026-11-11)
   const price = menuPrice(k, p);
   mkBtn.disabled = true;
   if (loadSheet()) { mkMsg.textContent = '연결한 원가표 시트를 확인하는 중…'; await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]); }
@@ -1254,7 +1263,7 @@ async function renderBrands(k) {
     + (top.open > 3 || top.more ? ' 매장이 여러 곳인 체인이라면, 맛보다 <b>우리 가게만의 한 가지</b>(크기·토핑·동네 재료)로 차별점을 두세요.' : '');
 }
 const __select = select;
-select = k => { track('select', k); __select(k); renderBrands(k); renderPicks(); renderSide(); renderProg(); if (STEP === 3) renderGoals(); head(); };
+select = k => { track('select', k); __select(k); renderBrands(k); renderPicks(); renderSide(); renderProg(); renderKind(); if (STEP === 3) renderGoals(); head(); };
 renderPicks(); renderSide(); renderProg(); head();
 
 
