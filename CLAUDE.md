@@ -59,6 +59,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 ## 동작 핵심 (src/app.js)
 - `select(k)`: 디저트 선택 → 판정·그래프·발견·기획 갱신. 아래쪽에서 한 번 감싸서 카드/사이드바도 갱신함
 - `goStep(n)`, `setView('flow'|'radar')`: 단계·화면 전환 (숨긴 차트는 전환 후 `Chart.instances` resize)
+  - **브라우저 뒤로·앞으로 가기(2026-11-11)**: 예전엔 단계를 옮겨도 이동 기록이 안 남아 뒤로 가기가 항상 꺼져 있었음. 지금은 `goStep`·`setView` 끝에서 `pushNav()`가 `history.pushState({v:화면, s:단계}, '')`(주소는 그대로, 해시 안 바꿈 — 로그인 되돌아오기가 `location.hash`를 읽기 때문)로 기록을 쌓고, `popstate`가 `setView`·`goStep`으로 되돌림(`NAV_RESTORE` 동안은 다시 쌓지 않음). 디저트를 안 골랐는데 2·3단계 기록이면 1단계로. 새로고침하면 1단계부터. 처음 자리는 `history.replaceState({v:'flow',s:1})`
 - `analyzeLive(q)`: 목록에 없는 디저트를 Worker로 실시간 분석 (`LIVE_API`) — 성공 시 true. 1단계 칩 중 `D.kw`에 없는 것(붕어빵·땅콩빵)은 점선 '실시간' 칩으로, 누르면 analyzeLive. 마라탕은 '비교용' 줄
 - `makeMenu()`: Worker `POST /menu`에 {keyword, type, kind, price, targetRate:30, profile, goal, note}
   - **메뉴 종류(2026-11-11)**: `kind`(디저트/음료)는 예전에는 가게 프로필 분야가 '음료'면 무조건 음료였음(디저트를 골라도 '카페 음료'가 나온다는 사용자 지적). 지금은 `kindOf(k)` = 사용자가 3단계 `#mk-kind` 버튼([🍰 디저트·베이커리] [🥤 음료])으로 고른 값, 안 골랐으면 `defaultKind(k)` = 고른 디저트 자신의 분야(`REQ`/`guessReq`의 cat이 '음료'인 흑당·달고나·말차 등은 음료, 나머지는 디저트). 프로필 분야는 이제 `profile`로 AI에 참고용으로만 감. 디저트별로 고른 값은 `KIND_PICK`(새로고침하면 초기화)
