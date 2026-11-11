@@ -710,7 +710,7 @@ mkBtn.addEventListener('click', () => makeMenu(false));
 // 신메뉴 결과 그리기 (단가를 고치면 다시 그림)
 function showMenu(m) {
   mkOut.innerHTML = menuCard(m, true) + `<div class="mk-act"><button type="button" class="btn primary" id="mk-save">♡ 보관함에 저장</button>
-    <button type="button" class="btn line" id="mk-again">↻ 마음에 안 들어요, 다른 메뉴</button></div>
+    <button type="button" class="btn line" id="mk-again">↻ <span class="mk-long">마음에 안 들어요, </span>다른 메뉴</button></div>
     <div class="mk-fb" id="mk-fb">${m._fb ? `<span>${m._fb === 'like' ? '👍' : '👎'} 알려 주셔서 고마워요!</span>` : `<span>이 메뉴, 쓸 만한가요?</span> <button type="button" data-fb="like">👍 쓸 만해요</button> <button type="button" data-fb="dislike">👎 별로예요</button>`}</div>`;
   const info = () => ({ name: m.name, rate: m.rate, price: m.price });
   document.getElementById('mk-save').onclick = e => { saveMenu(LAST_MENU); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; track('menu_save', m.keyword, m.goal, info()); };
