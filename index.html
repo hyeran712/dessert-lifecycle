@@ -780,7 +780,7 @@ details.more #chips{padding:0 16px 14px}
   #p-table td:first-child{grid-column:1/3;font-weight:800}
 }
 /* ===== 1단계 디저트 시계 ===== */
-.dk-wrap{display:grid;grid-template-columns:minmax(0,400px) 1fr;gap:22px;align-items:center}
+.dk-wrap{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:22px;align-items:center}
 .dk{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 45%,#fffdf3 0 52%,#f6e7c4 53% 61%,#e9d3a6 62% 100%);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
 .dk-it{position:absolute;width:17%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--ink);background:#fdf5dc;padding:0;cursor:pointer;overflow:visible;transition:transform .2s}
 .dk-it img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
@@ -794,6 +794,7 @@ details.more #chips{padding:0 16px 14px}
 .dk-hand::after{content:"";position:absolute;left:50%;top:-6%;width:100%;aspect-ratio:1;translate:-50% 0;background:#ff5a1f;border:2px solid var(--ink);border-radius:50% 50% 50% 0;rotate:-45deg}
 .dk-c{position:absolute;left:50%;top:50%;width:9%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--pop-y);border:3px solid var(--ink)}
 .dk-mo{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-family:var(--display);font-size:clamp(18px,4vw,26px);color:var(--ink);white-space:nowrap}
+.dk-side{min-width:0}
 .dk-side h2{margin-top:0}
 .dk-left{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0}
 .dk-left .dk{align-self:stretch}
@@ -824,10 +825,11 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 @media (max-width:900px){.dk-how-g{grid-template-columns:repeat(2,1fr)}}
 .dk-now em.dk-act{color:#ff5a1f;font-weight:800;margin-top:2px}
 .dk-now em{display:block;font-style:normal;font-size:13px;color:var(--ink-2)}
-.dk-now{gap:8px;margin:4px 0 0}
+.dk-now{gap:8px;margin:4px 0 0;grid-template-columns:minmax(0,1fr)}
+.dk-now button{min-width:0}
 .dk-now button>span{min-width:0;flex:1}
 .dk-now em{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;line-height:1.45}
-.dk-now .dk-top{box-sizing:border-box;height:88px;align-items:center;overflow:hidden;padding:7px 10px}
+.dk-now .dk-top{box-sizing:border-box;height:76px;align-items:center;overflow:hidden;padding:7px 10px}
 .dk-now .dk-top img,.dk-now .dk-top .dk-emo{width:44px;height:44px}
 .dk-now .dk-top small{line-height:1.2;font-size:12px}
 .dk-now .dk-top span b{font-size:16px}
@@ -840,6 +842,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .dk-side .sub{margin:0 0 8px}
 @media (min-width:761px){.dk-side .sub{display:none}}
 .dk-now em.dk-act{display:block;-webkit-line-clamp:unset;overflow:visible}
+.dk-now em.dk-why{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}   /* 이유·안내 글은 항상 한 줄 (fitWhy가 칸 폭에 맞는 길이를 고름) */
 @media (max-width:760px){.dk-wrap{grid-template-columns:1fr;gap:18px}.dk{max-width:360px;margin:0 auto;width:100%}.dk-it b{font-size:9.5px;bottom:-8px}}
 @media print{
   @page{size:A4;margin:10mm}
@@ -2782,7 +2785,7 @@ function monthScores(i, C, evs) {
   const [lo, hi] = p && p.price ? p.price.split('-').map(Number) : [0, 1e9];
   return Object.entries(C).map(([k, o]) => {
     const parts = [], add = (pts, txt) => parts.push({ pts, txt });
-    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `${i + 1}월 검색 평소의 ${s.toFixed(1)}배` : '');
+    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `검색 평소의 ${s.toFixed(1)}배` : '');
     const t = TYPE_PTS[o.type]; if (t) add(t[0], t[1]);
     if (o.yoy !== null && o.yoy !== undefined && Math.abs(o.yoy) >= 20) add(clamp(o.yoy / 200, -0.5, 0.5), `작년보다 ${o.yoy > 0 ? '+' : ''}${Math.round(o.yoy)}%`);
     const es = evs.filter(e => e.d.getMonth() === i && e.ks.includes(k));
@@ -2799,7 +2802,16 @@ function monthScores(i, C, evs) {
 }
 // 한 줄 이유: 점수를 많이 준 이유 3개까지
 const DK_TAG = ['이 달 대표 메뉴', '같이 팔기 좋음'];   // 표 가점 꼬리표는 이유 글에서 뺌(자리가 좁고 정보가 적음)
-const dkWhy = m => m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => b.pts - a.pts).slice(0, 2).map(x => x.txt).join(' · ') || '꾸준히 찾는 디저트';
+// 이유 글 후보(긴 것 → 짧은 것). 칸 폭에 한 줄로 들어가는 가장 긴 것을 fitWhy()가 골라 보여 줌
+const dkWhy = m => { const p = m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => (b.pts + (/대목$/.test(b.txt) ? 10 : 0)) - (a.pts + (/대목$/.test(a.txt) ? 10 : 0))).slice(0, 2).map(x => x.txt);   // 대목(날짜가 있는 행동거리)을 맨 앞에
+  return p.length ? (p.length > 1 ? [p.join(' · '), p[0]] : [p[0]]) : ['꾸준히 찾는 디저트']; };
+const whyAttr = list => encodeURIComponent(JSON.stringify(list));
+function fitWhy() {
+  document.querySelectorAll('#dk-now .dk-why').forEach(el => {
+    let list; try { list = JSON.parse(decodeURIComponent(el.dataset.w)); } catch { return; }
+    for (const t of list) { el.textContent = t; if (el.scrollWidth <= el.clientWidth + 1) break; }
+  });
+}
 function top3(list) { const out = [], fam = new Set();
   for (const m of list) { const f = FAMILY[m.k] || m.k; if (fam.has(f)) continue; fam.add(f); out.push(m); if (out.length === 3) break; } return out; }
 function clockPlan() {
@@ -2815,17 +2827,23 @@ function renderClock() {
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
   const medal = ['🥇', '🥈', '🥉'];
-  const topRows = plan[now].top.map((m, r) => `<button type="button" class="dk-top" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em>${esc(dkWhy(m))}</em></span></button>`).join('');
+  const topRows = plan[now].top.map((m, r) => `<button type="button" class="dk-top" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em class="dk-why" data-w="${whyAttr(dkWhy(m))}"></em></span></button>`).join('');
   const nm = plan[nx].top[0], daysToNext = Math.round((new Date(today.getFullYear(), now + 1, 1) - today) / 864e5);
   const evLeft = nm.e ? Math.round((nm.e.d - today) / 864e5) : null;
-  const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em>${esc(dkWhy(nm))}</em><em class="dk-act">→ ${evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`} 남았어요 · 재료·사진 미리 준비</em></span></button>`;
+  const nextBase = evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`, nextDays = `${evLeft !== null && evLeft >= 0 ? evLeft : daysToNext}일`;
+  const nextAct = [`→ ${nextBase} 남았어요 · 재료·사진 미리 준비`, `→ ${nextBase} · 미리 준비`, `→ ${nextDays} 남았어요 · 미리 준비`, `→ ${nextDays} 남았어요`];
+  const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em class="dk-why dk-act" data-w="${whyAttr(nextAct)}"></em></span></button>`;
   document.getElementById('dk-title').textContent = `${now + 1}월은 ${plan[now].top[0].k}의 시간`;
   document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요.`;
   document.getElementById('dk-now').innerHTML = topRows + nextRow;
+  fitWhy();   // 한 줄에 들어가게 글 길이를 맞춤
   document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = CLICK_AS[b.dataset.k] || b.dataset.k;
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
 }
 function refreshClock() { try { renderClock(); } catch (e) { console.error(e); } }
+// 칸 폭이 바뀌거나(창 크기·화면 전환) 글꼴이 늦게 불러와지면 다시 맞춤
+if (window.ResizeObserver) new ResizeObserver(() => fitWhy()).observe(document.getElementById('dk-now'));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitWhy());
 // 재료값(KAMIS): 한 달 새 소매가 변화를 재료 이름별 중앙값으로
 fetch(LIVE_API + '/kamis').then(r => r.ok ? r.json() : null).then(j => {
   if (!j || !j.ok || !j.rows) return;

@@ -1471,7 +1471,7 @@ function monthScores(i, C, evs) {
   const [lo, hi] = p && p.price ? p.price.split('-').map(Number) : [0, 1e9];
   return Object.entries(C).map(([k, o]) => {
     const parts = [], add = (pts, txt) => parts.push({ pts, txt });
-    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `${i + 1}월 검색 평소의 ${s.toFixed(1)}배` : '');
+    const s = o.s[i]; add(clamp(Math.log2(Math.max(s, 0.05)) * 2, -1.5, 2.5), s >= 1.2 ? `검색 평소의 ${s.toFixed(1)}배` : '');
     const t = TYPE_PTS[o.type]; if (t) add(t[0], t[1]);
     if (o.yoy !== null && o.yoy !== undefined && Math.abs(o.yoy) >= 20) add(clamp(o.yoy / 200, -0.5, 0.5), `작년보다 ${o.yoy > 0 ? '+' : ''}${Math.round(o.yoy)}%`);
     const es = evs.filter(e => e.d.getMonth() === i && e.ks.includes(k));
@@ -1488,7 +1488,16 @@ function monthScores(i, C, evs) {
 }
 // 한 줄 이유: 점수를 많이 준 이유 3개까지
 const DK_TAG = ['이 달 대표 메뉴', '같이 팔기 좋음'];   // 표 가점 꼬리표는 이유 글에서 뺌(자리가 좁고 정보가 적음)
-const dkWhy = m => m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => b.pts - a.pts).slice(0, 2).map(x => x.txt).join(' · ') || '꾸준히 찾는 디저트';
+// 이유 글 후보(긴 것 → 짧은 것). 칸 폭에 한 줄로 들어가는 가장 긴 것을 fitWhy()가 골라 보여 줌
+const dkWhy = m => { const p = m.parts.filter(x => x.txt && x.pts > 0 && !DK_TAG.includes(x.txt)).sort((a, b) => (b.pts + (/대목$/.test(b.txt) ? 10 : 0)) - (a.pts + (/대목$/.test(a.txt) ? 10 : 0))).slice(0, 2).map(x => x.txt);   // 대목(날짜가 있는 행동거리)을 맨 앞에
+  return p.length ? (p.length > 1 ? [p.join(' · '), p[0]] : [p[0]]) : ['꾸준히 찾는 디저트']; };
+const whyAttr = list => encodeURIComponent(JSON.stringify(list));
+function fitWhy() {
+  document.querySelectorAll('#dk-now .dk-why').forEach(el => {
+    let list; try { list = JSON.parse(decodeURIComponent(el.dataset.w)); } catch { return; }
+    for (const t of list) { el.textContent = t; if (el.scrollWidth <= el.clientWidth + 1) break; }
+  });
+}
 function top3(list) { const out = [], fam = new Set();
   for (const m of list) { const f = FAMILY[m.k] || m.k; if (fam.has(f)) continue; fam.add(f); out.push(m); if (out.length === 3) break; } return out; }
 function clockPlan() {
@@ -1504,17 +1513,23 @@ function renderClock() {
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
   const medal = ['🥇', '🥈', '🥉'];
-  const topRows = plan[now].top.map((m, r) => `<button type="button" class="dk-top" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em>${esc(dkWhy(m))}</em></span></button>`).join('');
+  const topRows = plan[now].top.map((m, r) => `<button type="button" class="dk-top" data-k="${m.k}">${dkPhoto(m.k)}<span><small>${medal[r]} ${r + 1}등</small><b>${esc(m.k)}</b><em class="dk-why" data-w="${whyAttr(dkWhy(m))}"></em></span></button>`).join('');
   const nm = plan[nx].top[0], daysToNext = Math.round((new Date(today.getFullYear(), now + 1, 1) - today) / 864e5);
   const evLeft = nm.e ? Math.round((nm.e.d - today) / 864e5) : null;
-  const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em>${esc(dkWhy(nm))}</em><em class="dk-act">→ ${evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`} 남았어요 · 재료·사진 미리 준비</em></span></button>`;
+  const nextBase = evLeft !== null && evLeft >= 0 ? `${nm.e.n}까지 ${evLeft}일` : `${nx + 1}월까지 ${daysToNext}일`, nextDays = `${evLeft !== null && evLeft >= 0 ? evLeft : daysToNext}일`;
+  const nextAct = [`→ ${nextBase} 남았어요 · 재료·사진 미리 준비`, `→ ${nextBase} · 미리 준비`, `→ ${nextDays} 남았어요 · 미리 준비`, `→ ${nextDays} 남았어요`];
+  const nextRow = `<button type="button" class="dk-next" data-k="${nm.k}">${dkPhoto(nm.k)}<span><small>다음 달 준비 (${nx + 1}월 1등)</small><b>${esc(nm.k)}</b><em class="dk-why dk-act" data-w="${whyAttr(nextAct)}"></em></span></button>`;
   document.getElementById('dk-title').textContent = `${now + 1}월은 ${plan[now].top[0].k}의 시간`;
   document.getElementById('dk-sub').textContent = `${now + 1}월에 팔기 좋은 TOP 3예요.`;
   document.getElementById('dk-now').innerHTML = topRows + nextRow;
+  fitWhy();   // 한 줄에 들어가게 글 길이를 맞춤
   document.querySelectorAll('#dk-face .dk-it, #dk-now button').forEach(b => b.onclick = async () => { const k = CLICK_AS[b.dataset.k] || b.dataset.k;
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
 }
 function refreshClock() { try { renderClock(); } catch (e) { console.error(e); } }
+// 칸 폭이 바뀌거나(창 크기·화면 전환) 글꼴이 늦게 불러와지면 다시 맞춤
+if (window.ResizeObserver) new ResizeObserver(() => fitWhy()).observe(document.getElementById('dk-now'));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitWhy());
 // 재료값(KAMIS): 한 달 새 소매가 변화를 재료 이름별 중앙값으로
 fetch(LIVE_API + '/kamis').then(r => r.ok ? r.json() : null).then(j => {
   if (!j || !j.ok || !j.rows) return;
