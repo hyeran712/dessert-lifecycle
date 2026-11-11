@@ -815,8 +815,14 @@ table.small.bt-tbl .kb{display:block;width:max-content;margin:3px 0 0}
 table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .bt-ok{color:#14804a}.bt-late{color:#c2410c;font-weight:700}
 @media (max-width:640px){table.small.bt-tbl th,table.small.bt-tbl td{padding:6px 4px;font-size:12px}.bt-sum{font-size:14px}}
-.dk-how{margin-top:22px;padding-top:16px;border-top:2px dashed var(--line)}
-.dk-how-t{display:block;font-size:14px;margin-bottom:10px}.dk-how-t small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:6px}
+.dk-how{margin-top:18px;padding-top:14px;border-top:2px dashed var(--line)}
+.dk-how-t{display:block;font-size:14px;cursor:pointer;list-style:none}
+.dk-how-t::-webkit-details-marker{display:none}
+.dk-how-t::before{content:"▸";display:inline-block;width:16px;color:var(--ink-2);transition:transform .15s}
+.dk-how[open] .dk-how-t::before{transform:rotate(90deg)}
+.dk-how-t small{font-weight:500;color:var(--ink-3);font-size:12px;margin-left:6px}
+.dk-how[open] .dk-how-t{margin-bottom:10px}
+.dk-how:not([open]){padding-top:12px}
 .dk-how-g{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .dk-how-g li{background:#fffdf3;border:1.5px solid var(--ink);border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.45;color:var(--ink-2)}
 .dk-how-g i{font-style:normal;font-weight:900;color:#ff5a1f;margin-right:4px}
@@ -897,8 +903,8 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
                 <div class="dk-now" id="dk-now"></div>
               </div>
             </div>
-            <div class="dk-how">
-              <b class="dk-how-t">점수는 이렇게 매겨요 <small>높은 3개를 보여 줘요 · 비슷한 디저트(모찌 종류 등)는 하나만 · 시계 사진은 달마다 1등</small></b>
+            <details class="dk-how">
+              <summary class="dk-how-t"><b>점수는 이렇게 매겨요</b> <small>높은 3개를 보여 줘요 · 비슷한 디저트(모찌 종류 등)는 하나만 · 시계 사진은 달마다 1등</small></summary>
               <ol class="dk-how-g">
                 <li><i>①</i><b>검색 증가</b><span>그 달 검색이 평소보다 늘어나는 정도 (10년치)</span></li>
                 <li><i>②</i><b>유행 단계</b><span>뜨는 중·정착형은 +, 식어 가는 유행은 −</span></li>
@@ -910,7 +916,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
                 <li><i>⑧</i><b>월별 판매 표</b><span>대표 메뉴 +3, 같이 팔기 +0.5</span></li>
               </ol>
               <p class="note">붕어빵은 검색 데이터가 없어 겨울 간식 기본값을 썼어요.</p>
-            </div>
+            </details>
           </div>
           <div class="card" id="rec">
             <h2>우리 가게에 맞는 디저트 추천</h2>
