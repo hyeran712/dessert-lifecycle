@@ -419,7 +419,7 @@ h2{font-family:var(--display);font-weight:400;letter-spacing:0;color:var(--ink);
 .stat b{font-family:var(--display);font-weight:400;font-size:22px;color:var(--ink)}
 .stat b small{font-family:"Noto Sans KR"}
 .stat.yoy{display:flex;flex-direction:column}
-.stat.yoy b{flex:1;display:flex;align-items:center;justify-content:center;font-size:30px}
+.stat.yoy b{flex:1;display:flex;align-items:center;justify-content:center}
 .stat.yoy b.neg{color:#e5322d}.stat.yoy b.pos{color:#1f9d55}
 .shopbox{border-top:2px dashed var(--ink)}
 .shop-k{color:var(--ink)}
@@ -684,6 +684,9 @@ details.more #chips{padding:0 16px 14px}
 .card.verdict{display:flex;flex-direction:column}
 .card.verdict .badge{align-self:flex-start}
 .stat span{white-space:nowrap}
+/* 결론 카드 숫자 4개는 같은 크기로 (2026-11-11 '지금 인기' 숫자가 다른 숫자와 크기가 달라 보인다는 요청) */
+.stat b,.stat.yoy b{font-size:24px}
+@media (max-width:640px){.stat b,.stat.yoy b{font-size:21px}}
 .verdict .v-note{margin:auto 0 0;padding-top:28px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
 .mk-disc{margin-top:8px}
 .prog{list-style:none;margin:0;padding:0}
