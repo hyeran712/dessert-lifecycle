@@ -680,7 +680,11 @@ details.more #chips{padding:0 16px 14px}
 .side-tip{background:#fff8dc}.side-tip b{display:block;margin-bottom:4px;font-size:14px}.side-tip p{margin:0;font-size:14px;line-height:1.55}
 .side-guide{display:block;text-align:right;font-size:12.5px;font-weight:700;color:var(--ink-2);padding:0 4px}
 .side-note{font-size:11.5px;color:var(--ink-3);line-height:1.55;margin:0;padding:0 4px}
-.v-note{margin:28px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+/* 결론 카드는 옆 그래프 카드와 높이가 같아져 아래가 비므로, 안내 문구를 카드 맨 아래로 내림 */
+.card.verdict{display:flex;flex-direction:column}
+.card.verdict .badge{align-self:flex-start}
+.stat span{white-space:nowrap}
+.verdict .v-note{margin:auto 0 0;padding-top:28px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
 .mk-disc{margin-top:8px}
 .prog{list-style:none;margin:0;padding:0}
 .prog li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px;color:var(--ink-3);font-weight:700}
@@ -966,7 +970,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
           <div class="stats">
             <div class="stat"><span>가장 많이 찾은 때</span><b id="st-peak"></b></div>
             <div class="stat"><span>뜨는 데 걸린 기간</span><b id="st-rise"></b></div>
-            <div class="stat"><span>지금 인기 (최고 때 대비)</span><b id="st-now"></b></div>
+            <div class="stat"><span>지금 인기 (최고 대비)</span><b id="st-now"></b></div>
             <div class="stat yoy"><span>작년 이맘때보다</span><b id="st-yoy"></b></div>
           </div>
           <div class="warnbox" id="warnbox" hidden><b>⚠️ 데이터 주의</b><ul id="warn-list"></ul></div>
