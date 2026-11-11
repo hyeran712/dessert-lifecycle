@@ -1,0 +1,14 @@
+{
+  "name": "디저트 타이밍",
+  "short_name": "디저트타이밍",
+  "description": "신메뉴, 언제 내고 언제 접을까? 데이터로 답하는 디저트 타이밍",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8dc",
+  "theme_color": "#ffd400",
+  "icons": [
+    {"src": "img/brand/apple-touch-icon.png?v=4", "sizes": "180x180", "type": "image/png"},
+    {"src": "img/brand/icon-512.png?v=4", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}

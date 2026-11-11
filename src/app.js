@@ -1650,3 +1650,22 @@ if (SB) {
   });
 }
 authUI();
+
+// 홈 화면에 추가 안내
+(function () {
+  const box = document.getElementById('a2hs'), btn = document.getElementById('a2hs-btn');
+  if (!box || !btn) return;
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+  box.hidden = false;
+  let ev = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); ev = e; });
+  btn.onclick = () => {
+    if (ev) { ev.prompt(); ev = null; return; }
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua);
+    alert(ios
+      ? '아이폰(사파리)에서 설치하는 법\n\n1. 화면 아래(또는 위) 공유 버튼 ⬆ 누르기\n2. "홈 화면에 추가" 고르기\n3. 오른쪽 위 [추가] 누르기\n\n※ 카카오톡 안에서 열었다면 사파리로 열어 주세요.'
+      : /Android/.test(ua)
+        ? '안드로이드(크롬)에서 설치하는 법\n\n1. 오른쪽 위 ⋮ 메뉴 누르기\n2. "홈 화면에 추가" 또는 "앱 설치" 고르기\n\n※ 카카오톡 안에서 열었다면 크롬으로 열어 주세요.'
+        : '컴퓨터(크롬·엣지)에서 설치하는 법\n\n주소창 오른쪽 끝의 설치 아이콘(⊕)을 누르거나, 브라우저 메뉴에서 "앱 설치"를 골라 주세요.');
+  };
+})();

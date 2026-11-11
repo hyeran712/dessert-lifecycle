@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#ffd400">
 <title>디저트 타이밍</title>
 <link rel="icon" type="image/png" sizes="32x32" href="img/brand/favicon.png?v=4">
 <link rel="icon" type="image/png" sizes="512x512" href="img/brand/icon-512.png?v=4">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="img/brand/apple-touch-icon.png?v=4">
 <meta name="description" content="네이버 10년치 검색량으로 본 디저트 수명주기와 출시 타이밍">
 <meta property="og:type" content="website">
@@ -872,5 +874,15 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
   .sh-box,.sh-act{break-inside:avoid}
   .gap-t{font-size:12.5px}.sh-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
 }
+
+/* 홈 화면에 추가 안내 */
+.a2hs{display:flex;align-items:center;gap:12px;max-width:1100px;margin:28px auto 0;padding:12px 16px;background:#fff;border:2px solid var(--ink);border-radius:14px}
+.a2hs[hidden]{display:none}
+.a2hs img{width:40px;height:40px;border-radius:10px;flex:none}
+.a2hs div{flex:1;min-width:0;line-height:1.35}
+.a2hs b{display:block;font-size:14.5px}.a2hs span{font-size:12.5px;color:var(--ink-2)}
+.a2hs .btn{padding:8px 14px;font-size:13px;white-space:nowrap}
+@media (max-width:1140px){.a2hs{margin-left:16px;margin-right:16px}}
+@media (max-width:640px){.a2hs{margin-bottom:90px}}
 </style>
 </head>
