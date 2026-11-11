@@ -59,5 +59,11 @@ jobs:
             echo "바뀐 내용 없음"
           else
             git commit -m "주간 레이더 자동 업데이트 ($(TZ=Asia/Seoul date +%Y-%m-%d))"
-            git push
+            # 계산하는 동안 누가 main 에 먼저 올렸으면 push 가 거부되므로(2026-11-11 실제로 겪음), 최신 main 을 가져와 그 위에 얹은 뒤 다시 올림
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase origin main && git push origin HEAD:main; then ok=1; break; fi
+              echo "올리기 실패, 다시 시도 ($i)"; sleep 5
+            done
+            [ "$ok" = 1 ] || exit 1
           fi
