@@ -794,11 +794,11 @@ details.more #chips{padding:0 16px 14px}
 /* ===== 1단계 디저트 시계 ===== */
 .dk-wrap{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:22px;align-items:center}
 .dk{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 45%,#fffdf3 0 52%,#f6e7c4 53% 61%,#e9d3a6 62% 100%);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
-.dk-it{position:absolute;width:17%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--ink);background:#fdf5dc;padding:0;cursor:pointer;overflow:visible;transition:transform .2s}
+.dk-it{position:absolute;width:15%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--ink);background:#fdf5dc;padding:0;cursor:pointer;overflow:visible;transition:transform .2s}
 .dk-it img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .dk-it b{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font:900 10.5px "Noto Sans KR";background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;white-space:nowrap}
 .dk-it:hover{transform:translate(-50%,-50%) scale(1.12);z-index:3}
-.dk-it.now{width:22%;border-width:3px;box-shadow:0 0 0 5px var(--pop-y),3px 3px 0 6px var(--ink);z-index:2}
+.dk-it.now{width:18%;border-width:3px;box-shadow:0 0 0 5px var(--pop-y),3px 3px 0 6px var(--ink);z-index:2}
 .dk-it.now b{background:var(--pop-y)}
 .dk-it.next{box-shadow:0 0 0 3px #fff3b0}
 .dk-hand{position:absolute;left:50%;top:50%;width:5%;height:30%;transform-origin:50% 100%;translate:-50% -100%;transition:rotate 1.2s cubic-bezier(.3,1.4,.5,1)}
@@ -2952,7 +2952,7 @@ function renderClock() {
   if (ingMode) return renderIngClock();
   document.getElementById('dk-make').hidden = true;
   const plan = clockPlan(), now = new Date().getMonth(), nx = (now + 1) % 12, today = new Date(); today.setHours(0, 0, 0, 0);
-  face.innerHTML = plan.map(({ top }, i) => { const k = top[0].k, a = (i + 1) * 30 * Math.PI / 180, x = 50 + 39 * Math.sin(a), y = 50 - 39 * Math.cos(a);
+  face.innerHTML = plan.map(({ top }, i) => { const k = top[0].k, a = (i + 1) * 30 * Math.PI / 180, x = 50 + 40 * Math.sin(a), y = 50 - 40 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 1등 · ${k}">${dkPhoto(k)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
@@ -3013,7 +3013,7 @@ function ingWhy(x) {
 }
 function renderIngClock() {
   const face = document.getElementById('dk-face'), now = new Date().getMonth(), nx = (now + 1) % 12, m = DK_M === null ? now : DK_M;
-  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 39 * Math.sin(a), py = 50 - 39 * Math.cos(a);
+  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 40 * Math.sin(a), py = 50 - 40 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-mi="${i}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%" title="${i + 1}월 제철 · ${esc(SEASON_ING[i].map(y => y[0]).join('·'))}">${ingEmo(x.g, x.e)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo${m >= 3 && m <= 7 ? ' up' : ''}">${m + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));

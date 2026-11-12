@@ -1560,7 +1560,7 @@ function renderClock() {
   if (ingMode) return renderIngClock();
   document.getElementById('dk-make').hidden = true;
   const plan = clockPlan(), now = new Date().getMonth(), nx = (now + 1) % 12, today = new Date(); today.setHours(0, 0, 0, 0);
-  face.innerHTML = plan.map(({ top }, i) => { const k = top[0].k, a = (i + 1) * 30 * Math.PI / 180, x = 50 + 39 * Math.sin(a), y = 50 - 39 * Math.cos(a);
+  face.innerHTML = plan.map(({ top }, i) => { const k = top[0].k, a = (i + 1) * 30 * Math.PI / 180, x = 50 + 40 * Math.sin(a), y = 50 - 40 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 1등 · ${k}">${dkPhoto(k)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${now + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { document.getElementById('dk-hand').style.rotate = `${(now + 1) * 30}deg`; }, 80));
@@ -1621,7 +1621,7 @@ function ingWhy(x) {
 }
 function renderIngClock() {
   const face = document.getElementById('dk-face'), now = new Date().getMonth(), nx = (now + 1) % 12, m = DK_M === null ? now : DK_M;
-  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 39 * Math.sin(a), py = 50 - 39 * Math.cos(a);
+  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 40 * Math.sin(a), py = 50 - 40 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-mi="${i}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%" title="${i + 1}월 제철 · ${esc(SEASON_ING[i].map(y => y[0]).join('·'))}">${ingEmo(x.g, x.e)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo${m >= 3 && m <= 7 ? ' up' : ''}">${m + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));
