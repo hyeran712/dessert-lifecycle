@@ -94,7 +94,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 
 ## 사용량 제한·사용 기록·통계 (2026-11-09)
 - Worker `Stats` Durable Object(SQLite, wrangler.toml migration v2, 바인딩 `STATS`, 인스턴스 하나 'stats-v1'): `hits`(날짜·사람·종류별 횟수), `events`(익명 사용 기록)
-- **하루 한도** `LIMITS` = 신메뉴 10 · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 60(2026-11-10에 30에서 올림) · 시트 읽기(/sheet 캐시 밖) 10 (사용자 결정 2026-11-09). 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
+- **하루 한도** `LIMITS` = 신메뉴 20(2026-11-12에 10에서 올림) · 검색류(/trend·/volume·/brands·/price·/shops, 캐시에서 나간 건 안 셈) 60(2026-11-10에 30에서 올림) · 시트 읽기(/sheet 캐시 밖) 10 (사용자 결정 2026-11-09). 사람 = `CF-Connecting-IP`를 `STATS_SALT`(없으면 기본값)와 해시한 앞 16자리. 넘으면 429 `{limit:true}` → 화면 '⏳ 오늘 … 다 썼어요'
 - **익명 기록**: 화면 `track(type,k,goal,v)`가 `navigator.sendBeacon(POST /event)`. UID = localStorage `dessert-timing-uid` 무작위. 종류 `EVENT_TYPES`: visit(하루 1번)·select·step(앞으로 갈 때)·menu_save·menu_again·like·dislike(결과 카드 `#mk-fb`)·file·pdf·price_pick·rec·local·cost_edit. Worker가 직접 남기는 것: menu(이름·원가율·초·모델·내 원가표 수)·menu_fail·sheet(fresh 연결)·limit
 - **주인**: Worker 비밀 변수 **`STATS_KEY`**(대시보드에서 사용자가 넣음). `stats.html`(저장소 루트, noindex, build.sh와 상관없음)에서 열쇠를 넣으면 `GET /stats`(헤더 X-Stats-Key)로 요약을 보고, localStorage `dessert-timing-owner`에 저장 → 그 브라우저는 X-Owner-Key로 한도 없음·기록 안 함
 - **로그인(2026-11-09)**: Supabase 프로젝트 `dessert-timing`(조직 '젠지표류기', 서울, automatic RLS 켬, 새 표 자동 공개 끔). URL·publishable 키는 app.js 끝 `SB_URL`/`SB_KEY`와 worker `SB_URL`/`SB_PUBLISHABLE`(공개용). **service_role 키·DB 비밀번호는 코드·채팅에 절대 X**
