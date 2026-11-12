@@ -831,8 +831,9 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .bt-ok{color:#14804a}.bt-late{color:#c2410c;font-weight:700}
 @media (max-width:640px){table.small.bt-tbl th,table.small.bt-tbl td{padding:6px 4px;font-size:12px}.bt-sum{font-size:14px}}
 .dk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.dk-mode{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
-.dk-mode button{font:900 12.5px "Noto Sans KR";border:0;background:none;padding:5px 11px;cursor:pointer;color:var(--ink)}
+.dk-head{display:block;margin:0 0 14px}
+.dk-mode{display:flex;width:100%;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}   /* 카드 위쪽 전체 폭 탭 (사용자 요청 2026-11-12) */
+.dk-mode button{flex:1;font:900 15px "Noto Sans KR";border:0;background:none;padding:9px 11px;cursor:pointer;color:var(--ink)}
 .dk-mode button[aria-pressed="true"]{background:var(--pop-y)}
 .dk-mode button+button{border-left:2px solid var(--ink)}
 .dk-it .dk-emo{font-size:clamp(20px,4.2vw,34px)}
