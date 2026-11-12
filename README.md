@@ -348,7 +348,8 @@ function geminiFetch(url, init, env) {
 
 ## 📈 분석으로 찾은 것
 
-네이버 데이터랩 주간 검색량(2016.01~2026.10)과 인허가 데이터로 디저트 21종의 수명주기를 분석했습니다. 자세한 과정은 [분석 노트북](dessert_lifecycle.ipynb)에 있습니다.
+네이버 데이터랩 주간 검색량(2016.01~2026.10)과 인허가 데이터로 디저트 21종의 수명주기를 분석했습니다.<br>
+자세한 과정은 [분석 노트북](dessert_lifecycle.ipynb)에 있습니다.
 
 <div align="center">
 
