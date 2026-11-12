@@ -157,7 +157,7 @@ async function trend(q, env) {
 
 // ---------- 재료 시세 (KAMIS 농산물유통정보, 최근일자 도·소매 가격) ----------
 // 디저트에 쓰는 재료만 골라서 보여 준다. ?all=1 이면 전체 품목 (처음 확인용)
-const KAMIS_WANT = ['딸기', '찹쌀', '쌀', '팥', '계란', '달걀', '사과', '배', '감귤', '귤', '포도', '샤인머스캣', '바나나', '키위', '토마토', '방울토마토', '복숭아', '참깨', '들깨', '땅콩', '호두', '밤', '쑥', '우유', '고구마', '단호박', '호박', '레몬', '블루베리', '파인애플', '망고', '체리', '감'];
+const KAMIS_WANT = ['한라봉', '천혜향', '참외', '수박', '매실', '무화과', '유자', '딸기', '찹쌀', '쌀', '팥', '계란', '달걀', '사과', '배', '감귤', '귤', '포도', '샤인머스캣', '바나나', '키위', '토마토', '방울토마토', '복숭아', '참깨', '들깨', '땅콩', '호두', '밤', '쑥', '우유', '고구마', '단호박', '호박', '레몬', '블루베리', '파인애플', '망고', '체리', '감'];
 const num0 = v => { const n = Number(String(v || '').replace(/,/g, '')); return Number.isFinite(n) && n > 0 ? n : null; };
 async function kamis(env, all) {
   if (!env.KAMIS_KEY || !env.KAMIS_ID) return { ok: false, error: 'KAMIS 키(KAMIS_KEY · KAMIS_ID)가 아직 Worker에 없어요.' };
@@ -356,7 +356,10 @@ const GOAL_GUIDE = {
 async function menu(body, env) {
   const kw = cleanQuery(body.keyword);
   if (!kw) throw new Error('디저트 이름이 필요해요.');
-  const kind = body.kind === '음료' ? '카페 음료 (ICE 16oz)' : '디저트·베이커리 (1인분)';
+  // 메뉴 종류: 디저트·음료 + 제철 재료 모드의 구움과자·떡 (2026-11-12)
+  const KIND = { '음료': ['카페 음료 (ICE 16oz)', ''], '구움과자': ['구움과자 (1개)', '휘낭시에·마들렌·쿠키·스콘처럼 오븐에 굽는 과자. 케이크·생크림 디저트는 아님'],
+    '떡·모찌': ['떡·모찌 (1개)', '찹쌀떡·모찌·설기·경단처럼 떡 종류. 오븐 없이 찌거나 반죽해서'] };
+  const [kind, kindHint] = KIND[body.kind] || ['디저트·베이커리 (1인분)', ''];
   const price = Math.max(2000, Math.min(30000, Number(body.price) || 5500));
   const target = Math.max(15, Math.min(50, Number(body.targetRate) || 30));
   const p = body.profile || {};
@@ -373,7 +376,7 @@ async function menu(body, env) {
 - 오늘: ${new Date(Date.now() + 9 * 3600e3).getUTCMonth() + 1}월 (계절이 들어간 이름·재료는 지금 계절에 맞게. 다른 계절 낱말 금지)
 - 트렌드 키워드: ${kw} (유행 단계: ${body.type || '알 수 없음'})
 - 메뉴명 규칙: 실제 메뉴판에 쓰는 짧은 이름(공백 빼고 4~14자). 문장·감탄·말장난("지금 아니면" 등)·다른 음식 이름·없는 낱말 금지. 예: "생딸기 찹쌀모찌", "겨울 유자 크림모찌".
-- 메뉴 분야: ${kind}
+- 메뉴 분야: ${kind}${kindHint ? ' — ' + kindHint : ''}
 - 메뉴 목적: ${GOAL_GUIDE[body.goal] ? `${body.goal} → ${GOAL_GUIDE[body.goal]}` : '알아서 판단'}
 - 사장님 요청사항(최우선): ${String(body.note || '없음').replace(/[<>`]/g, '').slice(0, 120)} (요청이 있으면 메뉴의 형태·종류는 반드시 이 요청을 따르고, 트렌드 키워드는 그 메뉴의 재료·맛·콘셉트로 살려 합칠 것. 예: 키워드 '쑥' + 요청 '젤라또 소금빵' → 쑥 젤라또를 넣은 소금빵이지, 다른 메뉴가 아님. 이름에도 요청한 메뉴 형태가 드러나게. 원가율 목표보다 낮은 숫자를 말하면 그 숫자를 지킬 것)
 - 목표 판매가: ${price}원, 목표 원가율: ${target}% 이하${visualLine}

@@ -568,11 +568,11 @@ function mktHTML(m) {
   if (base) { const d = m.price - base.median, where = base === mk.area ? `${esc(mk.area.area)} 카페` : '다른 카페';
     say += (say ? ' ' : '') + (d >= 500 ? `${where}보다 <b>${won(d)} 비싸요.</b> 크기·토핑·포장으로 차이를 보여 주세요.`
       : d <= -500 ? `${where}보다 <b>${won(-d)} 싸요.</b> 값을 조금 올려도 될 여지가 있어요.` : `${where}와 <b>비슷한 가격</b>이에요 ✅`); }
-  const st = !mk ? '<p class="note">다른 카페 가격을 찾는 중…</p>'
+  const st = mk && mk.need === 'ing' ? '' : !mk ? '<p class="note">다른 카페 가격을 찾는 중…</p>'
     : base ? '' : `<p class="note">${mk.need === 'search' ? '다른 카페 가격은 준비 중이에요. (네이버 검색 연결 전)' : '가격이 적힌 후기가 적어서 다른 카페 보통 가격을 내기 어려워요.'}</p>`;
   const smp = base && base.samples && base.samples.length ? `<details class="mkt-s"><summary>가격이 나온 후기 보기</summary><ul>${base.samples.map(x =>
     `<li><b>${won(x[0])}</b> <a href="${esc(x[2])}" target="_blank" rel="noopener">${esc(x[1])}</a> <small>${x[3] ? x[3].slice(0, 4) + '.' + x[3].slice(4, 6) : ''}</small></li>`).join('')}</ul></details>` : '';
-  return `<p class="mkt-h"><b>💰 가격 비교</b> <small>다른 카페 가격은 최근 1년 네이버 블로그 후기에서 '${esc(m.keyword || '')} ○,○○○원'을 모은 값이에요</small></p>
+  return `<p class="mkt-h"><b>💰 가격 비교</b> <small>${mk && mk.need === 'ing' ? '제철 재료로 만든 메뉴는 원가 기준 최소가와 목표가를 비교해요' : `다른 카페 가격은 최근 1년 네이버 블로그 후기에서 '${esc(m.keyword || '')} ○,○○○원'을 모은 값이에요`}</small></p>
     <div class="mkt-g"><div><span>원가 기준 최소가 <small>원가율 ${m.target}%</small></span><b>${won(minP)}</b></div>
       ${mk ? row(mk.all, '다른 카페 보통') + row(mk.area, `${esc((mk.area && mk.area.area) || '')} 카페 보통`) : ''}
       <div class="me"><span>내 목표가</span><b>${won(m.price)}</b></div></div>
@@ -1555,6 +1555,10 @@ function clockPlan() {
 }
 function renderClock() {
   const face = document.getElementById('dk-face'); if (!face) return;
+  const ingMode = DK_MODE === 'i';
+  document.getElementById('dk-how').hidden = ingMode; document.getElementById('dk-ing-note').hidden = !ingMode;
+  if (ingMode) return renderIngClock();
+  document.getElementById('dk-make').hidden = true;
   const plan = clockPlan(), now = new Date().getMonth(), nx = (now + 1) % 12, today = new Date(); today.setHours(0, 0, 0, 0);
   face.innerHTML = plan.map(({ top }, i) => { const k = top[0].k, a = (i + 1) * 30 * Math.PI / 180, x = 50 + 39 * Math.sin(a), y = 50 - 39 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-k="${k}" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%" title="${i + 1}월 1등 · ${k}">${dkPhoto(k)}<b>${i + 1}월</b></button>`; }).join('') +
@@ -1575,6 +1579,106 @@ function renderClock() {
     if (D.kw[k]) { select(k); goStep(2); } else if (await analyzeLive(k)) goStep(2); });
 }
 function refreshClock() { try { renderClock(); } catch (e) { console.error(e); } }
+/* ---------- 디저트 시계 '제철 재료' 모드 (2026-11-12): 달마다 제철 재료 → 누르면 우리 가게 방식(디저트·음료·구움과자·떡)으로 바로 신메뉴 ----------
+   케이크를 안 하는 가게도 같은 재료를 음료·구움과자·떡으로 쓸 수 있게. 재료값 변화는 KAMIS(KAMIS_VS) */
+var DK_MODE = 'd', DK_M = null, DK_ING = null;
+const SEASON_ING = [   // 0 = 1월. 국내에서 많이 나오는 때 기준, 앞의 것이 시계 사진(1등)
+  [['딸기', '🍓'], ['한라봉', '🍊'], ['유자', '🍋']],
+  [['한라봉', '🍊'], ['딸기', '🍓'], ['천혜향', '🍊']],
+  [['딸기', '🍓'], ['쑥', '🌿'], ['한라봉', '🍊']],
+  [['쑥', '🌿'], ['딸기', '🍓'], ['녹차', '🍵']],
+  [['참외', '🍈'], ['녹차', '🍵'], ['체리', '🍒']],
+  [['매실', '🍏'], ['체리', '🍒'], ['블루베리', '🫐']],
+  [['복숭아', '🍑'], ['수박', '🍉'], ['블루베리', '🫐']],
+  [['복숭아', '🍑'], ['포도', '🍇'], ['망고', '🥭']],
+  [['무화과', ''], ['포도', '🍇'], ['배', '🍐']],
+  [['밤', '🌰'], ['고구마', '🍠'], ['사과', '🍎']],
+  [['귤', '🍊'], ['사과', '🍎'], ['유자', '🍋'], ['단호박', '🎃']],
+  [['유자', '🍋'], ['딸기', '🍓'], ['귤', '🍊']]];
+const ING_KAMIS = { '귤': ['감귤', '귤'], '한라봉': ['한라봉', '만감'], '천혜향': ['천혜향', '만감'], '단호박': ['단호박'] };
+const ingEmo = (g, e) => `<span class="dk-emo${e ? '' : ' dk-txt'}">${e || esc(g)}</span>`;
+function ingVs(g) {
+  for (const n of ING_KAMIS[g] || [g]) { if (KAMIS_VS[n] !== undefined && KAMIS_VS[n] !== null) return KAMIS_VS[n];
+    const hit = Object.keys(KAMIS_VS).find(x => x.includes(n)); if (hit && KAMIS_VS[hit] !== null) return KAMIS_VS[hit]; }
+  return null;
+}
+function ingRange(g) {   // '제철 11~2월'
+  const ms = SEASON_ING.map((l, i) => l.some(x => x[0] === g) ? i : -1).filter(i => i >= 0); if (!ms.length) return '';
+  const st = ms.find(i => !ms.includes((i + 11) % 12)); if (st === undefined) return '1년 내내';
+  let en = st; while (ms.includes((en + 1) % 12) && (en + 1) % 12 !== st) en = (en + 1) % 12;
+  return st === en ? `제철 ${st + 1}월` : `제철 ${st + 1}~${en + 1}월`;
+}
+function ingList(i) {   // 그 달 재료. 이번·다음 달은 값이 내린 재료를 앞으로
+  const cm = new Date().getMonth(), near = i === cm || i === (cm + 1) % 12, l = SEASON_ING[i].map((x, r) => ({ g: x[0], e: x[1], r, v: ingVs(x[0]) }));
+  return near ? l.sort((a, b) => ((a.v !== null && a.v <= -5 ? -10 : 0) + a.r) - ((b.v !== null && b.v <= -5 ? -10 : 0) + b.r)) : l;
+}
+function ingWhy(x) {
+  const rg = ingRange(x.g);
+  if (x.v !== null && x.v <= -5) return [[`${x.g}값 한 달 새 −${Math.abs(x.v)}% · 지금 사기 좋아요 · ${rg}`, `${x.g}값 −${Math.abs(x.v)}% · 지금 사기 좋아요`, `${x.g}값 −${Math.abs(x.v)}%`], 'dk-dn'];
+  if (x.v !== null && x.v >= 15) return [[`${x.g}값 한 달 새 +${x.v}% · 양 조절 필요 · ${rg}`, `${x.g}값 +${x.v}% · 양 조절 필요`, `${x.g}값 +${x.v}%`], 'dk-up'];
+  return [[`${rg}${x.v !== null ? ` · 값 ${x.v > 0 ? '+' : ''}${x.v}%` : ''} · 누르면 메뉴 만들기`, `${rg} · 누르면 메뉴 만들기`, rg], ''];
+}
+function renderIngClock() {
+  const face = document.getElementById('dk-face'), now = new Date().getMonth(), nx = (now + 1) % 12, m = DK_M === null ? now : DK_M;
+  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 39 * Math.sin(a), py = 50 - 39 * Math.cos(a);
+    return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-mi="${i}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%" title="${i + 1}월 제철 · ${esc(SEASON_ING[i].map(y => y[0]).join('·'))}">${ingEmo(x.g, x.e)}<b>${i + 1}월</b></button>`; }).join('') +
+    `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${m + 1}월</span>`;
+  requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));
+  const list = ingList(m);
+  const rows = list.slice(0, 4).map(x => { const [w, cls] = ingWhy(x);
+    return `<button type="button" class="dk-top" data-g="${esc(x.g)}" aria-pressed="${DK_ING === x.g}">${ingEmo(x.g, x.e)}<span><b>${esc(x.g)}</b><em class="dk-why ${cls}" data-w="${whyAttr(w)}"></em></span></button>`; }).join('');
+  document.getElementById('dk-title').textContent = `${m + 1}월 제철 재료`;
+  document.getElementById('dk-sub').textContent = '재료를 누르면 우리 가게 방식으로 신메뉴를 바로 만들어요.';
+  document.getElementById('dk-now').innerHTML = rows;
+  fitWhy();
+  face.querySelectorAll('.dk-it').forEach(b => b.onclick = () => { DK_M = +b.dataset.mi; DK_ING = null; renderClock(); });
+  document.querySelectorAll('#dk-now .dk-top').forEach(b => b.onclick = () => { DK_ING = b.dataset.g; renderClock(); });
+  const mk = document.getElementById('dk-make'), cur = list.find(x => x.g === DK_ING);
+  mk.hidden = !cur;
+  if (cur) {
+    mk.innerHTML = `<p><b>${cur.e || ''} ${esc(cur.g)}</b>로 무엇을 만들까요? <small>우리 가게에서 하는 걸 골라 주세요</small></p>
+      <div class="dk-kinds">${ING_KINDS.map(([k, t]) => `<button type="button" data-kind="${k}">${t}</button>`).join('')}</div>`;
+    mk.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => makeIngMenu(cur.g, b.dataset.kind));
+  }
+}
+const ING_KINDS = [['디저트', '🍰 디저트'], ['음료', '🥤 음료'], ['구움과자', '🍪 구움과자'], ['떡·모찌', '🍡 떡·모찌']];
+const ING_PRICE = { '디저트': 6500, '음료': 6000, '구움과자': 3500, '떡·모찌': 4000 };   // 가게 프로필 가격대가 없을 때 기본 판매가
+const ING_MADE = {};
+let ING_BUSY = false;
+async function makeIngMenu(g, kind, again) {
+  if (ING_BUSY) return; ING_BUSY = true;
+  const out = document.getElementById('dk-out'), p = loadProfile() || {}, key = g + '|' + kind;
+  const price = p.price ? (([lo, hi]) => Math.round((lo + hi) / 2 / 100) * 100)(p.price.split('-').map(Number)) : ING_PRICE[kind];
+  const btns = document.querySelectorAll('#dk-make [data-kind]'); btns.forEach(b => b.disabled = true);
+  const t0 = Date.now(), lab = `${g} ${kind}`;
+  const tick = () => { out.innerHTML = `<div class="mk-prog"><div class="mk-prog-top"><b>🍳 ${esc(lab)} 메뉴를 만드는 중…</b><span>${Math.floor((Date.now() - t0) / 1000)}초</span></div><p class="note">AI가 레시피를 짜고, 재료마다 실제 단가로 원가율 30%를 맞추는 중이에요. (10초쯤 걸려요)</p></div>`; };
+  tick(); const id = setInterval(tick, 1000); out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    if (loadSheet()) await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]);
+    const tok = await authToken();
+    const note = [`제철 재료 '${g}'를 주인공으로 한 ${kind} 메뉴`, again && ING_MADE[key] ? `앞에서 제안한 ${ING_MADE[key].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 메뉴로` : ''].filter(Boolean).join(' / ');
+    const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}), ...(tok ? { Authorization: 'Bearer ' + tok } : {}) },
+      body: JSON.stringify({ keyword: g, type: '제철 재료', kind, price, targetRate: 30, profile: p, goal: '시즌 메뉴', myPrice: myPriceMap(), note }) });
+    const m = await res.json();
+    clearInterval(id);
+    if (m.limit) { out.innerHTML = `<p class="note">⏳ ${esc(m.error)}</p>`; return; }
+    if (!res.ok || m.error) throw new Error(m.error || res.status);
+    m.market = { need: 'ing' };   // 재료 이름으로는 다른 카페 판매가를 찾기 어려워 원가 기준 최소가만 보여 줌
+    (ING_MADE[key] = ING_MADE[key] || []).push(m.name);
+    out.innerHTML = menuCard(m) + `<div class="mk-act"><button type="button" class="btn primary" id="dk-save">♡ 보관함에 저장</button>
+      <button type="button" class="btn line" id="dk-again">↻ 다른 메뉴</button></div>`;
+    document.getElementById('dk-save').onclick = e => { saveMenu({ m, k: g, goal: '시즌 메뉴' }); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; track('menu_save', g, '시즌 메뉴', { name: m.name, rate: m.rate, price: m.price }); };
+    document.getElementById('dk-again').onclick = () => makeIngMenu(g, kind, true);
+  } catch (e) {
+    clearInterval(id);
+    const msg = String(e.message || e);
+    out.innerHTML = `<p class="note">${/429|RESOURCE_EXHAUSTED|quota/i.test(msg) ? 'AI 무료 사용량을 다 썼어요. 잠시 뒤 다시 눌러 주세요.' : /503|UNAVAILABLE|high demand/.test(msg) ? 'AI 서버가 지금 붐벼요. 1~2분 뒤에 다시 눌러 주세요.' : '만들지 못했어요: ' + esc(msg)}</p>`;
+  } finally { clearInterval(id); ING_BUSY = false; btns.forEach(b => b.disabled = false); }
+}
+document.getElementById('dk-mode').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b || b.dataset.m === DK_MODE) return;
+  DK_MODE = b.dataset.m; DK_M = null; DK_ING = null; document.getElementById('dk-out').innerHTML = '';
+  document.querySelectorAll('#dk-mode button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderClock(); });
+
 // 칸 폭이 바뀌거나(창 크기·화면 전환) 글꼴이 늦게 불러와지면 다시 맞춤
 if (window.ResizeObserver) new ResizeObserver(() => fitWhy()).observe(document.getElementById('dk-now'));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitWhy());

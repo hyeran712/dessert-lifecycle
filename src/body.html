@@ -30,15 +30,19 @@
         <section class="step" data-panel="1" id="diagnose">
           <div class="card" id="dclock">
             <div class="dk-wrap">
-              <div class="dk-left"><span class="tagpill">디저트 시계</span>
+              <div class="dk-left"><div class="dk-head"><span class="tagpill">디저트 시계</span>
+                <div class="dk-mode" id="dk-mode" role="group" aria-label="시계에 보여 줄 것"><button type="button" data-m="d" aria-pressed="true">🍰 디저트</button><button type="button" data-m="i" aria-pressed="false">🍓 제철 재료</button></div></div>
               <div class="dk" id="dk-face" role="group" aria-label="달마다 잘 팔리는 디저트 시계"></div></div>
               <div class="dk-side">
                 <h2 id="dk-title">지금은 이 디저트의 시간</h2>
                 <p class="sub" id="dk-sub"></p>
                 <div class="dk-now" id="dk-now"></div>
+                <div class="dk-make" id="dk-make" hidden></div>
               </div>
             </div>
-            <details class="dk-how">
+            <div class="dk-out" id="dk-out"></div>
+            <p class="note dk-ing-note" id="dk-ing-note" hidden>제철 시기는 국내에서 많이 나오는 때를 기준으로 했어요. 재료값 변화는 KAMIS(한국농수산식품유통공사) 소매가예요. 만든 메뉴는 가게 프로필(가격대·장비·안 쓰는 재료)과 내 원가표를 그대로 반영해요.</p>
+            <details class="dk-how" id="dk-how">
               <summary class="dk-how-t"><b>점수는 이렇게 매겨요</b> <small>높은 3개를 보여 줘요 · 비슷한 디저트(모찌 종류 등)는 하나만 · 시계 사진은 달마다 1등</small></summary>
               <ol class="dk-how-g">
                 <li><i>①</i><b>검색 증가</b><span>그 달 검색이 평소보다 늘어나는 정도 (10년치)</span></li>
