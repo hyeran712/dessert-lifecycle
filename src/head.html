@@ -832,9 +832,8 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 @media (max-width:640px){table.small.bt-tbl th,table.small.bt-tbl td{padding:6px 4px;font-size:12px}.bt-sum{font-size:14px}}
 .dk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dk-head{display:block;margin:0 0 14px}
-.dk-mode{display:flex;width:100%;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}   /* 카드 위쪽 전체 폭 탭 (사용자 요청 2026-11-12) */
-@media (min-width:761px){.dk-mode{display:grid;grid-template-columns:minmax(0,334px) minmax(0,1fr);width:auto;margin:0 37px}}   /* 구분선을 시계 칸과 오른쪽 카드 칸 사이(가운데 틈)에 맞춤: 360px 칸 + 틈 22px의 절반 */
-.dk-mode button{flex:1;font:900 15px "Noto Sans KR";border:0;background:none;padding:9px 11px;cursor:pointer;color:var(--ink)}
+.dk-mode{display:flex;width:100%;max-width:600px;margin:0 auto;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}   /* 카드 위쪽 전체 폭 탭 (사용자 요청 2026-11-12) */
+.dk-mode button{flex:1 1 0;min-width:0;font:900 15px "Noto Sans KR";border:0;background:none;padding:9px 11px;cursor:pointer;color:var(--ink)}
 .dk-mode button[aria-pressed="true"]{background:var(--pop-y)}
 .dk-mode button+button{border-left:2px solid var(--ink)}
 .dk-it .dk-emo{font-size:clamp(20px,4.2vw,34px)}
