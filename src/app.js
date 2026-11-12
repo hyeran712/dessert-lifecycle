@@ -1621,7 +1621,8 @@ function ingWhy(x) {
 }
 function renderIngClock() {
   const face = document.getElementById('dk-face'), now = new Date().getMonth(), nx = (now + 1) % 12, m = DK_M === null ? now : DK_M;
-  face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 40 * Math.sin(a), py = 50 - 40 * Math.cos(a);
+  const used = new Set(), lead = SEASON_ING.map((l, i) => { const L = ingList(i), x = L.find(y => !used.has(y.g)) || L[0]; used.add(x.g); return x; });   // 시계 12칸에 같은 재료 사진이 두 번 나오지 않게(그 달 목록 순서대로 안 쓴 재료 중 1등)
+  face.innerHTML = SEASON_ING.map((l, i) => { const x = lead[i], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 40 * Math.sin(a), py = 50 - 40 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-mi="${i}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%" title="${i + 1}월 제철 · ${esc(SEASON_ING[i].map(y => y[0]).join('·'))}">${ingEmo(x.g, x.e)}<b>${i + 1}월</b></button>`; }).join('') +
     `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo${m >= 3 && m <= 7 ? ' up' : ''}">${m + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));
