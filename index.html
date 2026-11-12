@@ -894,6 +894,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .mk-ref-th{border:2px solid var(--ink,#1c1c1c);cursor:default;padding:0}
 .mk-ref-th img{width:100%;height:100%;object-fit:cover}
 .mk-ref-th button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink,#1c1c1c);color:#fff;font-size:13px;line-height:1;cursor:pointer}
+.mk-ref.drag{outline:3px dashed var(--orange,#ff5a1f);outline-offset:4px;background:#fff3c4}
 </style>
 </head>
 <body>
@@ -1165,7 +1166,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
             <label class="fld">요청사항 (선택)<textarea id="mk-note" maxlength="120" rows="3" placeholder="예: 원가율 25% 이하, 오븐 없이 만들 수 있게"></textarea></label>
             <div class="fld mk-ref"><span>원하는 비주얼 사진 (선택, 최대 3장)</span>
               <div class="mk-ref-row" id="mk-ref-row"><label class="mk-ref-add" id="mk-ref-add">＋<small>사진 추가</small><input type="file" id="mk-ref-file" accept="image/*" multiple hidden></label></div>
-              <small>인스타·핀터레스트에서 저장한 마음에 드는 사진을 올리면, AI가 색감·단면·토핑을 읽어 메뉴와 <b>사진 잘 나오게 만드는 법</b>(케이크 단면 살리는 법 포함)을 알려 줘요. 사진은 저장되지 않고 이번 요청에만 쓰여요.</small></div>
+              <small>인스타·핀터레스트에서 저장한 마음에 드는 사진을 눌러서 고르거나, 이 칸에 끌어다 놓거나, Ctrl+V로 붙여 넣으면, AI가 색감·단면·토핑을 읽어 메뉴와 <b>사진 잘 나오게 만드는 법</b>(케이크 단면 살리는 법 포함)을 알려 줘요. 사진은 저장되지 않고 이번 요청에만 쓰여요.</small></div>
             <div class="mk">
               <button type="button" id="mk-btn"><span id="mk-label">신메뉴 만들기</span> →</button>
               <span class="note" id="mk-msg">보통 5~10초 걸려요. 판매가는 위 '시장가' 카드에서 정할 수 있어요. 원가율이 목표를 넘으면 AI가 스스로 고쳐요.</span>
@@ -2069,10 +2070,14 @@ function shrinkImg(file) {
 }
 (function () {
   const f = document.getElementById('mk-ref-file'); if (!f) return;
-  f.addEventListener('change', async () => {
-    for (const file of [...f.files]) { if (REF_IMGS.length >= 3) break; if (!/^image\//.test(file.type)) continue; const u = await shrinkImg(file); if (u) REF_IMGS.push(u); }
-    f.value = ''; renderRefs();
-  });
+  const addFiles = async files => { for (const file of [...files]) { if (REF_IMGS.length >= 3) break; if (!/^image\//.test(file.type)) continue; const u = await shrinkImg(file); if (u) REF_IMGS.push(u); } renderRefs(); };
+  f.addEventListener('change', async () => { await addFiles(f.files); f.value = ''; });
+  // 끌어다 놓기·붙여넣기(Ctrl+V)도 가능
+  const box = document.querySelector('.mk-ref');
+  ['dragenter', 'dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('drag'); }));
+  box.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+  document.addEventListener('paste', e => { const fs = [...(e.clipboardData ? e.clipboardData.files : [])].filter(x => /^image\//.test(x.type)); if (fs.length && document.getElementById('mk-ref-row').offsetParent) addFiles(fs); });
   document.getElementById('mk-ref-row').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) { REF_IMGS.splice(+b.dataset.i, 1); renderRefs(); } });
 })();
 async function makeMenu(again) {

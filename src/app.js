@@ -707,10 +707,14 @@ function shrinkImg(file) {
 }
 (function () {
   const f = document.getElementById('mk-ref-file'); if (!f) return;
-  f.addEventListener('change', async () => {
-    for (const file of [...f.files]) { if (REF_IMGS.length >= 3) break; if (!/^image\//.test(file.type)) continue; const u = await shrinkImg(file); if (u) REF_IMGS.push(u); }
-    f.value = ''; renderRefs();
-  });
+  const addFiles = async files => { for (const file of [...files]) { if (REF_IMGS.length >= 3) break; if (!/^image\//.test(file.type)) continue; const u = await shrinkImg(file); if (u) REF_IMGS.push(u); } renderRefs(); };
+  f.addEventListener('change', async () => { await addFiles(f.files); f.value = ''; });
+  // 끌어다 놓기·붙여넣기(Ctrl+V)도 가능
+  const box = document.querySelector('.mk-ref');
+  ['dragenter', 'dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('drag'); }));
+  box.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+  document.addEventListener('paste', e => { const fs = [...(e.clipboardData ? e.clipboardData.files : [])].filter(x => /^image\//.test(x.type)); if (fs.length && document.getElementById('mk-ref-row').offsetParent) addFiles(fs); });
   document.getElementById('mk-ref-row').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) { REF_IMGS.splice(+b.dataset.i, 1); renderRefs(); } });
 })();
 async function makeMenu(again) {
