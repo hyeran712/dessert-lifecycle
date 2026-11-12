@@ -1213,7 +1213,7 @@ function renderSide() {
   else {
     const E = entry(current), v = E.v;
     el.innerHTML = `<p class="ss-k">고른 디저트</p><p class="ss-n">${photo(current, 'ss-ph')}${esc(current)} <span class="tag" style="background:${TYPE_COLOR[v.type]}">${v.type}</span></p>
-    <div class="ss-g"><div><b>${v.now}%</b>최고 때 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>작년 이맘때보다</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
+    <div class="ss-g"><div><b>${v.now}%</b>최고 때 대비</div><div><b>${v.yoy === null ? '–' : sign(v.yoy)}</b>작년 이맘때</div><div><b>${E.shop ? E.shop.open_now.toLocaleString() + '곳' : '–'}</b>영업 중 매장</div></div>`;
   }
   // 반영되는 가게 정보: 있으면 요약 + [수정], 없으면 넣으라는 안내(누르면 프로필로)
   const p = loadProfile(), has = hasProfile(p), body = document.getElementById('side-store-body');
