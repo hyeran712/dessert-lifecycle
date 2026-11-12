@@ -129,7 +129,7 @@ dessert_lifecycle.ipynb, dessert_lifecycle/   분석 노트북·그림·원본 �
 
 ## README · 발표 자료 (2026-11-11)
 - README.md는 사용자 요청으로 참고 저장소(su4228-prog/orga_whole_food) README 구성을 따라 다시 씀: 가운데 로고·배지 → 시연 영상(준비 중) → 숫자 표 → 목차 → 01 소개(개요·기능 지도·데이터 7가지) → 02 주요 기능 1~9(판단·시계·레이더·동네·AI 신메뉴·원가표 시트·로그인·관리자·모바일, 화면 캡처 `docs/readme/shots/*.webp`) → 03 도구·구조(mermaid)·서버 기능·고치기 전후·검증 → 분석(접기) → 한계 → 실행 방법 → 슬라이드 24장 펼쳐보기(`docs/readme/slides/01~24.webp`)
-- 발표 슬라이드 원본은 claude.ai Slides 아티팩트 '디저트 타이밍 포트폴리오'(https://claude.ai/artifact/3Beg8Qok5eFv3BTGGyYGqJ, 24장). README의 슬라이드 그림은 그 슬라이드를 1600×900으로 찍은 것 — 슬라이드를 고치면 다시 찍어 바꿔야 함. 시연 시연 영상은 2026-11-12 `docs/readme/demo/`(demo-pc.mp4·demo-mobile.mp4·poster 이미지)에 넣고 README 맨 위에 연결함
+- 발표 슬라이드 원본은 claude.ai Slides 아티팩트 '디저트 타이밍 포트폴리오'(https://claude.ai/artifact/3Beg8Qok5eFv3BTGGyYGqJ, 24장). README의 슬라이드 그림은 그 슬라이드를 1600×900으로 찍은 것 — 슬라이드를 고치면 다시 찍어 바꿔야 함. 2026-11-12부터 같은 사진으로 만든 PDF·HTML(사진을 파일 안에 넣은 한 장짜리)도 `docs/deck/dessert-timing-portfolio.pdf`·`.html`에 올려 README 위쪽·슬라이드 칸에 [PDF 받기]·[웹으로 보기](GitHub Pages 주소) 링크를 둠 — 슬라이드를 고치면 이 두 파일도 다시 만들어 바꿀 것. 시연 시연 영상은 2026-11-12 `docs/readme/demo/`(demo-pc.mp4·demo-mobile.mp4·poster 이미지)에 넣고 README 맨 위에 연결함
 
 ## 커밋
 - 커밋 작성자는 `Claude <noreply@anthropic.com>`
