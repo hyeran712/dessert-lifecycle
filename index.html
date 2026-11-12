@@ -2988,7 +2988,8 @@ const SEASON_ING = [   // 0 = 1월. 국내에서 많이 나오는 때 기준, �
   [['귤', '🍊'], ['사과', '🍎'], ['유자', '🍋'], ['고구마', '🍠']],
   [['유자', '🍋'], ['딸기', '🍓'], ['귤', '🍊']]];
 const ING_KAMIS = { '귤': ['감귤', '귤'], '한라봉': ['한라봉', '만감'], '천혜향': ['천혜향', '만감'], '단호박': ['단호박'] };
-const ingEmo = (g, e) => `<span class="dk-emo${e ? '' : ' dk-txt'}">${e || esc(g)}</span>`;
+const ING_IMG = { '사과': 'apple', '블루베리': 'blueberry', '천혜향': 'cheonhyehyang', '체리': 'cherry', '밤': 'chestnut', '무화과': 'fig', '포도': 'grape', '녹차': 'green-tea', '한라봉': 'hallabong', '단호박': 'kabocha', '참외': 'korean-melon', '망고': 'mango', '쑥': 'mugwort', '복숭아': 'peach', '배': 'pear', '매실': 'green-plum', '딸기': 'strawberry', '고구마': 'sweet-potato', '귤': 'tangerine', '수박': 'watermelon', '유자': 'yuzu' };   // img/menu/ing-○○.webp (크림 배경 #fdf5dc). 사진 바꾸면 ?v 올리기
+const ingEmo = (g, e) => ING_IMG[g] ? `<img src="img/menu/ing-${ING_IMG[g]}.webp?v=1" alt="${esc(g)}" loading="lazy">` : `<span class="dk-emo${e ? '' : ' dk-txt'}">${e || esc(g)}</span>`;
 function ingVs(g) {
   for (const n of ING_KAMIS[g] || [g]) { if (KAMIS_VS[n] !== undefined && KAMIS_VS[n] !== null) return KAMIS_VS[n];
     const hit = Object.keys(KAMIS_VS).find(x => x.includes(n)); if (hit && KAMIS_VS[hit] !== null) return KAMIS_VS[hit]; }
@@ -3029,7 +3030,7 @@ function renderIngClock() {
   const mk = document.getElementById('dk-make'), cur = list.find(x => x.g === DK_ING);
   mk.hidden = !cur;
   if (cur) {
-    mk.innerHTML = `<p><b>${cur.e || ''} ${esc(cur.g)}</b>로 무엇을 만들까요? <small>위에서 다른 재료를 눌러 바꿀 수 있어요</small></p>
+    mk.innerHTML = `<p><b>${esc(cur.g)}</b>로 무엇을 만들까요? <small>위에서 다른 재료를 눌러 바꿀 수 있어요</small></p>
       <div class="dk-kinds">${ING_KINDS.map(([k, t]) => `<button type="button" data-kind="${k}">${t}</button>`).join('')}</div>`;
     mk.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => makeIngMenu(cur.g, b.dataset.kind));
   }
