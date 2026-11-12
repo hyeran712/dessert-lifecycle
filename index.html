@@ -836,6 +836,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .dk-it .dk-emo{font-size:clamp(20px,4.2vw,34px)}
 .dk-it.now .dk-emo{font-size:clamp(26px,5.4vw,44px)}
 .dk-emo.dk-txt{font:900 13px "Noto Sans KR"}
+.dk-now .dk-emo.dk-txt{font-size:9.5px;letter-spacing:-.5px;word-break:keep-all;text-align:center;line-height:1.1}
 .dk-now .dk-top[aria-pressed="true"]{background:#fff8dc;box-shadow:3px 3px 0 #ff5a1f}
 .dk-now em.dk-dn{color:#1a9a55;font-weight:800}
 .dk-now em.dk-up{color:#b42318;font-weight:800}
@@ -849,6 +850,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .dk-out:empty{display:none}
 .dk-out{margin-top:16px}
 .dk-ing-note{margin:12px 0 0}
+.dk-mo.up{top:28%}
 .dk-how{margin-top:18px;padding-top:14px;border-top:2px dashed var(--line)}
 .dk-how-t{display:block;font-size:14px;cursor:pointer;list-style:none}
 .dk-how-t::-webkit-details-marker{display:none}
@@ -2976,8 +2978,8 @@ const SEASON_ING = [   // 0 = 1월. 국내에서 많이 나오는 때 기준, �
   [['딸기', '🍓'], ['쑥', '🌿'], ['한라봉', '🍊']],
   [['쑥', '🌿'], ['딸기', '🍓'], ['녹차', '🍵']],
   [['참외', '🍈'], ['녹차', '🍵'], ['체리', '🍒']],
-  [['매실', '🍏'], ['체리', '🍒'], ['블루베리', '🫐']],
-  [['복숭아', '🍑'], ['수박', '🍉'], ['블루베리', '🫐']],
+  [['매실', '🍏'], ['체리', '🍒'], ['블루베리', '']],
+  [['복숭아', '🍑'], ['수박', '🍉'], ['블루베리', '']],
   [['복숭아', '🍑'], ['포도', '🍇'], ['망고', '🥭']],
   [['무화과', ''], ['포도', '🍇'], ['배', '🍐']],
   [['밤', '🌰'], ['고구마', '🍠'], ['사과', '🍎']],
@@ -3010,9 +3012,10 @@ function renderIngClock() {
   const face = document.getElementById('dk-face'), now = new Date().getMonth(), nx = (now + 1) % 12, m = DK_M === null ? now : DK_M;
   face.innerHTML = SEASON_ING.map((l, i) => { const x = ingList(i)[0], a = (i + 1) * 30 * Math.PI / 180, px = 50 + 39 * Math.sin(a), py = 50 - 39 * Math.cos(a);
     return `<button type="button" class="dk-it${i === now ? ' now' : i === nx ? ' next' : ''}" data-mi="${i}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%" title="${i + 1}월 제철 · ${esc(SEASON_ING[i].map(y => y[0]).join('·'))}">${ingEmo(x.g, x.e)}<b>${i + 1}월</b></button>`; }).join('') +
-    `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo">${m + 1}월</span>`;
+    `<i class="dk-hand" id="dk-hand"></i><i class="dk-c"></i><span class="dk-mo${m >= 3 && m <= 7 ? ' up' : ''}">${m + 1}월</span>`;
   requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));
   const list = ingList(m);
+  if (!list.some(x => x.g === DK_ING)) DK_ING = list[0].g;   // 처음부터 1등 재료를 골라 둬서 만들기 버튼이 바로 보이게
   const rows = list.slice(0, 4).map(x => { const [w, cls] = ingWhy(x);
     return `<button type="button" class="dk-top" data-g="${esc(x.g)}" aria-pressed="${DK_ING === x.g}">${ingEmo(x.g, x.e)}<span><b>${esc(x.g)}</b><em class="dk-why ${cls}" data-w="${whyAttr(w)}"></em></span></button>`; }).join('');
   document.getElementById('dk-title').textContent = `${m + 1}월 제철 재료`;
@@ -3024,7 +3027,7 @@ function renderIngClock() {
   const mk = document.getElementById('dk-make'), cur = list.find(x => x.g === DK_ING);
   mk.hidden = !cur;
   if (cur) {
-    mk.innerHTML = `<p><b>${cur.e || ''} ${esc(cur.g)}</b>로 무엇을 만들까요? <small>우리 가게에서 하는 걸 골라 주세요</small></p>
+    mk.innerHTML = `<p><b>${cur.e || ''} ${esc(cur.g)}</b>로 무엇을 만들까요? <small>위에서 다른 재료를 눌러 바꿀 수 있어요</small></p>
       <div class="dk-kinds">${ING_KINDS.map(([k, t]) => `<button type="button" data-kind="${k}">${t}</button>`).join('')}</div>`;
     mk.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => makeIngMenu(cur.g, b.dataset.kind));
   }
