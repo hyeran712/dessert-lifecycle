@@ -311,7 +311,7 @@ const FAST_MODEL = 'gemini-flash-lite-latest';
 
 // deadline: 이 시각(ms)까지는 끝내야 한다. 한 번 부를 때 최대 40초, 늦거나 붐비면 다음 모델로
 // thinkingLevel 'low': 3.x 모델이 오래 '생각'하느라 느린 것을 줄인다. 모델이 이 설정을 모르면(400) 빼고 다시
-async function askGemini(prompt, env, deadline = Date.now() + 90000, only) {
+async function askGemini(prompt, env, deadline = Date.now() + 90000, only, imgs = []) {
   // 2026-11-09 측정: flash-lite 2~4초, flash-latest 37초~실패, 3.8-flash 40초 넘게 → 가벼운 모델을 먼저, 실패할 때만 큰 모델
   const models = only ? [only] : [...new Set([FAST_MODEL, env.GEMINI_MODEL || GEMINI_MODEL, ...FALLBACK_MODELS])];
   let res, text = '', last = '', think = true, used = '';
@@ -325,7 +325,7 @@ async function askGemini(prompt, env, deadline = Date.now() + 90000, only) {
       const t0 = Date.now();
       res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: gen }),
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, ...imgs.map(d => ({ inline_data: { mime_type: d.mime, data: d.data } }))] }], generationConfig: gen }),
       }, env, Math.min(40000, left - 3000));
       text = await res.text(); tried.push(`${model} ${res.status} ${((Date.now() - t0) / 1000).toFixed(0)}초`);
       if (res.status === 400 && think && /thinking/i.test(text)) { think = false; i--; continue; }   // 이 모델은 thinkingLevel 모름
@@ -365,6 +365,10 @@ async function menu(body, env) {
     ...Object.entries(MY).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 우리 가게)`),
     ...Object.entries(PRICE).filter(([k]) => !MY[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원)`),
     ...Object.entries(MKT).filter(([k]) => !PRICE[k] && !MY[k]).map(([k, v]) => `${k}(${v.unit}당 ${v.price}원, 오늘 시세)`)].join(', ');
+  // 사장님이 붙인 참고 사진(최대 3장, 화면에서 줄여서 보냄) — 모양이 맞는 것만 받는다
+  const imgs = (Array.isArray(body.images) ? body.images : []).slice(0, 3).map(u => /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(u))).filter(m => m && m[2].length < 900000).map(m => ({ mime: m[1], data: m[2] }));
+  const visualLine = imgs.length ? `
+- 첨부 사진 ${imgs.length}장: 사장님이 만들고 싶은 비주얼 참고 사진. 색감·모양·층(단면)·토핑·담음새·그릇을 읽어서 메뉴 구성과 이름, 사진 포인트에 반영할 것. 사진 속 가게의 메뉴를 그대로 베끼지 말고, 우리 메뉴 재료로 재현할 수 있는 범위에서 같은 분위기를 내게. 사진에 없는 건 지어내지 말 것.` : '';
   const base = `당신은 한국 카페·디저트 프랜차이즈의 메뉴개발자입니다. 트렌드 키워드로 실제 매장에서 팔 신메뉴 1개를 만드세요.
 - 오늘: ${new Date(Date.now() + 9 * 3600e3).getUTCMonth() + 1}월 (계절이 들어간 이름·재료는 지금 계절에 맞게. 다른 계절 낱말 금지)
 - 트렌드 키워드: ${kw} (유행 단계: ${body.type || '알 수 없음'})
@@ -372,14 +376,14 @@ async function menu(body, env) {
 - 메뉴 분야: ${kind}
 - 메뉴 목적: ${GOAL_GUIDE[body.goal] ? `${body.goal} → ${GOAL_GUIDE[body.goal]}` : '알아서 판단'}
 - 사장님 요청사항(최우선): ${String(body.note || '없음').replace(/[<>`]/g, '').slice(0, 120)} (요청이 있으면 메뉴의 형태·종류는 반드시 이 요청을 따르고, 트렌드 키워드는 그 메뉴의 재료·맛·콘셉트로 살려 합칠 것. 예: 키워드 '쑥' + 요청 '젤라또 소금빵' → 쑥 젤라또를 넣은 소금빵이지, 다른 메뉴가 아님. 이름에도 요청한 메뉴 형태가 드러나게. 원가율 목표보다 낮은 숫자를 말하면 그 숫자를 지킬 것)
-- 목표 판매가: ${price}원, 목표 원가율: ${target}% 이하
+- 목표 판매가: ${price}원, 목표 원가율: ${target}% 이하${visualLine}
 - 가게 주력 분야: ${p.cat || '정보 없음'} / 보유 장비: ${(p.eq || []).join(', ') || '정보 없음'} (없는 장비가 필요한 공정은 쓰지 말 것)
 - 쓰지 않는 재료: ${(p.ban || []).join(', ') || '없음'} (절대 넣지 말 것)
 - 단가를 아는 재료: ${known}. 이 재료는 이름을 똑같이 쓰고 단위도 맞출 것.
 - 그 밖의 재료는 2026년 한국 업소용 식자재 기준 단위당 단가(원)를 est_unit_price로 추정. 단위는 g, ml, 개 중 하나.
 - 레시피는 실제 매장 배합처럼 빠짐없이: 이름에 들어간 재료는 반드시 넣고(소금빵이면 소금), 빵·발효 반죽이면 강력분·이스트·소금, 과자·케이크면 박력분처럼 용도에 맞는 재료를 쓸 것. 단가를 아는 재료 목록에 없어도(예: 강력분, 이스트) 맞는 재료를 쓰고 단가는 추정할 것 — 목록에 있다는 이유로 다른 재료로 바꾸지 말 것. 만드는 순서도 발효·굽는 온도와 시간까지 구체적으로.
 - 음료면 아이스컵세트 1개와 빨대 1개를 넣고, 디저트면 포장용기 1개를 재료로 넣을 것. 생딸기처럼 과일은 개수 말고 g으로 쓸 것.
-JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","goal_fit":"메뉴 목적에 맞춘 점 한 문장","photo":"SNS 인증용일 때만: 사진이 잘 나오게 담고 찍는 법 한 문장, 아니면 빈 문자열","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
+JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target":"타깃 고객 한 문장","point":"판매 포인트 한 문장","pairing":"함께 팔 메뉴 한 문장","goal_fit":"메뉴 목적에 맞춘 점 한 문장","photo":"SNS 인증용이거나 첨부 사진이 있을 때만: 사진이 잘 나오게 만들고 담고 찍는 법을 쉬운 말로 2~3문장(비주얼 포인트 1개 + 실제로 하는 방법). 케이크·빵·타르트처럼 속이 보이는 메뉴면 단면을 살리는 방법을 구체적으로: 자르는 법(칼을 뜨거운 물에 데워 닦으며 한 번에 자르기), 층의 색 대비를 만드는 재료, 단면이 보이게 세우는 각도(정면 또는 45도)와 조명. 아니면 빈 문자열","recipe":[{"ing":"재료","qty":숫자,"unit":"g|ml|개","est_unit_price":숫자}],"steps":["만드는 순서 3~5단계"]}`;
   const log = [];
   let prompt = base, result, cost;
   const deadline = Date.now() + 90000;   // 전체 90초 안에 (Cloudflare는 100초가 넘으면 524로 끊는다)
@@ -391,7 +395,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
     for (let a = 0; a < 3; a++) {
       if (deadline - Date.now() < 10000) break;
       try {
-        const r = await askGemini(prompt, env, a < 2 ? Math.min(deadline, Date.now() + 25000) : deadline, pick || (a < 2 ? FAST_MODEL : undefined));
+        const r = await askGemini(prompt, env, a < 2 ? Math.min(deadline, Date.now() + 25000) : deadline, pick || (a < 2 ? FAST_MODEL : undefined), imgs);
         if (Array.isArray(r.recipe) && r.recipe.length) return r;
         err = new Error('AI가 레시피를 만들지 못했어요. 다시 시도해 주세요.'); err.got = Array.isArray(r) ? 'array:' + JSON.stringify(r).slice(0, 300) : 'keys:' + Object.keys(r || {}).join(',') + ' ' + JSON.stringify(r).slice(0, 300);
       } catch (e) { err = e; }
@@ -419,7 +423,7 @@ JSON 하나만 답하세요: {"name":"메뉴명","concept":"한 문장","target"
   const rate = cost.total / price * 100;
   const banned = (p.ban || []).filter(b => cost.rows.some(r => r.ing.includes(b)));
   return { banned, keyword: kw, kind, price, target, name: result.name, concept: result.concept, targetCustomer: result.target,
-    point: result.point, pairing: result.pairing, goal: GOAL_GUIDE[body.goal] ? body.goal : '', goalFit: result.goal_fit || '', photo: result.photo || '', steps: result.steps || [], recipe: cost.rows, cost: cost.total,
+    point: result.point, pairing: result.pairing, goal: GOAL_GUIDE[body.goal] ? body.goal : '', goalFit: result.goal_fit || '', photo: result.photo || '', imgN: imgs.length, steps: result.steps || [], recipe: cost.rows, cost: cost.total,
     rate: +rate.toFixed(1), margin: price - cost.total, pass: rate <= target, tries: log, ai: result._ai || null, priceDate: '2026-11-04' };
 }
 

@@ -686,6 +686,33 @@ function renderKind() {
   box.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === kindOf(current))));
 }
 document.getElementById('mk-kind').addEventListener('click', e => { const b = e.target.closest('button[data-kind]'); if (!b || !current) return; KIND_PICK[current] = b.dataset.kind; renderKind(); });
+// 원하는 비주얼 참고 사진(최대 3장): 긴 변 768px jpeg로 줄여 메뉴 요청에만 실어 보냄(저장 안 함)
+const REF_IMGS = [];
+function renderRefs() {
+  const row = document.getElementById('mk-ref-row'), add = document.getElementById('mk-ref-add'); if (!row) return;
+  row.querySelectorAll('.mk-ref-th').forEach(n => n.remove());
+  REF_IMGS.forEach((u, i) => { const d = document.createElement('div'); d.className = 'mk-ref-th'; d.innerHTML = `<img src="${u}" alt="참고 사진 ${i + 1}"><button type="button" aria-label="사진 빼기" data-i="${i}">×</button>`; row.insertBefore(d, add); });
+  add.style.display = REF_IMGS.length >= 3 ? 'none' : '';
+}
+function shrinkImg(file) {
+  return new Promise(ok => {
+    const fr = new FileReader();
+    fr.onload = () => { const im = new Image(); im.onload = () => {
+      const sc = Math.min(1, 768 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', 0.8)); };
+      im.onerror = () => ok(null); im.src = fr.result; };
+    fr.onerror = () => ok(null); fr.readAsDataURL(file);
+  });
+}
+(function () {
+  const f = document.getElementById('mk-ref-file'); if (!f) return;
+  f.addEventListener('change', async () => {
+    for (const file of [...f.files]) { if (REF_IMGS.length >= 3) break; if (!/^image\//.test(file.type)) continue; const u = await shrinkImg(file); if (u) REF_IMGS.push(u); }
+    f.value = ''; renderRefs();
+  });
+  document.getElementById('mk-ref-row').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) { REF_IMGS.splice(+b.dataset.i, 1); renderRefs(); } });
+})();
 async function makeMenu(again) {
   if (!current) return;
   const k = current, v = entry(k).v, p = loadProfile() || {}, r = REQ[k] || guessReq(k);
@@ -697,7 +724,7 @@ async function makeMenu(again) {
   try {
     const tok = await authToken();   // 로그인했으면 사람별 한도 (Worker가 Supabase로 확인)
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}), ...(tok ? { Authorization: 'Bearer ' + tok } : {}) },
-      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, myPrice: myPriceMap(), note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
+      body: JSON.stringify({ keyword: k, type: v.type, kind, price, targetRate: 30, profile: p, goal: GOAL, images: REF_IMGS.slice(), myPrice: myPriceMap(), note: [(document.getElementById('mk-note').value || '').trim(), again === true && MADE_NAMES[k] ? `앞에서 제안한 ${MADE_NAMES[k].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 형태·맛의 메뉴로` : ''].filter(Boolean).join(' / ') }) });
     const m = await res.json();
     if (m.limit) { mkMsg.textContent = '⏳ ' + m.error; return; }   // 하루 사용 횟수 제한 (Worker LIMITS)
     if (!res.ok || m.error) throw new Error(m.error || res.status);
