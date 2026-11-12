@@ -36,8 +36,7 @@
 
 </div>
 
->
-> 📑 **발표 슬라이드 24장**은 맨 아래 [슬라이드 펼쳐보기](#-슬라이드-펼쳐보기)에 있습니다.
+> 📑 **발표 슬라이드 24장**은 맨 아래 [슬라이드 펼쳐보기](#-슬라이드-펼쳐보기)에 있습니다. · [PDF 받기](docs/deck/dessert-timing-portfolio.pdf?raw=1) · [웹으로 보기](https://hyeran712.github.io/dessert-lifecycle/docs/deck/dessert-timing-portfolio.html)
 
 <div align="center">
 
@@ -411,6 +410,8 @@ python3 -m http.server 8765     # http://localhost:8765 에서 확인
 ---
 
 ## 📊 슬라이드 펼쳐보기
+
+📥 [PDF 받기](docs/deck/dessert-timing-portfolio.pdf?raw=1) · [웹으로 보기(HTML)](https://hyeran712.github.io/dessert-lifecycle/docs/deck/dessert-timing-portfolio.html) · [HTML 파일 받기](docs/deck/dessert-timing-portfolio.html?raw=1)
 
 <details open>
 <summary><b>📂 슬라이드 24장</b> — 01 프로젝트 소개 · 02 주요 기능 · 03 기술과 문제 해결</summary>
