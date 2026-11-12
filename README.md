@@ -24,7 +24,13 @@
   <img src="https://img.shields.io/badge/Python-pandas-3776AB?style=flat-square&logo=python&logoColor=white" />
 </p>
 
-> 🎬 **시연 영상** — 준비 중이에요. (메인 → 디저트 고르기 → 타이밍 진단 → AI 신메뉴·원가율 → 레이더 → 동네 리포트 → 로그인 → 휴대폰 설치)
+### 🎬 시연 영상
+
+그림을 누르면 영상이 열려요. (소금빵 기준, 무음·자막 · 시계 → 디저트 고르기 → 타이밍 진단 → AI 신메뉴·원가율 → 레이더 → 동네 리포트)
+
+| 💻 PC (1분 30초) | 📱 휴대폰 (1분 30초) |
+|:---:|:---:|
+| [<img src="docs/readme/demo/poster-pc.jpg" width="520" alt="PC 시연 영상">](docs/readme/demo/demo-pc.mp4) | [<img src="docs/readme/demo/poster-mobile.jpg" width="200" alt="휴대폰 시연 영상">](docs/readme/demo/demo-mobile.mp4) |
 >
 > 📑 **발표 슬라이드 24장**은 맨 아래 [슬라이드 펼쳐보기](#-슬라이드-펼쳐보기)에 있습니다.
 
