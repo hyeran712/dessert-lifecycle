@@ -1628,7 +1628,7 @@ function renderIngClock() {
   requestAnimationFrame(() => setTimeout(() => { const h = document.getElementById('dk-hand'); if (h) h.style.rotate = `${(m + 1) * 30}deg`; }, 80));
   const list = ingList(m);
   if (!list.some(x => x.g === DK_ING)) DK_ING = list[0].g;   // 처음부터 1등 재료를 골라 둬서 만들기 버튼이 바로 보이게
-  const rows = list.slice(0, 4).map(x => { const [w, cls] = ingWhy(x);
+  const rows = list.slice(0, 3).map(x => { const [w, cls] = ingWhy(x);
     return `<button type="button" class="dk-top" data-g="${esc(x.g)}" aria-pressed="${DK_ING === x.g}">${ingEmo(x.g, x.e)}<span><b>${esc(x.g)}</b><em class="dk-why ${cls}" data-w="${whyAttr(w)}"></em></span></button>`; }).join('');
   document.getElementById('dk-title').textContent = `${m + 1}월 제철 재료`;
   document.getElementById('dk-sub').textContent = '재료를 누르면 우리 가게 방식으로 신메뉴를 바로 만들어요.';
@@ -1639,12 +1639,12 @@ function renderIngClock() {
   const mk = document.getElementById('dk-make'), cur = list.find(x => x.g === DK_ING);
   mk.hidden = !cur;
   if (cur) {
-    mk.innerHTML = `<p><b>${esc(cur.g)}</b>로 무엇을 만들까요? <small>위에서 다른 재료를 눌러 바꿀 수 있어요</small></p>
+    mk.innerHTML = `<p><b>${esc(cur.g)}</b>로 만들기 <small>· 재료는 위에서 바꿔요</small></p>
       <div class="dk-kinds">${ING_KINDS.map(([k, t]) => `<button type="button" data-kind="${k}">${t}</button>`).join('')}</div>`;
     mk.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => makeIngMenu(cur.g, b.dataset.kind));
   }
 }
-const ING_KINDS = [['디저트', '🍰 디저트'], ['음료', '🥤 음료'], ['구움과자', '🍪 구움과자'], ['떡·모찌', '🍡 떡·모찌']];
+const ING_KINDS = [['디저트', '디저트'], ['음료', '음료'], ['구움과자', '구움과자'], ['떡·모찌', '떡·모찌']];
 const ING_PRICE = { '디저트': 6500, '음료': 6000, '구움과자': 3500, '떡·모찌': 4000 };   // 가게 프로필 가격대가 없을 때 기본 판매가
 const ING_MADE = {};
 let ING_BUSY = false;
