@@ -833,7 +833,7 @@ table.small.bt-tbl td:first-child{word-break:break-all;white-space:normal}
 .dk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dk-head{display:block;margin:0 0 14px}
 .dk-mode{display:flex;width:100%;max-width:550px;margin:0 auto;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}   /* 카드 위쪽 전체 폭 탭 (사용자 요청 2026-11-12) */
-@media (min-width:761px){.dk-mode{display:grid;grid-template-columns:309px minmax(0,1fr);margin:0 0 0 62px}}   /* 탭 폭 550px 그대로, 구분선만 시계 칸과 카드 칸 사이 틈 한가운데(왼쪽 끝에서 371px)에 (사용자 요청 2026-11-13) */
+@media (min-width:761px){.dk-mode{display:grid;grid-template-columns:241px 241px;width:482px;max-width:none;margin:0 0 0 130px}}   /* 두 버튼 모두 241px(제철 재료 버튼 너비), 구분선은 시계 칸과 카드 칸 사이 틈 한가운데(왼쪽 끝에서 371px)에 (사용자 요청 2026-11-13) */
 .dk-mode button{flex:1 1 0;min-width:0;font:900 15px "Noto Sans KR";border:0;background:none;padding:9px 11px;cursor:pointer;color:var(--ink)}
 .dk-mode button[aria-pressed="true"]{background:var(--pop-y)}
 .dk-mode button+button{border-left:2px solid var(--ink)}
