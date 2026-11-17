@@ -1022,14 +1022,17 @@ async function analyzeLive(q) {
   qMsg.textContent = `'${q}' 검색량과 전국 매장을 불러오는 중… (10초쯤 걸려요)`;
   try {
     const nq = q.replace(/\s+/g, '');
-    const [t, a, b] = await Promise.all([getJSON(`/trend?q=${encodeURIComponent(q)}`), fetchShops(nq, 'cafe'), fetchShops(nq, 'bakery')]);
+    // 매장(인허가) 조회는 정부 서버가 느리면 504가 나기도 함 → 실패해도 검색량 분석은 보여 준다 (2026-11-17, '파블로 롤케이크' 검색이 통째로 실패)
+    const noShop = () => ({ rows: [], capped: false, fail: true });
+    const [t, a, b] = await Promise.all([getJSON(`/trend?q=${encodeURIComponent(q)}`), fetchShops(nq, 'cafe').catch(noShop), fetchShops(nq, 'bakery').catch(noShop)]);
+    const shopFail = a.fail || b.fail;
     const v = lifecycle(t.dates, t.ratio);
     if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 너무 적어서 분석하기 어려워요. 다른 이름으로 검색해 보세요.`; return false; }
     const XX = t.dates.map(d => { const x = new Date(d); return x.getFullYear() + (x - new Date(x.getFullYear(), 0, 1)) / 31536000000; });
     const sh = shopAnalysis([...a.rows, ...b.rows], v.peakDate, a.capped || b.capped);
     LIVE[q] = { v, X: XX, dates: t.dates, shop: sh.stats.total ? sh.stats : { total: 0, popup: 0, open_now: 0, alive_max: 0, close1y_before: null, close1y_after: null },
-      shopPts: sh.pts, shopNote: `· 상호에 '${nq}'가 들어간 매장`, shopLegend: ` (상호에 '${nq}')` };
-    qMsg.textContent = `'${q}' 실시간 분석 결과예요. (네이버 데이터랩 · 행정안전부 인허가 데이터)`;
+      shopPts: sh.pts, shopNote: shopFail ? '· 매장 데이터는 정부 서버가 느려서 이번엔 못 불러왔어요' : `· 상호에 '${nq}'가 들어간 매장`, shopLegend: ` (상호에 '${nq}')` };
+    qMsg.textContent = shopFail ? `'${q}' 검색량 분석 결과예요. 매장 수는 정부 서버가 느려서 못 불러왔어요. 잠시 뒤 다시 검색하면 나와요.` : `'${q}' 실시간 분석 결과예요. (네이버 데이터랩 · 행정안전부 인허가 데이터)`;
     select(q);
     goStep(2);
     return true;
