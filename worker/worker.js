@@ -634,6 +634,26 @@ async function cafePrice(q, area, env) {
   return { ok: true, q, area: area || '', posts: items.length, since, ...priceStats(items, q, since) };
 }
 
+// ---------- 막 뜨는 유행 초기 신호: 검색량이 아직 안 잡히는 이름을 네이버 블로그 최근 글 수로 본다 (2026-11-17) ----------
+// 최신순 200개 중 제목·본문에 그 이름이 실제로 들어간 글만 세서 최근 30일 / 그 전 30일로 나눈다. 200개가 다 60일 안이면 cap(더 많음)
+async function buzz(q, env) {
+  const ns = naverSearch(env);
+  if (!(env.NAVER_SEARCH_ID && env.NAVER_SEARCH_SECRET) && !(env.NAVER_ID && env.NAVER_SECRET)) return { ok: false, need: 'search', error: '네이버 검색 API 키가 없어요.' };
+  const calls = [1, 101].map(start => fetch(`${ns.base}/blog${ns.ext}?query=${encodeURIComponent('"' + q + '"')}&display=100&start=${start}&sort=date`, { headers: ns.headers })
+    .then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`네이버 검색 ${r.status}: ${t.slice(0, 120)}`); })));
+  const res = await Promise.allSettled(calls), okRes = res.filter(r => r.status === 'fulfilled');
+  if (!okRes.length) return { ok: false, error: String(res[0].reason && res[0].reason.message || res[0].reason) };
+  const items = okRes.flatMap(r => r.value.items || []), total = Number(okRes[0].value.total || 0);
+  const norm = x => stripTag(x).replace(/\s/g, '').toLowerCase(), nq = norm(q), ymd = d => new Date(Date.now() + 9 * 3600e3 - d * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+  const d30 = ymd(30), d60 = ymd(60), seen = new Set(), hit = [];
+  for (const it of items) { if (!it || seen.has(it.link) || !it.postdate) continue; seen.add(it.link);
+    if (norm(`${it.title} ${it.description}`).includes(nq)) hit.push(it); }
+  const n30 = hit.filter(x => x.postdate >= d30).length, p30 = hit.filter(x => x.postdate < d30 && x.postdate >= d60).length;
+  const oldest = items.length ? items[items.length - 1].postdate || '' : '';
+  return { ok: true, q, total, n30, p30, cap: items.length >= 200 && oldest >= d60,
+    samples: hit.slice(0, 5).map(x => [stripTag(x.title).slice(0, 44), x.link, x.postdate]) };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
@@ -706,13 +726,14 @@ export default {
     const hit = await cache.match(key);
     if (hit) { const r = new Response(hit.body, hit); Object.entries(cors(origin)).forEach(([k, v]) => r.headers.set(k, v)); return r; }
 
-    if (['/trend', '/volume', '/brands', '/price', '/shops'].includes(url.pathname)) { const lim = await overLimit('search', request, env, origin); if (lim) return lim; }   // 캐시에서 나간 건 세지 않음
+    if (['/trend', '/volume', '/brands', '/price', '/shops', '/buzz'].includes(url.pathname)) { const lim = await overLimit('search', request, env, origin); if (lim) return lim; }   // 캐시에서 나간 건 세지 않음
     try {
       let data;
       if (url.pathname === '/trend') data = await trend(q, env);
       else if (url.pathname === '/volume') { data = await volume(q, env); if (!data.ok) return json(data, 200, origin); delete data._all; }
       else if (url.pathname === '/brands') { data = await brands(q, env, url.searchParams.get('debug') === '1'); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/price') { data = await cafePrice(q, cleanQuery(url.searchParams.get('area')) || '', env); if (!data.ok) return json(data, 200, origin); }
+      else if (url.pathname === '/buzz') { data = await buzz(q, env); if (!data.ok) return json(data, 200, origin); }
       else if (url.pathname === '/shops') data = await shops(q, url.searchParams.get('src'), Math.max(1, Math.min(50, Number(url.searchParams.get('page')) || 1)), env);
       else return json({ ok: true, usage: ['/trend?q=', '/shops?q=&src=cafe|bakery&page=', '/volume?q=', '/price?q=&area=', '/brands?q=', '/kamis', '/sheet?id=&gid='] }, 200, origin);
       const noCache = url.pathname === '/brands' && !data.verified;   // 지역 검색이 막혔던 결과는 저장하지 않는다

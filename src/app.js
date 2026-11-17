@@ -1020,6 +1020,7 @@ const qMsg = document.getElementById('q-msg');
 async function analyzeLive(q) {
   if (!LIVE_API) { qMsg.textContent = '실시간 검색은 준비 중이에요. 위 목록에서 골라 주세요.'; return false; }
   qMsg.textContent = `'${q}' 검색량과 전국 매장을 불러오는 중… (10초쯤 걸려요)`;
+  { const bz = document.getElementById('q-buzz'); if (bz) { bz.hidden = true; bz.innerHTML = ''; } }
   try {
     const nq = q.replace(/\s+/g, '');
     // 매장(인허가) 조회는 정부 서버가 느리면 504가 나기도 함 → 실패해도 검색량 분석은 보여 준다 (2026-11-17, '파블로 롤케이크' 검색이 통째로 실패)
@@ -1027,7 +1028,7 @@ async function analyzeLive(q) {
     const [t, a, b] = await Promise.all([getJSON(`/trend?q=${encodeURIComponent(q)}`), fetchShops(nq, 'cafe').catch(noShop), fetchShops(nq, 'bakery').catch(noShop)]);
     const shopFail = a.fail || b.fail;
     const v = lifecycle(t.dates, t.ratio);
-    if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 너무 적어서 분석하기 어려워요. 다른 이름으로 검색해 보세요.`; return false; }
+    if (!v) { qMsg.textContent = `'${q}'은(는) 네이버 검색량이 아직 너무 적어서 타이밍 진단은 어려워요. 대신 블로그 글로 초기 신호를 볼게요…`; showBuzz(q); return false; }
     const XX = t.dates.map(d => { const x = new Date(d); return x.getFullYear() + (x - new Date(x.getFullYear(), 0, 1)) / 31536000000; });
     const sh = shopAnalysis([...a.rows, ...b.rows], v.peakDate, a.capped || b.capped);
     LIVE[q] = { v, X: XX, dates: t.dates, shop: sh.stats.total ? sh.stats : { total: 0, popup: 0, open_now: 0, alive_max: 0, close1y_before: null, close1y_after: null },
@@ -1038,6 +1039,55 @@ async function analyzeLive(q) {
     return true;
   } catch (e) { qMsg.textContent = `불러오지 못했어요: ${e.message}`; return false; }
 }
+/* ---------- 막 뜨는 유행 초기 신호 (2026-11-17): 검색량이 아직 안 잡히는 이름(예: '파블로바 롤케이크')은 네이버 블로그 최근 글 수로 본다 ----------
+   Worker /buzz?q= → 최근 30일 글 수 n30 · 그 전 30일 p30 · 글 예시. 지켜보기는 localStorage 'dessert-timing-watch' */
+const WATCH_KEY = 'dessert-timing-watch';
+const loadWatch = () => { try { return JSON.parse(localStorage.getItem(WATCH_KEY)) || []; } catch { return []; } };
+const storeWatch = x => { try { localStorage.setItem(WATCH_KEY, JSON.stringify(x.slice(0, 8))); } catch { } };
+const BUZZ = {};
+const buzzGet = q => BUZZ[q] = BUZZ[q] || fetch(`${LIVE_API}/buzz?q=${encodeURIComponent(q)}`, { headers: { 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}) } }).then(r => r.json()).catch(() => ({ ok: false }));
+function buzzSay(b) {   // [머리말, 색 종류]
+  const n = b.n30, p = b.p30;
+  if (n >= 5 && n >= p * 1.5) return ['🔥 막 뜨는 중일 수 있어요', 'hot'];
+  if (n >= 1) return ['👀 조금씩 올라오고 있어요', 'warm'];
+  return ['🌱 아직 블로그에도 거의 없어요', 'cold'];
+}
+const buzzNum = (n, cap) => `${n}${cap ? '개 이상' : '개'}`;
+async function showBuzz(q) {
+  const box = document.getElementById('q-buzz'); if (!box) return;
+  box.hidden = false; box.innerHTML = `<p class="note">'${esc(q)}' 블로그 글을 세는 중…</p>`;
+  const b = await buzzGet(q);
+  if (b.limit) { box.innerHTML = `<p class="note">⏳ ${esc(b.error)}</p>`; return; }
+  if (!b.ok) { box.innerHTML = `<p class="note">블로그 글 수를 불러오지 못했어요. 잠시 뒤 다시 검색해 주세요.</p>`; delete BUZZ[q]; return; }
+  const [head, cls] = buzzSay(b), watching = loadWatch().some(w => w.q === q);
+  const diff = b.n30 - b.p30, arrow = b.cap ? '' : diff > 0 ? ` <b class="bz-up">▲${diff}</b>` : diff < 0 ? ` <b class="bz-dn">▼${-diff}</b>` : '';
+  box.innerHTML = `<div class="bz ${cls}">
+    <p class="bz-h"><b>${head}</b> <span>${esc(q)}</span></p>
+    <div class="bz-g"><div><span>최근 30일 블로그 글</span><b>${buzzNum(b.n30, b.cap)}${arrow}</b></div><div><span>그 전 30일</span><b>${b.cap ? '–' : b.p30 + '개'}</b></div><div><span>네이버 검색량</span><b>아직 적음</b></div></div>
+    <p class="note">검색량이 생기기 전, 블로그 후기가 먼저 늘어나는 초기 신호예요. 글 수는 관심 정도이고 실제 판매량은 아니에요.${cls === 'cold' ? ' 이름을 다르게 넣어 보거나(띄어쓰기·줄임말) 지켜보기에 넣어 두세요.' : ''}</p>
+    ${b.samples && b.samples.length ? `<details class="bz-s"><summary>최근 글 보기</summary><ul>${b.samples.map(x => `<li><small>${esc(String(x[2]).slice(4, 6))}.${esc(String(x[2]).slice(6, 8))}</small> <a href="${esc(x[1])}" target="_blank" rel="noopener">${esc(x[0])}</a></li>`).join('')}</ul></details>` : ''}
+    <p class="bz-q"><b>이 이름으로 바로 신메뉴 만들기</b> <small>우리 가게에서 하는 걸 골라 주세요</small></p>
+    <div class="dk-kinds bz-kinds">${ING_KINDS.map(([k, t]) => `<button type="button" data-kind="${k}">${t}</button>`).join('')}</div>
+    <button type="button" class="btn line bz-w" id="bz-watch">${watching ? '⭐ 지켜보는 중 (눌러서 빼기)' : '☆ 지켜보기에 넣기'}</button>
+    <div class="dk-out" id="bz-out"></div></div>`;
+  box.querySelectorAll('.bz-kinds [data-kind]').forEach(x => x.onclick = () => makeIngMenu(q, x.dataset.kind, false,
+    { out: document.getElementById('bz-out'), btns: '#q-buzz .bz-kinds [data-kind]', type: '막 뜨기 시작한 유행', goal: '기간 한정', note: `요즘 SNS에서 막 뜨기 시작한 '${q}'를 우리 가게 ${x.dataset.kind} 메뉴로` }));
+  document.getElementById('bz-watch').onclick = () => { const w = loadWatch(), i = w.findIndex(y => y.q === q);
+    if (i >= 0) w.splice(i, 1); else w.unshift({ q, at: new Date().toISOString().slice(0, 10), n30: b.n30 });
+    storeWatch(w); renderWatch(); showBuzz(q); };
+}
+// 지켜보는 유행: 1단계 검색창 아래 줄. 열 때마다 블로그 글 수를 다시 세서(서버가 하루 캐시) 처음 넣었을 때와 비교
+async function renderWatch() {
+  const box = document.getElementById('q-watch'); if (!box) return;
+  const w = loadWatch(); box.hidden = !w.length; if (!w.length) return;
+  const row = (x, b) => { const now = b && b.ok ? b.n30 : null, d = now !== null ? now - (x.n30 || 0) : 0;
+    return `<span class="wc"><button type="button" class="wc-b" data-q="${esc(x.q)}">⭐ ${esc(x.q)}${now !== null ? ` <small>30일 글 ${buzzNum(now, b.cap)}${d > 0 ? ` <b class="bz-up">▲${d}</b>` : ''}</small>` : ''}</button><button type="button" class="wc-x" data-x="${esc(x.q)}" aria-label="${esc(x.q)} 지켜보기에서 빼기">×</button></span>`; };
+  const draw = bs => { box.innerHTML = `<b class="wc-t">지켜보는 유행</b>${w.map((x, i) => row(x, bs[i])).join('')}`;
+    box.querySelectorAll('.wc-b').forEach(b => b.onclick = () => { document.getElementById('q').value = b.dataset.q; delete LIVE[b.dataset.q]; analyzeLive(b.dataset.q); });
+    box.querySelectorAll('.wc-x').forEach(b => b.onclick = () => { storeWatch(loadWatch().filter(y => y.q !== b.dataset.x)); renderWatch(); }); };
+  draw([]); draw(await Promise.all(w.map(x => buzzGet(x.q))));
+}
+renderWatch();
 document.getElementById('q-form').addEventListener('submit', e => {
   e.preventDefault();
   const q = document.getElementById('q').value.trim();
@@ -1651,30 +1701,31 @@ const ING_KINDS = [['디저트', '디저트'], ['음료', '음료'], ['구움과
 const ING_PRICE = { '디저트': 6500, '음료': 6000, '구움과자': 3500, '떡·모찌': 4000 };   // 가게 프로필 가격대가 없을 때 기본 판매가
 const ING_MADE = {};
 let ING_BUSY = false;
-async function makeIngMenu(g, kind, again) {
-  if (ING_BUSY) return; ING_BUSY = true;
-  const out = document.getElementById('dk-out'), p = loadProfile() || {}, key = g + '|' + kind;
+// opt: 제철 재료가 아닌 곳(막 뜨는 유행 카드)에서도 같은 빠른 메뉴 만들기를 씀 → { out, btns, type, goal, note }
+async function makeIngMenu(g, kind, again, opt) {
+  if (ING_BUSY) return; ING_BUSY = true; opt = opt || {};
+  const out = opt.out || document.getElementById('dk-out'), p = loadProfile() || {}, key = g + '|' + kind, goal = opt.goal || '시즌 메뉴';
   const price = p.price ? (([lo, hi]) => Math.round((lo + hi) / 2 / 100) * 100)(p.price.split('-').map(Number)) : ING_PRICE[kind];
-  const btns = document.querySelectorAll('#dk-make [data-kind]'); btns.forEach(b => b.disabled = true);
+  const btns = document.querySelectorAll(opt.btns || '#dk-make [data-kind]'); btns.forEach(b => b.disabled = true);
   const t0 = Date.now(), lab = `${g} ${kind}`;
   const tick = () => { out.innerHTML = `<div class="mk-prog"><div class="mk-prog-top"><b>🍳 ${esc(lab)} 메뉴를 만드는 중…</b><span>${Math.floor((Date.now() - t0) / 1000)}초</span></div><p class="note">AI가 레시피를 짜고, 재료마다 실제 단가로 원가율 30%를 맞추는 중이에요. (10초쯤 걸려요)</p></div>`; };
   tick(); const id = setInterval(tick, 1000); out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   try {
     if (loadSheet()) await Promise.race([syncSheet(), new Promise(r => setTimeout(r, 6000))]);
     const tok = await authToken();
-    const note = [`제철 재료 '${g}'를 주인공으로 한 ${kind} 메뉴`, again && ING_MADE[key] ? `앞에서 제안한 ${ING_MADE[key].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 메뉴로` : ''].filter(Boolean).join(' / ');
+    const note = [opt.note || `제철 재료 '${g}'를 주인공으로 한 ${kind} 메뉴`, again && ING_MADE[key] ? `앞에서 제안한 ${ING_MADE[key].slice(-3).map(n => `'${n}'`).join(', ')}와는 다른 메뉴로` : ''].filter(Boolean).join(' / ');
     const res = await fetch(LIVE_API + '/menu', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Uid': OWNER ? '' : (authUid() || UID), ...(OWNER ? { 'X-Owner-Key': OWNER } : {}), ...(tok ? { Authorization: 'Bearer ' + tok } : {}) },
-      body: JSON.stringify({ keyword: g, type: '제철 재료', kind, price, targetRate: 30, profile: p, goal: '시즌 메뉴', myPrice: myPriceMap(), note }) });
+      body: JSON.stringify({ keyword: g, type: opt.type || '제철 재료', kind, price, targetRate: 30, profile: p, goal, myPrice: myPriceMap(), note }) });
     const m = await res.json();
     clearInterval(id);
     if (m.limit) { out.innerHTML = `<p class="note">⏳ ${esc(m.error)}</p>`; return; }
     if (!res.ok || m.error) throw new Error(m.error || res.status);
     m.market = { need: 'ing' };   // 재료 이름으로는 다른 카페 판매가를 찾기 어려워 원가 기준 최소가만 보여 줌
     (ING_MADE[key] = ING_MADE[key] || []).push(m.name);
-    out.innerHTML = menuCard(m) + `<div class="mk-act"><button type="button" class="btn primary" id="dk-save">♡ 보관함에 저장</button>
-      <button type="button" class="btn line" id="dk-again">↻ 다른 메뉴</button></div>`;
-    document.getElementById('dk-save').onclick = e => { saveMenu({ m, k: g, goal: '시즌 메뉴' }); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; track('menu_save', g, '시즌 메뉴', { name: m.name, rate: m.rate, price: m.price }); };
-    document.getElementById('dk-again').onclick = () => makeIngMenu(g, kind, true);
+    out.innerHTML = menuCard(m) + `<div class="mk-act"><button type="button" class="btn primary" data-a="save">♡ 보관함에 저장</button>
+      <button type="button" class="btn line" data-a="again">↻ 다른 메뉴</button></div>`;
+    out.querySelector('[data-a="save"]').onclick = e => { saveMenu({ m, k: g, goal }); e.target.textContent = '✓ 보관함에 저장했어요'; e.target.disabled = true; track('menu_save', g, goal, { name: m.name, rate: m.rate, price: m.price }); };
+    out.querySelector('[data-a="again"]').onclick = () => makeIngMenu(g, kind, true, opt);
   } catch (e) {
     clearInterval(id);
     const msg = String(e.message || e);
